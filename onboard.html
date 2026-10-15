@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Onboarding · Besa Logistics</title>
+<title>Onboarding Â· Besa Logistics</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -56,22 +56,22 @@
   </form>
 </div>
 
-<script src="config.js"></script>
+<script src="config.js?v=login-fix-20261015"></script>
 <script>
 document.getElementById('onboard-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const form = e.target;
   const status = document.getElementById('status');
-  status.textContent = 'Submitting…';
+  status.textContent = 'Submittingâ€¦';
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await besaClient.auth.getUser();
   if (!user) {
     status.textContent = 'Please use the link from your invitation email.';
     return;
   }
 
   // Update driver record
-  await supabase.from('drivers').update({
+  await besaClient.from('drivers').update({
     first_name: form.first_name.value,
     last_name: form.last_name.value,
     phone: form.phone.value,
@@ -80,7 +80,7 @@ document.getElementById('onboard-form').addEventListener('submit', async (e) => 
   }).eq('email', user.email);
 
   // Record signature
-  await supabase.from('signatures').insert({
+  await besaClient.from('signatures').insert({
     driver_id: user.id, // adjust if using separate id
     document_name: 'Training + SLA',
     signed_name: form.signed_name.value
