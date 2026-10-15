@@ -40,6 +40,7 @@
   }
   function setReady(ready) {
     state.ready = ready;
+    scheduleVehicleHeader();
     $('data-content').hidden = !ready;
     ['primary-add', 'export-vehicles', 'export-drivers'].forEach(id => { $(id).disabled = !ready; });
     $('connection-label').textContent = ready ? 'Workspace connected' : 'Workspace unavailable';
@@ -103,22 +104,97 @@
     const d = days(date);
     return `<span class="${d === null ? 'muted' : d < 0 ? 'date-overdue' : d <= 30 ? 'date-soon' : ''}">${formatDate(date)}</span>`;
   }
-  function filteredVehicles() {
-    const search = $('vehicle-search').value.trim().toLowerCase(); const status = $('vehicle-filter').value;
-    return state.vehicles.filter(v => (status ? sheetValues(v).status === status : v.status !== 'Archived') && (!search || [v.registration, v.make, v.model, v.vin, v.ownership, v.status].join(' ').toLowerCase().includes(search)));
+  const vehicleFilterIds = ['vehicle-search', 'vehicle-filter', 'vehicle-ownership-filter', 'vehicle-mot-filter', 'vehicle-service-filter'];
+  function syncVehicleFilterOptions() {
+    const select = $('vehicle-ownership-filter');
+    const owners = [...new Set(state.vehicles.map(v => v.ownership || '').filter(Boolean))].sort((a,b) => a.localeCompare(b));
+    const key = JSON.stringify(owners);
+    if (select.dataset.options === key) return;
+    const selected = select.value;
+    select.innerHTML = '<option value="">All owners</option><option value="__unrecorded__">Not recorded</option>' + owners.map(owner => `<option value="${escape(owner)}">${escape(owner)}</option>`).join('');
+    select.value = selected;
+    if (select.selectedIndex === -1) select.value = '';
+    select.dataset.options = key;
   }
+  function filteredVehicles() {
+    const search = $('vehicle-search').value.trim().toLowerCase();
+    const status = $('vehicle-filter').value, ownership = $('vehicle-ownership-filter').value;
+    const mot = $('vehicle-mot-filter').value, service = $('vehicle-service-filter').value;
+    return state.vehicles.filter(vehicle => {
+      const values = sheetValues(vehicle);
+      if (status ? values.status !== status : vehicle.status === 'Archived') return false;
+      if (ownership && (ownership === '__unrecorded__' ? Boolean(vehicle.ownership) : vehicle.ownership !== ownership)) return false;
+      if (service && values.service_status !== service) return false;
+      const remaining = days(vehicle.mot_due);
+      if (mot === 'overdue' && !(remaining !== null && remaining < 0)) return false;
+      if (mot === 'soon' && !(remaining !== null && remaining >= 0 && remaining <= 30)) return false;
+      if (mot === 'current' && !(remaining !== null && remaining > 30)) return false;
+      if (mot === 'missing' && remaining !== null) return false;
+      return !search || [vehicle.registration, vehicle.make, vehicle.model, vehicle.vin, vehicle.ownership, values.status, vehicle.notes].join(' ').toLowerCase().includes(search);
+    });
+  }
+  let floatingHeader = null, floatingHeaderDirty = true, headerFrame = 0;
+  function scheduleVehicleHeader() {
+    if (headerFrame) return;
+    headerFrame = requestAnimationFrame(() => { headerFrame = 0; positionVehicleHeader(); });
+  }
+  function positionVehicleHeader() {
+    if (!floatingHeader) {
+      floatingHeader = document.createElement('div');
+      floatingHeader.id = 'vehicle-floating-header';
+      floatingHeader.className = 'vehicle-floating-header';
+      floatingHeader.setAttribute('aria-hidden', 'true');
+      floatingHeader.hidden = true;
+      document.body.appendChild(floatingHeader);
+    }
+    const region = $('vehicle-scroll');
+    if (!state.ready || state.page !== 'vehicles' || !state.session || $('app-shell').hidden) {
+      floatingHeader.hidden = true; return;
+    }
+    const rect = region.getBoundingClientRect();
+    const source = $('vehicle-headings');
+    const headerHeight = source.getBoundingClientRect().height;
+    if (rect.top >= 0 || rect.bottom <= 0 || !headerHeight || !region.clientWidth) {
+      floatingHeader.hidden = true; return;
+    }
+    if (floatingHeaderDirty) {
+      const table = document.createElement('table');
+      const columns = document.createElement('colgroup');
+      const clone = source.cloneNode(true);
+      clone.removeAttribute('id');
+      for (let i = 0; i < source.children.length; i++) {
+        const width = source.children[i].getBoundingClientRect().width;
+        const column = document.createElement('col'); column.style.width = width + 'px'; columns.appendChild(column);
+        const cell = clone.children[i]; cell.style.minWidth = width + 'px'; cell.style.maxWidth = width + 'px'; cell.style.width = width + 'px';
+      }
+      const head = document.createElement('thead'); head.appendChild(clone);
+      table.append(columns, head);
+      table.style.width = region.querySelector('table').getBoundingClientRect().width + 'px';
+      floatingHeader.replaceChildren(table);
+      floatingHeaderDirty = false;
+    }
+    floatingHeader.style.left = rect.left + region.clientLeft + 'px';
+    floatingHeader.style.top = Math.min(0, rect.bottom - headerHeight) + 'px';
+    floatingHeader.style.width = region.clientWidth + 'px';
+    floatingHeader.style.height = headerHeight + 'px';
+    floatingHeader.hidden = false;
+    floatingHeader.scrollLeft = region.scrollLeft;
+  }
+
   function renderVehicles() {
+    syncVehicleFilterOptions();
     const rows = filteredVehicles();
     $('vehicle-headings').innerHTML = sheetColumns.map(([, heading]) => `<th scope="col">${escape(heading)}</th>`).join('');
     $('vehicle-rows').innerHTML = rows.map(vehicle => {
       const values = sheetValues(vehicle);
       return '<tr>' + sheetColumns.map(([field, heading, type]) => {
         const value = sheetDisplay(values, field, type);
-        if (field === 'registration') return `<td><strong class="reg">${escape(value)}</strong><span class="secondary">${editButton('vehicle', vehicle.id)}</span></td>`;
+        if (field === 'registration') return `<td><strong class="reg">${escape(value)}</strong><span class="secondary">${editButton('vehicle', vehicle.id, 'Edit vehicle')}</span></td>`;
         return `<td title="${escape(value)}" class="${field === 'notes' ? 'sheet-notes' : ''}">${escape(value === '' ? '—' : value)}</td>`;
       }).join('') + '</tr>';
     }).join('');
     $('vehicle-empty').hidden = rows.length > 0; $('vehicle-count').textContent = `${rows.length} ${rows.length === 1 ? 'vehicle' : 'vehicles'} shown · 27 columns, matching MOTs/ services`;
+    floatingHeaderDirty = true; scheduleVehicleHeader();
   }
 
   function filteredDrivers() {
@@ -428,13 +504,21 @@
     $('setup-retry').addEventListener('click', refresh);
     $('primary-add').addEventListener('click', () => openForm(state.page === 'drivers' ? 'driver' : 'vehicle'));
     document.addEventListener('click', event => { const button = event.target.closest('[data-edit]'); if (button) openForm(button.dataset.edit, button.dataset.id); });
-    for (const id of ['vehicle-search', 'vehicle-filter']) $(id).addEventListener('input', renderVehicles);
+    for (const id of vehicleFilterIds) $(id).addEventListener('input', renderVehicles);
+    $('reset-vehicle-filters').addEventListener('click', () => {
+      for (const id of vehicleFilterIds) $(id).value = '';
+      renderVehicles();
+    });
     for (const id of ['driver-search', 'driver-filter']) $(id).addEventListener('input', renderDrivers);
     for (const id of ['compliance-search', 'compliance-filter']) $(id).addEventListener('input', renderCompliance);
     $('record-form').addEventListener('input', updateVehicleCalculations);
     $('record-form').addEventListener('submit', saveRecord); $('cancel-dialog').addEventListener('click', closeForm); $('close-dialog').addEventListener('click', closeForm);
     $('record-dialog').addEventListener('cancel', event => { if (state.busy) event.preventDefault(); else state.edit = null; });
     $('export-vehicles').addEventListener('click', () => downloadCsv('vehicle')); $('export-drivers').addEventListener('click', () => downloadCsv('driver'));
+    window.addEventListener('scroll', scheduleVehicleHeader, { passive: true });
+    window.addEventListener('resize', () => { floatingHeaderDirty = true; scheduleVehicleHeader(); });
+    $('vehicle-scroll').addEventListener('scroll', scheduleVehicleHeader, { passive: true });
+    new ResizeObserver(() => { floatingHeaderDirty = true; scheduleVehicleHeader(); }).observe($('vehicle-scroll'));
     window.addEventListener('hashchange', route); route(); setReady(false);
     const params = new URLSearchParams(location.hash.slice(1));
     if (params.has('error_description')) { $('login-status').classList.add('error'); $('login-status').textContent = params.get('error_description'); history.replaceState(null, '', location.pathname); }

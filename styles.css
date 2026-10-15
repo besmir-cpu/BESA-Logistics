@@ -15,3 +15,26 @@ dialog{width:660px;max-width:calc(100vw - 28px);max-height:calc(100vh - 32px);pa
 .vehicle-dialog{width:1000px}.vehicle-dialog .form-grid{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}
 input[readonly]{background:#f1f4ee;color:#68796d;cursor:default}
 @media(max-width:750px){.vehicle-dialog .form-grid{grid-template-columns:1fr}}
+
+/* Vehicle editing, filters and frozen spreadsheet headings. */
+.vehicle-controls{margin-bottom:17px}.vehicle-search-row{display:flex;gap:12px;align-items:center;margin-bottom:15px}.vehicle-search-row .search{flex:1}
+.vehicle-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:12px;align-items:end;padding:17px;background:#edf1e8;border:1px solid #e1e7dc;border-radius:11px}
+.vehicle-filters label{font-size:11px;color:#5b6e60}.vehicle-filters select{font-size:12px;min-height:42px}.vehicle-filters .button{min-height:42px}.vehicle-help{margin-top:10px}
+#vehicles .vehicle-scroll{overflow:auto;max-height:68vh;max-height:68dvh;overscroll-behavior:contain;scrollbar-gutter:stable}
+#vehicles .vehicle-scroll:focus-visible{outline:2px solid #99b777;outline-offset:-2px}
+#vehicles th{position:sticky;top:0;z-index:3;background:#edf2e7;box-shadow:0 1px 0 #d7e0d0}
+#vehicles th:first-child{top:0;left:0;z-index:4;background:#edf2e7}
+#vehicles td:first-child{min-width:155px}#vehicles th:first-child{min-width:155px}
+#vehicles td:first-child .button{background:#235c46;border-color:#235c46;color:white;font-size:11px;padding:7px 11px;min-height:32px}
+#vehicles td:first-child .button:hover{background:#184332}#vehicles .secondary{margin-top:9px}
+@media(max-width:1100px){.vehicle-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.vehicle-filters .button{grid-column:1/-1}}
+@media(max-width:750px){.vehicle-filters{padding:12px;gap:10px}.vehicle-search-row{gap:8px}.vehicle-search-row input{font-size:12px}.vehicle-search-row .button{font-size:11px;padding:10px}.vehicle-help{font-size:10px}#vehicles .vehicle-scroll{max-height:64vh;max-height:64dvh}}
+
+/* Keep a synchronised copy of the headings at the viewport edge during page scroll. */
+.vehicle-floating-header{position:fixed;z-index:30;overflow:hidden;background:#edf2e7;box-shadow:0 2px 5px #193b2b20;pointer-events:none}
+.vehicle-floating-header table{table-layout:fixed;border-collapse:collapse;margin:0}
+.vehicle-floating-header th{text-transform:none;letter-spacing:0;font-size:11px;white-space:pre-wrap;color:#78867c;font-weight:600;padding:16px 19px;background:#edf2e7;border-bottom:1px solid #d7e0d0}
+.vehicle-floating-header th:first-child{position:sticky;left:0;z-index:1;background:#edf2e7;box-shadow:1px 0 0 var(--line)}
+
+/* Use the page's vertical scrollbar for the vehicle list. */
+#vehicles .vehicle-scroll{max-height:none;overflow-x:auto;overflow-y:hidden;overscroll-behavior:auto;scrollbar-gutter:auto}
