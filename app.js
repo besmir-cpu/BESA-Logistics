@@ -105,13 +105,22 @@
   }
   function filteredVehicles() {
     const search = $('vehicle-search').value.trim().toLowerCase(); const status = $('vehicle-filter').value;
-    return state.vehicles.filter(v => (status ? v.status === status : v.status !== 'Archived') && (!search || [v.registration, v.make, v.model, v.vin, v.ownership, v.status].join(' ').toLowerCase().includes(search)));
+    return state.vehicles.filter(v => (status ? sheetValues(v).status === status : v.status !== 'Archived') && (!search || [v.registration, v.make, v.model, v.vin, v.ownership, v.status].join(' ').toLowerCase().includes(search)));
   }
   function renderVehicles() {
     const rows = filteredVehicles();
-    $('vehicle-rows').innerHTML = rows.map(v => `<tr><td><span class="reg">${escape(v.registration)}</span><span class="secondary">${escape([v.make, v.model].filter(Boolean).join(' ') || v.vin || 'Vehicle details not added')}</span></td><td>${escape(v.ownership || '—')}</td><td>${dateCell(v.mot_due)}</td><td>${dateCell(v.service_due)}${v.service_due_mileage != null ? `<span class="secondary">${number(v.service_due_mileage)} miles</span>` : ''}</td><td>${number(v.current_mileage)}</td><td>${statusPill(v.status)}</td><td>${editButton('vehicle', v.id)}</td></tr>`).join('');
-    $('vehicle-empty').hidden = rows.length > 0; $('vehicle-count').textContent = `${rows.length} ${rows.length === 1 ? 'vehicle' : 'vehicles'} shown`;
+    $('vehicle-headings').innerHTML = sheetColumns.map(([, heading]) => `<th scope="col">${escape(heading)}</th>`).join('');
+    $('vehicle-rows').innerHTML = rows.map(vehicle => {
+      const values = sheetValues(vehicle);
+      return '<tr>' + sheetColumns.map(([field, heading, type]) => {
+        const value = sheetDisplay(values, field, type);
+        if (field === 'registration') return `<td><strong class="reg">${escape(value)}</strong><span class="secondary">${editButton('vehicle', vehicle.id)}</span></td>`;
+        return `<td title="${escape(value)}" class="${field === 'notes' ? 'sheet-notes' : ''}">${escape(value === '' ? '—' : value)}</td>`;
+      }).join('') + '</tr>';
+    }).join('');
+    $('vehicle-empty').hidden = rows.length > 0; $('vehicle-count').textContent = `${rows.length} ${rows.length === 1 ? 'vehicle' : 'vehicles'} shown · 27 columns, matching MOTs/ services`;
   }
+
   function filteredDrivers() {
     const search = $('driver-search').value.trim().toLowerCase(); const status = $('driver-filter').value;
     return state.drivers.filter(d => (status ? d.status === status : d.status !== 'Archived') && (!search || [nameOf(d), d.email, d.phone].join(' ').toLowerCase().includes(search)));
@@ -184,17 +193,116 @@
       if (generation === state.generation) { $('refresh-button').disabled = false; $('loading-state').hidden = true; }
     }
   }
-  const vehicleFields = [
-    ['registration', 'Registration', 'text', true, { maxlength: 16, placeholder: 'AB23 CDE' }],
-    ['status', 'Fleet status', 'select', true, { options: vehicleStatuses }],
-    ['make', 'Make', 'text'], ['model', 'Model', 'text'],
-    ['ownership', 'Owner / leasing company', 'text'], ['vin', 'VIN', 'text', false, { maxlength: 32 }],
-    ['mot_due', 'MOT due date', 'date'], ['tax_due', 'Road tax due date', 'date'],
-    ['insurance_due', 'Insurance expiry', 'date'], ['current_mileage', 'Current mileage', 'number'],
+  // Source order: MOTs/ services!A1:AA1. Preserve even the source's trailing spaces.
+  const sheetColumns = [
+    ['registration', 'Van Reg', 'text', true, { maxlength: 16 }],
+    ['ownership', 'Ownership', 'text'], ['vin', 'VIN ', 'text'],
+    ['mot_due', 'MOT Due Date ', 'date'], ['tax_due', 'Road Tax', 'text', false, { placeholder: 'DD/MM/YYYY or SORN' }],
+    ['deployment_date', 'Deployment date', 'date'], ['today', 'Today ', 'text', false, { calculated: true }],
+    ['tenure', 'Tenure (completed months)', 'text', false, { calculated: true }],
+    ['deployment_mileage', 'Deployment mileage', 'number'], ['current_mileage', 'Current mileage', 'number'],
+    ['deployment_difference', 'Difference in miles from deployment date', 'text', false, { calculated: true }],
     ['last_service_date', 'Last service date', 'date'], ['last_service_mileage', 'Last service mileage', 'number'],
+    ['miles_since_service', 'Miles since last service', 'text', false, { calculated: true }],
+    ['months_since_service', 'Months since last service', 'text', false, { calculated: true }],
+    ['service_status', 'Service status', 'text', false, { calculated: true }], ['notes', 'Notes', 'textarea'],
+    ['spare_key', 'Spare key', 'select', false, { options: [['', 'Not recorded'], 'Yes', 'No'] }],
+    ['service_interval_miles', 'Service interval (miles)', 'number'], ['service_interval_months', 'Service interval (months)', 'number'],
+    ['status', 'Fleet status', 'select', true, { options: ['Active', 'Needs review', 'In maintenance', 'Off hire', 'SORN', 'Personal', 'Archived'] }],
+    ['mileage_reading_date', 'Mileage reading date', 'date'],
+    ['days_until_mot', 'Days until MOT', 'text', false, { calculated: true }],
     ['service_due', 'Next service date', 'date'], ['service_due_mileage', 'Next service mileage', 'number'],
-    ['notes', 'Notes', 'textarea', false, { wide: true }]
+    ['tax_status', 'Tax date status', 'text', false, { calculated: true }],
+    ['action_required', 'Action required', 'text', false, { calculated: true }]
   ];
+  const storedVehicleFields = new Set(['registration', 'ownership', 'vin', 'mot_due', 'tax_due', 'current_mileage', 'last_service_date', 'last_service_mileage', 'notes', 'status', 'service_due', 'service_due_mileage']);
+  const sheetDate = value => {
+    if (!value) return null;
+    const text = String(value).trim();
+    const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text);
+    const iso = match ? `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}` : text;
+    const parsed = new Date(iso + 'T00:00:00Z');
+    return /^\d{4}-\d{2}-\d{2}$/.test(iso) && !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === iso ? iso : null;
+  };
+  const sheetDateText = value => value ? value.split('-').reverse().join('/') : '';
+  const sheetNumber = value => value == null || String(value).trim() === '' ? null : Number.isFinite(Number(String(value).replace(/,/g, ''))) ? Number(String(value).replace(/,/g, '')) : null;
+  function completedMonths(start, end, missing, future) {
+    if (!start) return missing;
+    if (start > end) return future;
+    const a = start.split('-').map(Number), b = end.split('-').map(Number);
+    return (b[0] - a[0]) * 12 + b[1] - a[1] - (b[2] < a[2] ? 1 : 0);
+  }
+  function addMonths(date, months) {
+    if (!date || !(months > 0) || months > 1200) return null;
+    const [y, m, d] = date.split('-').map(Number);
+    const first = new Date(Date.UTC(y, m - 1 + months, 1));
+    const last = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+    first.setUTCDate(Math.min(d, last));
+    return first.toISOString().slice(0, 10);
+  }
+  function sheetValues(vehicle, overrides = {}) {
+    const source = vehicle?.tracker_snapshot || {};
+    const v = {};
+    for (const [field, heading, type, , opts = {}] of sheetColumns) {
+      if (opts.calculated) continue;
+      let value = storedVehicleFields.has(field) ? vehicle?.[field] : source[heading];
+      if (field === 'status') value = vehicle?.status === 'Active' && source['Fleet status'] === 'Needs review' ? 'Needs review' : vehicle?.status || 'Active';
+      if (field === 'tax_due') value = vehicle?.tax_due ? sheetDateText(vehicle.tax_due) : String(source['Road Tax'] || '').trim().toUpperCase() === 'SORN' ? 'SORN' : '';
+      v[field] = type === 'number' ? sheetNumber(value) : type === 'date' ? sheetDate(value) : value || '';
+    }
+    Object.assign(v, overrides);
+    const now = today();
+    const difference = (end, start) => end == null || start == null ? 'Missing mileage' : end < start ? 'Check mileage' : end - start;
+    v.today = sheetDateText(now);
+    v.tenure = completedMonths(v.deployment_date, now, 'Missing deployment date', 'Check deployment date');
+    v.deployment_difference = difference(v.current_mileage, v.deployment_mileage);
+    v.miles_since_service = difference(v.current_mileage, v.last_service_mileage);
+    v.months_since_service = completedMonths(v.last_service_date, now, 'Missing service date', 'Check service date');
+    const notInService = ['Off hire', 'SORN', 'Archived'].includes(v.status);
+    const checkData = v.miles_since_service === 'Check mileage' || v.months_since_service === 'Check service date';
+    const overdue = (v.service_due && days(v.service_due) <= 0) || (v.service_due_mileage != null && v.current_mileage != null && v.current_mileage >= v.service_due_mileage);
+    const missingData = v.current_mileage == null || !v.last_service_date || v.last_service_mileage == null;
+    const missingIntervals = !(v.service_interval_miles > 0) || !(v.service_interval_months > 0);
+    const dueSoon = (v.service_due && days(v.service_due) <= 30) || (v.service_due_mileage != null && v.current_mileage != null && v.service_due_mileage - v.current_mileage <= 1000);
+    v.service_status = notInService ? 'Not in service' : checkData ? 'Check data' : overdue ? 'Overdue' : missingData ? 'Missing service data' : missingIntervals ? 'Missing service intervals' : dueSoon ? 'Due soon' : 'OK';
+    v.days_until_mot = v.mot_due ? days(v.mot_due) : v.status === 'SORN' ? 'SORN' : 'Missing MOT date';
+    const taxDate = sheetDate(v.tax_due);
+    v.tax_status = v.status === 'SORN' || String(v.tax_due).trim().toUpperCase() === 'SORN' ? 'SORN' : !taxDate ? 'Missing tax date' : days(taxDate) < 0 ? 'Past date - verify' : days(taxDate) <= 30 ? 'Due within 30 days' : 'Future date';
+    const urgent = v.service_status === 'Check data' || (typeof v.days_until_mot === 'number' && v.days_until_mot < 0) || v.tax_status === 'Past date - verify' || v.service_status === 'Overdue';
+    const incomplete = v.status === 'Needs review' || ['Missing service data', 'Missing service intervals'].includes(v.service_status) || !v.mileage_reading_date || v.days_until_mot === 'Missing MOT date' || v.tax_status === 'Missing tax date';
+    const due = v.service_status === 'Due soon' || (typeof v.days_until_mot === 'number' && v.days_until_mot <= 30) || v.tax_status === 'Due within 30 days' || (v.mileage_reading_date && days(v.mileage_reading_date) < -7);
+    v.action_required = notInService ? 'Not in service' : urgent ? 'Urgent review' : incomplete ? 'Complete data' : due ? 'Due soon / update reading' : 'OK';
+    return v;
+  }
+  function sheetDisplay(values, field, type) {
+    const value = values[field];
+    return type === 'date' ? sheetDateText(value) : value ?? '';
+  }
+  function readVehicleForm() {
+    const values = {};
+    for (const [field, , type, , opts = {}] of sheetColumns) {
+      if (opts.calculated) continue;
+      const value = $('field-' + field).value.trim();
+      values[field] = type === 'number' ? sheetNumber(value) : type === 'date' ? sheetDate(value) : value;
+    }
+    return values;
+  }
+  function updateVehicleCalculations(event) {
+    if (state.edit?.type !== 'vehicle') return;
+    const values = readVehicleForm();
+    if (['field-last_service_date', 'field-service_interval_months'].includes(event?.target?.id)) {
+      values.service_due = addMonths(values.last_service_date, values.service_interval_months);
+      $('field-service_due').value = values.service_due || '';
+    }
+    if (['field-last_service_mileage', 'field-service_interval_miles'].includes(event?.target?.id)) {
+      values.service_due_mileage = values.last_service_mileage != null && values.service_interval_miles > 0 ? values.last_service_mileage + values.service_interval_miles : null;
+      $('field-service_due_mileage').value = values.service_due_mileage ?? '';
+    }
+    const calculated = sheetValues(state.edit.record, values);
+    for (const [field, , , , opts = {}] of sheetColumns) if (opts.calculated) $('field-' + field).value = calculated[field] ?? '';
+  }
+
+  const vehicleFields = sheetColumns;
   const driverFields = () => [
     ['first_name', 'First name', 'text', true], ['last_name', 'Last name', 'text'],
     ['email', 'Email address', 'email'], ['phone', 'Phone number', 'tel'],
@@ -215,16 +323,17 @@
     $('dialog-eyebrow').textContent = type === 'vehicle' ? 'FLEET RECORD' : 'DRIVER RECORD';
     $('save-record').textContent = `Save ${type}`; $('form-status').textContent = ''; $('form-status').classList.remove('error');
     $('form-fields').innerHTML = fields.map(([field, label, inputType, required, opts = {}]) => {
-      const value = record?.[field] ?? (field === 'status' ? (type === 'vehicle' ? 'Active' : 'Onboarding') : '');
+      const value = (type === 'vehicle' ? sheetValues(record)[field] : record?.[field]) ?? (field === 'status' ? 'Onboarding' : '');
       let control;
       if (inputType === 'select') control = `<select id="field-${field}" name="${field}" ${required ? 'required' : ''}>${opts.options.map(option => {
         const [optionValue, optionLabel] = Array.isArray(option) ? option : [option, option];
         return `<option value="${escape(optionValue)}" ${String(value) === String(optionValue) ? 'selected' : ''}>${escape(optionLabel)}</option>`;
       }).join('')}</select>`;
       else if (inputType === 'textarea') control = `<textarea id="field-${field}" name="${field}" maxlength="5000">${escape(value)}</textarea>`;
-      else control = `<input id="field-${field}" name="${field}" type="${inputType}" value="${escape(value)}" ${required ? 'required' : ''} ${inputType === 'number' ? 'min="0" max="9999999" step="1"' : ''} ${inputType === 'date' ? 'min="1950-01-01" max="2100-12-31"' : ''} ${opts.maxlength ? `maxlength="${opts.maxlength}"` : ''} ${['text', 'email', 'tel'].includes(inputType) && !opts.maxlength ? 'maxlength="254"' : ''} ${opts.placeholder ? `placeholder="${escape(opts.placeholder)}"` : ''}>`;
-      return `<label ${opts.wide ? 'class="wide"' : ''} for="field-${field}">${escape(label)}${required ? ' *' : ''}${control}${field === 'status' ? '<span class="form-hint">Use Archived to remove this record from daily views while keeping its history.</span>' : ''}</label>`;
+      else control = `<input id="field-${field}" name="${field}" type="${inputType}" value="${escape(value)}" ${required ? 'required' : ''} ${opts.calculated ? 'readonly aria-readonly="true"' : ''} ${inputType === 'number' ? 'min="0" max="9999999" step="1"' : ''} ${inputType === 'date' ? 'min="1950-01-01" max="2100-12-31"' : ''} ${opts.maxlength ? `maxlength="${opts.maxlength}"` : ''} ${['text', 'email', 'tel'].includes(inputType) && !opts.maxlength ? 'maxlength="254"' : ''} ${opts.placeholder ? `placeholder="${escape(opts.placeholder)}"` : ''}>`;
+      return `<label ${opts.wide ? 'class="wide"' : ''} for="field-${field}">${escape(label)}${required ? ' *' : ''}${control}${opts.calculated ? '<span class="form-hint">Calculated automatically</span>' : ''}${field === 'status' ? '<span class="form-hint">Use Archived to remove this record from daily views while keeping its history.</span>' : ''}</label>`;
     }).join('');
+    $('record-dialog').classList.toggle('vehicle-dialog', type === 'vehicle');
     $('record-dialog').showModal();
   }
   function closeForm() { if (!state.busy) { $('record-dialog').close(); state.edit = null; } }
@@ -233,9 +342,21 @@
     if (state.busy || !state.edit || !state.session) return;
     const edit = state.edit; const fields = edit.type === 'vehicle' ? vehicleFields : driverFields();
     const values = new FormData($('record-form')); const payload = {};
-    for (const [field, , inputType] of fields) {
+    for (const [field, , inputType, , opts = {}] of fields) {
+      if (opts.calculated || (edit.type === 'vehicle' && !storedVehicleFields.has(field))) continue;
       const value = String(values.get(field) ?? '').trim();
       payload[field] = inputType === 'number' ? (value === '' ? null : Number(value)) : value || null;
+    }
+    if (edit.type === 'vehicle') {
+      const values = sheetValues(edit.record, readVehicleForm());
+      const roadTax = String(values.tax_due || '').trim();
+      if (roadTax && roadTax.toUpperCase() !== 'SORN' && !sheetDate(roadTax)) {
+        $('form-status').classList.add('error'); $('form-status').textContent = 'Road Tax must be a valid date in DD/MM/YYYY format, SORN, or blank.'; return;
+      }
+      payload.tracker_snapshot = { ...(edit.record?.tracker_snapshot || {}) };
+      for (const [field, heading, type] of sheetColumns) payload.tracker_snapshot[heading] = sheetDisplay(values, field, type);
+      payload.tax_due = sheetDate(roadTax);
+      if (payload.status === 'Needs review') payload.status = 'Active';
     }
     if (edit.type === 'vehicle') payload.registration = (payload.registration || '').replace(/\s/g, '').toUpperCase();
     if (payload.email) payload.email = payload.email.toLowerCase();
@@ -265,10 +386,10 @@
     const fields = type === 'vehicle' ? vehicleFields : driverFields();
     const cell = value => {
       let text = String(value ?? '');
-      if (/^[\s]*[=+@-]/.test(text)) text = "'" + text;
+      if (typeof value !== 'number' && /^[\s]*[=+@-]/.test(text)) text = "'" + text;
       return '"' + text.replace(/"/g, '""') + '"';
     };
-    const output = [fields.map(f => cell(f[1])).join(','), ...rows.map(row => fields.map(([key]) => cell(key === 'vehicle_id' ? state.vehicles.find(v => v.id === row[key])?.registration : row[key])).join(','))].join('\r\n');
+    const output = [fields.map(f => cell(f[1])).join(','), ...rows.map(row => fields.map(([key, , inputType]) => cell(type === 'vehicle' ? sheetDisplay(sheetValues(row), key, inputType) : key === 'vehicle_id' ? state.vehicles.find(v => v.id === row[key])?.registration : row[key])).join(','))].join('\r\n');
     const url = URL.createObjectURL(new Blob(['\ufeff', output], { type: 'text/csv;charset=utf-8' }));
     const anchor = document.createElement('a'); anchor.href = url; anchor.download = `besa-${type === 'vehicle' ? 'vehicles' : 'drivers'}-${today()}.csv`; anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -310,6 +431,7 @@
     for (const id of ['vehicle-search', 'vehicle-filter']) $(id).addEventListener('input', renderVehicles);
     for (const id of ['driver-search', 'driver-filter']) $(id).addEventListener('input', renderDrivers);
     for (const id of ['compliance-search', 'compliance-filter']) $(id).addEventListener('input', renderCompliance);
+    $('record-form').addEventListener('input', updateVehicleCalculations);
     $('record-form').addEventListener('submit', saveRecord); $('cancel-dialog').addEventListener('click', closeForm); $('close-dialog').addEventListener('click', closeForm);
     $('record-dialog').addEventListener('cancel', event => { if (state.busy) event.preventDefault(); else state.edit = null; });
     $('export-vehicles').addEventListener('click', () => downloadCsv('vehicle')); $('export-drivers').addEventListener('click', () => downloadCsv('driver'));

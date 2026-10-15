@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#122822">
   <title>Besa Logistics · Operations</title>
-  <link rel="stylesheet" href="styles.css?v=operations-1">
+  <link rel="stylesheet" href="styles.css?v=sheet-headings-2">
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-  <script defer src="config.js?v=operations-1"></script>
-  <script defer src="app.js?v=operations-1"></script>
+  <script defer src="config.js?v=sheet-headings-2"></script>
+  <script defer src="app.js?v=sheet-headings-2"></script>
 </head>
 <body>
   <section id="login-screen" class="login-screen">
@@ -60,8 +60,8 @@
           </section>
 
           <section id="vehicles" class="page-section" hidden>
-            <div class="toolbar"><label class="search"><span class="sr-only">Search vehicles</span><input id="vehicle-search" type="search" placeholder="Search registration, make, model or VIN…"></label><label><span class="sr-only">Vehicle status</span><select id="vehicle-filter"><option value="">All statuses</option><option>Active</option><option>In maintenance</option><option>Off hire</option><option>SORN</option><option>Personal</option><option>Archived</option></select></label><button class="button" id="export-vehicles">Export CSV</button></div>
-            <article class="panel table-panel"><div class="table-wrap"><table><caption class="sr-only">Vehicle records</caption><thead><tr><th>Vehicle</th><th>Ownership</th><th>MOT due</th><th>Next service</th><th>Mileage</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="vehicle-rows"></tbody></table></div><div id="vehicle-empty" class="empty" hidden>No vehicles match. Try another search or add a vehicle.</div><div class="table-footer" id="vehicle-count"></div></article>
+            <div class="toolbar"><label class="search"><span class="sr-only">Search vehicles</span><input id="vehicle-search" type="search" placeholder="Search registration, make, model or VIN…"></label><label><span class="sr-only">Vehicle status</span><select id="vehicle-filter"><option value="">All statuses</option><option>Active</option><option>Needs review</option><option>In maintenance</option><option>Off hire</option><option>SORN</option><option>Personal</option><option>Archived</option></select></label><button class="button" id="export-vehicles">Export CSV</button></div>
+            <article class="panel table-panel"><div class="table-wrap"><table><caption class="sr-only">Vehicle records</caption><thead><tr id="vehicle-headings"></tr></thead><tbody id="vehicle-rows"></tbody></table></div><div id="vehicle-empty" class="empty" hidden>No vehicles match. Try another search or add a vehicle.</div><div class="table-footer" id="vehicle-count"></div></article>
           </section>
 
           <section id="drivers" class="page-section" hidden>
