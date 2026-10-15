@@ -3,15 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Besa Logistics Â· Secure Platform</title>
+<title>Besa Logistics · Operations Platform</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  [hidden] { display: none !important; }
+  body { font-family: 'Inter', system_ui, sans-serif; background: #f8fafc; }
+  .status-ok { background: #dcfce7; color: #166534; }
+  .status-warning { background: #fef9c3; color: #854d0e; }
+  .status-danger { background: #fee2e2; color: #991b1b; }
+  .status-info { background: #e0f2fe; color: #075985; }
+  .status-neutral { background: #f1f5f9; color: #475569; }
+  .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1); }
+</style>
 </head>
-<body class="bg-slate-50 min-h-screen">
-<div class="max-w-4xl mx-auto p-6">
-  <h1 class="text-2xl font-bold mb-6">Besa Logistics</h1>
+<body class="min-h-screen">
 
-  <!-- Login / Invite section -->
+<div id="login-screen" class="max-w-lg mx-auto p-6 mt-12">
+  <h1 class="text-2xl font-bold mb-6">Besa Logistics</h1>
   <form id="auth-section" onsubmit="login(event)" class="bg-white p-6 rounded-xl border mb-6">
     <h2 class="font-semibold mb-4">Admin Login</h2>
     <label for="email" class="block text-sm mb-2">Admin email</label>
@@ -19,8 +29,122 @@
     <button id="login-button" type="submit" class="bg-slate-900 text-white px-4 py-2 rounded">Send magic link</button>
     <div id="auth-status" role="status" aria-live="polite" class="text-sm mt-3 text-slate-600"></div>
   </form>
+</div>
+<!-- Sidebar + Main -->
+<div id="app-shell" class="flex" hidden>
+  <!-- Sidebar -->
+  <aside class="w-64 bg-slate-900 text-white min-h-screen p-6 hidden md:block">
+    <div class="flex items-center gap-3 mb-10">
+      <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center font-bold text-lg">B</div>
+      <div>
+        <div class="font-bold text-lg">Besa Logistics</div>
+        <div class="text-xs text-slate-400">Operations Platform</div>
+      </div>
+    </div>
+    <nav class="space-y-1">
+      <a href="#" onclick="showSection('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-800 text-white">📊 Dashboard</a>
+      <a href="#" onclick="showSection('fleet')" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 text-slate-300">🚐 Fleet & Compliance</a>
+      <a href="#" onclick="showSection('onboarding')" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 text-slate-300">📋 Driver Onboarding</a>
+      <a href="#" onclick="showSection('alerts')" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 text-slate-300">⚠️ Priorities</a>
+    </nav>
+    <div class="mt-auto pt-10 text-xs text-slate-500">
+      Prototype · Data from your tracker<br>Built for Besa Logistics Ltd
+    </div>
+  </aside>
 
-  <div id="admin-section" class="hidden bg-white p-6 rounded-xl border">
+  <!-- Main content -->
+  <main class="flex-1 p-6 md:p-8">
+    <div class="flex flex-wrap justify-end items-center gap-3 mb-4 text-sm">
+      <span id="account-email" class="text-slate-500"></span>
+      <button type="button" onclick="signOut()" class="border rounded-lg px-3 py-2">Sign out</button>
+      <span id="account-status" role="status"></span>
+    </div>
+    <label class="block md:hidden mb-4">Navigate
+      <select class="w-full border rounded-lg p-2 mt-1" onchange="showSection(this.value)" id="mobile-nav">
+        <option value="dashboard">Dashboard</option><option value="fleet">Fleet &amp; Compliance</option>
+        <option value="onboarding">Driver Onboarding</option><option value="alerts">Priorities</option>
+      </select>
+    </label>
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-900" id="page-title">Operations Dashboard</h1>
+        <p class="text-slate-500 mt-1">Last-mile delivery · Fleet compliance · Driver readiness</p>
+      </div>
+      <div class="text-right">
+        <div class="text-sm font-medium text-emerald-600">Live prototype</div>
+        <div class="text-xs text-slate-400">15 Oct 2026</div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="space-y-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 card-hover transition">
+          <div class="text-sm text-slate-500">Total Vehicles</div>
+          <div class="text-3xl font-bold text-slate-900 mt-1" id="kpi-total">—</div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 card-hover transition">
+          <div class="text-sm text-slate-500">Needs Review</div>
+          <div class="text-3xl font-bold text-amber-600 mt-1" id="kpi-review">—</div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 card-hover transition">
+          <div class="text-sm text-slate-500">Overdue / Due Soon MOT</div>
+          <div class="text-3xl font-bold text-red-600 mt-1" id="kpi-mot">—</div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 card-hover transition">
+          <div class="text-sm text-slate-500">Missing Service Data</div>
+          <div class="text-3xl font-bold text-orange-600 mt-1" id="kpi-missing">—</div>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <h2 class="font-semibold text-lg mb-4">Fleet Status Breakdown</h2>
+          <div id="status-breakdown" class="space-y-3"></div>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <h2 class="font-semibold text-lg mb-4">Immediate Priorities</h2>
+          <div id="priority-list" class="space-y-3 text-sm"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FLEET -->
+    <section id="fleet" class="hidden">
+      <div class="flex gap-3 mb-4">
+        <input id="fleet-search" type="text" placeholder="Search reg, VIN, status..." class="flex-1 px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <select id="fleet-filter" class="px-4 py-2 border border-slate-200 rounded-xl">
+          <option value="">All statuses</option>
+          <option value="Needs review">Needs review</option>
+          <option value="Off hire">Off hire</option>
+          <option value="Personal">Personal</option>
+          <option value="SORN">SORN</option>
+        </select>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-600">
+              <tr>
+                <th class="text-left p-4 font-medium">Van Reg</th>
+                <th class="text-left p-4 font-medium">Ownership</th>
+                <th class="text-left p-4 font-medium">MOT Due</th>
+                <th class="text-left p-4 font-medium">Days</th>
+                <th class="text-left p-4 font-medium">Service</th>
+                <th class="text-left p-4 font-medium">Fleet Status</th>
+                <th class="text-left p-4 font-medium">Action</th>
+              </tr>
+            </thead>
+            <tbody id="fleet-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ONBOARDING -->
+    <section id="onboarding" class="hidden">
+  <div id="admin-section" class="mb-6 bg-white p-6 rounded-xl border">
     <h2 class="font-semibold mb-4">Invite new driver</h2>
     <div class="flex gap-2 mb-4">
       <input id="invite-email" type="email" placeholder="Driver email" class="flex-1 border rounded px-3 py-2">
@@ -31,10 +155,203 @@
     <h3 class="font-medium mt-6 mb-2">Recent applications</h3>
     <div id="drivers-list" class="text-sm"></div>
   </div>
+<p class="text-sm text-slate-500 mb-4">The summary and pipeline below are sample data from your dashboard prototype. Recent applications above come from your account.</p>
+      <div class="grid md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
+          <div class="font-semibold text-emerald-800">Road Ready</div>
+          <div class="text-3xl font-bold text-emerald-600 mt-1">18</div>
+          <div class="text-xs text-emerald-700 mt-1">Documents + training complete</div>
+        </div>
+        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+          <div class="font-semibold text-amber-800">In Progress</div>
+          <div class="text-3xl font-bold text-amber-600 mt-1">9</div>
+          <div class="text-xs text-amber-700 mt-1">Awaiting docs or training</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+          <div class="font-semibold text-slate-700">Invited</div>
+          <div class="text-3xl font-bold text-slate-600 mt-1">4</div>
+          <div class="text-xs text-slate-500 mt-1">Not yet started</div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <h2 class="font-semibold mb-4">Sample Onboarding Pipeline</h2>
+        <div class="space-y-3" id="onboarding-list"></div>
+      </div>
+      <p class="text-sm text-slate-500 mt-4">In a full version this would support document uploads, digital signatures, per-contract checklists (Amazon / Evri / etc.), and DVLA/HMRC checks — exactly like Verion.</p>
+    </section>
+
+    <!-- ALERTS -->
+    <section id="alerts" class="hidden">
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <h2 class="font-semibold text-lg mb-4">Compliance Priorities</h2>
+        <div id="alerts-list" class="space-y-3"></div>
+      </div>
+    </section>
+  </main>
 </div>
 
+<script>
+// Embedded vehicle data from your sheet
+const VEHICLES = [{"Van Reg": "LC21WCE", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREMM47003", "MOT Due Date ": "24/04/2026", "Road Tax": "SORN", "Deployment date": "02/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "20470", "Current mileage": "50,426", "Difference in miles from deployment date": "29956", "Last service date": "24/04/2025", "Last service mileage": 38728.0, "Miles since last service": "11698", "Months since last service": "17", "Service status": "Not in service", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Off hire", "Mileage reading date": "", "Days until MOT": "-174", "Next service date": "24/04/2027", "Next service mileage": 63728.0, "Tax date status": "SORN", "Action required": "Not in service"}, {"Van Reg": "LC21XLN", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREMP69191", "MOT Due Date ": "28/04/2026", "Road Tax": "SORN", "Deployment date": "03/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "49268", "Current mileage": "80,880", "Difference in miles from deployment date": "31612", "Last service date": "24/04/2025", "Last service mileage": 66712.0, "Miles since last service": "14168", "Months since last service": "17", "Service status": "Not in service", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Off hire", "Mileage reading date": "", "Days until MOT": "-170", "Next service date": "24/04/2027", "Next service mileage": 91712.0, "Tax date status": "SORN", "Action required": "Not in service"}, {"Van Reg": "LC21YCP", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREMP68005", "MOT Due Date ": "11/06/2026", "Road Tax": "SORN", "Deployment date": "04/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "21412", "Current mileage": "55,744", "Difference in miles from deployment date": "34332", "Last service date": "31/10/2025", "Last service mileage": 46289.0, "Miles since last service": "9455", "Months since last service": "11", "Service status": "Not in service", "Notes": "Geotab export 14/10/2026 17:40 Europe/London; Last GPS record 2026-09-29; stale reading not imported.", "Spare key": "Yes", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Off hire", "Mileage reading date": "", "Days until MOT": "-126", "Next service date": "31/10/2027", "Next service mileage": 71289.0, "Tax date status": "SORN", "Action required": "Not in service"}, {"Van Reg": "LG71XLA", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREMA11331", "MOT Due Date ": "12/09/2026", "Road Tax": "SORN", "Deployment date": "24/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "35", "Deployment mileage": "15009", "Current mileage": "47,994", "Difference in miles from deployment date": "32985", "Last service date": "18/03/2026", "Last service mileage": 46799.0, "Miles since last service": "1195", "Months since last service": "6", "Service status": "Not in service", "Notes": "Geotab export 14/10/2026 17:40 Europe/London; Geotab 42 miles is below existing/deployment mileage; verify odometer.", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Off hire", "Mileage reading date": "", "Days until MOT": "-33", "Next service date": "18/03/2028", "Next service mileage": 71799.0, "Tax date status": "SORN", "Action required": "Not in service"}, {"Van Reg": "KV70WKN", "Ownership": "Ayvens", "VIN ": "W1V9106332P272640", "MOT Due Date ": "21/09/2026", "Road Tax": "SORN", "Deployment date": "01/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "32500", "Current mileage": "37149", "Difference in miles from deployment date": "4649", "Last service date": "24/07/2024", "Last service mileage": 34248.0, "Miles since last service": "2901", "Months since last service": "26", "Service status": "Not in service", "Notes": "", "Spare key": "", "Service interval (miles)": "", "Service interval (months)": "", "Fleet status": "Off hire", "Mileage reading date": "", "Days until MOT": "-24", "Next service date": "", "Next service mileage": "", "Tax date status": "SORN", "Action required": "Not in service"}, {"Van Reg": "LD71UPC", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREMG32205", "MOT Due Date ": "07/10/2027", "Road Tax": "01/03/2027", "Deployment date": "07/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "9894", "Current mileage": "42,176", "Difference in miles from deployment date": "32282", "Last service date": "23/01/2026", "Last service mileage": 38105.0, "Miles since last service": "4071", "Months since last service": "8", "Service status": "Not in service", "Notes": "Geotab export 14/10/2026 17:40 Europe/London; Last GPS record 2026-08-07; stale reading not imported.", "Spare key": "No", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Off hire", "Mileage reading date": "", "Days until MOT": "357", "Next service date": "23/01/2028", "Next service mileage": 63105.0, "Tax date status": "Future date", "Action required": "Not in service"}, {"Van Reg": "LD71OXT", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREMA19021", "MOT Due Date ": "14/10/2026", "Road Tax": "01/10/2027", "Deployment date": "06/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "9824", "Current mileage": "45,934", "Difference in miles from deployment date": "36110", "Last service date": "02/10/2025", "Last service mileage": 35574.0, "Miles since last service": "10360", "Months since last service": "12", "Service status": "Not in service", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Off hire", "Mileage reading date": "14/10/2026", "Days until MOT": "-1", "Next service date": "02/10/2027", "Next service mileage": 60574.0, "Tax date status": "Future date", "Action required": "Not in service"}, {"Van Reg": "LD73JVH", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREPL52569", "MOT Due Date ": "25/10/2026", "Road Tax": "01/10/2027", "Deployment date": "09/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "500", "Current mileage": "47,640", "Difference in miles from deployment date": "47140", "Last service date": "31/10/2025", "Last service mileage": 31806.0, "Miles since last service": "15834", "Months since last service": "11", "Service status": "OK", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "10", "Next service date": "31/10/2027", "Next service mileage": 56806.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LC71FEK", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREMC71842", "MOT Due Date ": "30/12/2026", "Road Tax": "01/12/2026", "Deployment date": "05/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "10540", "Current mileage": "41,969", "Difference in miles from deployment date": "31429", "Last service date": "10/03/2026", "Last service mileage": 32446.0, "Miles since last service": "9523", "Months since last service": "7", "Service status": "OK", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "76", "Next service date": "10/03/2028", "Next service mileage": 57446.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LD73JWP", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREPL53851", "MOT Due Date ": "27/09/2027", "Road Tax": "01/09/2027", "Deployment date": "10/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "500", "Current mileage": "50,293", "Difference in miles from deployment date": "49793", "Last service date": "18/07/2026", "Last service mileage": 45028.0, "Miles since last service": "5265", "Months since last service": "2", "Service status": "OK", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "347", "Next service date": "18/07/2028", "Next service mileage": 70028.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LD73JWV", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREPL52577", "MOT Due Date ": "27/09/2027", "Road Tax": "01/09/2027", "Deployment date": "11/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "500", "Current mileage": "47,179", "Difference in miles from deployment date": "46679", "Last service date": "10/08/2026", "Last service mileage": 42660.0, "Miles since last service": "4519", "Months since last service": "2", "Service status": "OK", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "347", "Next service date": "10/08/2028", "Next service mileage": 67660.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LD73JWY", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREPL52571", "MOT Due Date ": "30/09/2027", "Road Tax": "01/09/2027", "Deployment date": "12/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "500", "Current mileage": "37,747", "Difference in miles from deployment date": "37247", "Last service date": "10/08/2026", "Last service mileage": 34693.0, "Miles since last service": "3054", "Months since last service": "2", "Service status": "OK", "Notes": "Previous service note: 24 months or 25,00 miles", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "350", "Next service date": "10/08/2028", "Next service mileage": 59693.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LD73JXP", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREPL52584", "MOT Due Date ": "27/09/2027", "Road Tax": "01/09/2027", "Deployment date": "15/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "500", "Current mileage": "45,841", "Difference in miles from deployment date": "45341", "Last service date": "18/07/2026", "Last service mileage": 41040.0, "Miles since last service": "4801", "Months since last service": "2", "Service status": "OK", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "347", "Next service date": "18/07/2028", "Next service mileage": 66040.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LD73JYF", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREPY04152", "MOT Due Date ": "27/09/2027", "Road Tax": "01/09/2027", "Deployment date": "17/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "35", "Deployment mileage": "500", "Current mileage": "44,069", "Difference in miles from deployment date": "43569", "Last service date": "12/06/2026", "Last service mileage": 36710.0, "Miles since last service": "7359", "Months since last service": "4", "Service status": "OK", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "347", "Next service date": "12/06/2028", "Next service mileage": 61710.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LD71WNH", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREMG48880", "MOT Due Date ": "24/11/2026", "Road Tax": "01/10/2027", "Deployment date": "08/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "19542", "Current mileage": "54,459", "Difference in miles from deployment date": "34917", "Last service date": "10/03/2026", "Last service mileage": 52643.0, "Miles since last service": "1816", "Months since last service": "7", "Service status": "Not in service", "Notes": "Geotab export 14/10/2026 17:40 Europe/London; Last GPS record 2026-07-21; stale reading not imported.", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Off hire", "Mileage reading date": "", "Days until MOT": "40", "Next service date": "10/03/2028", "Next service mileage": 77643.0, "Tax date status": "Future date", "Action required": "Not in service"}, {"Van Reg": "LD73JYJ", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREPY01724", "MOT Due Date ": "27/09/2027", "Road Tax": "01/09/2027", "Deployment date": "18/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "35", "Deployment mileage": "500", "Current mileage": "46,697", "Difference in miles from deployment date": "46197", "Last service date": "18/07/2026", "Last service mileage": 43196.0, "Miles since last service": "3501", "Months since last service": "2", "Service status": "OK", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "347", "Next service date": "18/07/2028", "Next service mileage": 68196.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LD73JYN", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREPL53854", "MOT Due Date ": "27/09/2027", "Road Tax": "01/09/2027", "Deployment date": "19/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "35", "Deployment mileage": "500", "Current mileage": "41,592", "Difference in miles from deployment date": "41092", "Last service date": "20/05/2025", "Last service mileage": 21528.0, "Miles since last service": "20064", "Months since last service": "16", "Service status": "OK", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "347", "Next service date": "20/05/2027", "Next service mileage": 46528.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LD73JYP", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREPL53819", "MOT Due Date ": "27/09/2027", "Road Tax": "01/09/2027", "Deployment date": "20/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "35", "Deployment mileage": "500", "Current mileage": "49,729", "Difference in miles from deployment date": "49229", "Last service date": "10/08/2026", "Last service mileage": 46764.0, "Miles since last service": "2965", "Months since last service": "2", "Service status": "OK", "Notes": "", "Spare key": "Yes", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "347", "Next service date": "10/08/2028", "Next service mileage": 71764.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LD73JXA", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREPL52581", "MOT Due Date ": "24/10/2027", "Road Tax": "01/10/2027", "Deployment date": "13/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "500", "Current mileage": "44,754", "Difference in miles from deployment date": "44254", "Last service date": "15/05/2026", "Last service mileage": 35304.0, "Miles since last service": "9450", "Months since last service": "5", "Service status": "OK", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "374", "Next service date": "15/05/2028", "Next service mileage": 60304.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LD73JXO", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREPL52583", "MOT Due Date ": "24/10/2027", "Road Tax": "01/10/2027", "Deployment date": "14/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "36", "Deployment mileage": "500", "Current mileage": "41,453", "Difference in miles from deployment date": "40953", "Last service date": "08/05/2026", "Last service mileage": 34191.0, "Miles since last service": "7262", "Months since last service": "5", "Service status": "OK", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "374", "Next service date": "08/05/2028", "Next service mileage": 59191.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LD73JXT", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREPL52579", "MOT Due Date ": "24/10/2027", "Road Tax": "01/10/2027", "Deployment date": "16/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "35", "Deployment mileage": "500", "Current mileage": "52,024", "Difference in miles from deployment date": "51524", "Last service date": "18/07/2026", "Last service mileage": 45227.0, "Miles since last service": "6797", "Months since last service": "2", "Service status": "OK", "Notes": "", "Spare key": "Yes", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "374", "Next service date": "18/07/2028", "Next service mileage": 70227.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KW25UUE", "Ownership": "Arval", "VIN ": "W1V3UBFZ7TP838517", "MOT Due Date ": "14/07/2028", "Road Tax": "01/07/2027", "Deployment date": "06/10/2025", "Today ": "15/10/2026", "Tenure (completed months)": "12", "Deployment mileage": "500", "Current mileage": "11851", "Difference in miles from deployment date": "11351", "Last service date": "20/07/2026", "Last service mileage": 8463.0, "Miles since last service": "3388", "Months since last service": "2", "Service status": "OK", "Notes": "", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "638", "Next service date": "20/07/2027", "Next service mileage": 32463.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KT25DFX", "Ownership": "Arval", "VIN ": "W1V3UBFZ0TP839685", "MOT Due Date ": "24/07/2028", "Road Tax": "01/07/2027", "Deployment date": "06/10/2025", "Today ": "15/10/2026", "Tenure (completed months)": "12", "Deployment mileage": "500", "Current mileage": "13572", "Difference in miles from deployment date": "13072", "Last service date": "21/07/2026", "Last service mileage": 9913.0, "Miles since last service": "3659", "Months since last service": "2", "Service status": "OK", "Notes": "", "Spare key": "Yes", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "648", "Next service date": "21/07/2027", "Next service mileage": 33913.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KW25UUC", "Ownership": "Arval", "VIN ": "W1V3UBFZ4TP834599", "MOT Due Date ": "24/07/2028", "Road Tax": "01/07/2027", "Deployment date": "06/10/2025", "Today ": "15/10/2026", "Tenure (completed months)": "12", "Deployment mileage": "500", "Current mileage": "12717", "Difference in miles from deployment date": "12217", "Last service date": "22/07/2026", "Last service mileage": 9260.0, "Miles since last service": "3457", "Months since last service": "2", "Service status": "OK", "Notes": "", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "648", "Next service date": "22/07/2027", "Next service mileage": 33260.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KT25FKW", "Ownership": "Arval", "VIN ": "W1V3UBFZ3TP841446", "MOT Due Date ": "27/07/2028", "Road Tax": "01/07/2027", "Deployment date": "06/10/2025", "Today ": "15/10/2026", "Tenure (completed months)": "12", "Deployment mileage": "500", "Current mileage": "14009", "Difference in miles from deployment date": "13509", "Last service date": "21/07/2026", "Last service mileage": 10395.0, "Miles since last service": "3614", "Months since last service": "2", "Service status": "OK", "Notes": "", "Spare key": "No", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "651", "Next service date": "21/07/2027", "Next service mileage": 34395.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KT25FTA", "Ownership": "Arval", "VIN ": "W1V3UBFZXTP841461", "MOT Due Date ": "27/07/2028", "Road Tax": "01/07/2027", "Deployment date": "06/10/2025", "Today ": "15/10/2026", "Tenure (completed months)": "12", "Deployment mileage": "500", "Current mileage": "14508", "Difference in miles from deployment date": "14008", "Last service date": "21/07/2026", "Last service mileage": 10943.0, "Miles since last service": "3565", "Months since last service": "2", "Service status": "OK", "Notes": "", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "651", "Next service date": "21/07/2027", "Next service mileage": 34943.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KN76MVL", "Ownership": "Ayvens", "VIN ": "W1V3UBFZ9VP933860", "MOT Due Date ": "", "Road Tax": "01/09/2027", "Deployment date": "15/09/2026", "Today ": "15/10/2026", "Tenure (completed months)": "1", "Deployment mileage": "500", "Current mileage": "1665", "Difference in miles from deployment date": "1165", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "Missing MOT date", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KN76NFK", "Ownership": "Ayvens", "VIN ": "W1V3UBFZ9VP932899", "MOT Due Date ": "", "Road Tax": "01/09/2027", "Deployment date": "15/09/2026", "Today ": "15/10/2026", "Tenure (completed months)": "1", "Deployment mileage": "500", "Current mileage": "950", "Difference in miles from deployment date": "450", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "Missing MOT date", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KN76OEM", "Ownership": "Ayvens", "VIN ": "W1V3UBFZ6TP921940", "MOT Due Date ": "", "Road Tax": "01/09/2027", "Deployment date": "15/09/2026", "Today ": "15/10/2026", "Tenure (completed months)": "1", "Deployment mileage": "500", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "Geotab export 14/10/2026 17:40 Europe/London; Geotab 484 miles is below existing/deployment mileage; verify odometer.", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "", "Days until MOT": "Missing MOT date", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KP76VZC", "Ownership": "Ayvens", "VIN ": "W1V3HBFZ0VP930964", "MOT Due Date ": "", "Road Tax": "01/09/2027", "Deployment date": "15/09/2026", "Today ": "15/10/2026", "Tenure (completed months)": "1", "Deployment mileage": "500", "Current mileage": "304", "Difference in miles from deployment date": "Check mileage", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "VIN updated to Geotab on user instruction (14/10/2026); previous VIN W1V3UBFZ8VP930545. Current odometer 304 miles (489.6 km) is below recorded deployment mileage 500; verify deployment mileage.", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "Missing MOT date", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KS26COH", "Ownership": "Ayvens", "VIN ": "W1V3UBFZ4TP914260", "MOT Due Date ": "", "Road Tax": "01/08/2027", "Deployment date": "07/08/2026", "Today ": "15/10/2026", "Tenure (completed months)": "2", "Deployment mileage": "500", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "", "Days until MOT": "Missing MOT date", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KS26GYE", "Ownership": "Ayvens", "VIN ": "W1V3UBFZ1TP912160", "MOT Due Date ": "", "Road Tax": "01/08/2027", "Deployment date": "07/08/2026", "Today ": "15/10/2026", "Tenure (completed months)": "2", "Deployment mileage": "500", "Current mileage": "3952", "Difference in miles from deployment date": "3452", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "Missing MOT date", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KS26XJC", "Ownership": "Ayvens", "VIN ": "W1V3UBFZ6TP913658", "MOT Due Date ": "", "Road Tax": "01/08/2027", "Deployment date": "03/08/2026", "Today ": "15/10/2026", "Tenure (completed months)": "2", "Deployment mileage": "500", "Current mileage": "3560", "Difference in miles from deployment date": "3060", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "Missing MOT date", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KS26XKU", "Ownership": "Ayvens", "VIN ": "W1V3UBFZ2TP913172", "MOT Due Date ": "", "Road Tax": "01/08/2027", "Deployment date": "04/08/2026", "Today ": "15/10/2026", "Tenure (completed months)": "2", "Deployment mileage": "500", "Current mileage": "4159", "Difference in miles from deployment date": "3659", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "Missing MOT date", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KS26ZKZ", "Ownership": "Ayvens", "VIN ": "W1V3UBFZ4TP918471", "MOT Due Date ": "", "Road Tax": "01/08/2027", "Deployment date": "04/08/2026", "Today ": "15/10/2026", "Tenure (completed months)": "2", "Deployment mileage": "500", "Current mileage": "3637", "Difference in miles from deployment date": "3137", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "Missing MOT date", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KS26ZLY", "Ownership": "Ayvens", "VIN ": "W1V3UBFZ5TP916910", "MOT Due Date ": "", "Road Tax": "01/08/2027", "Deployment date": "03/08/2026", "Today ": "15/10/2026", "Tenure (completed months)": "2", "Deployment mileage": "500", "Current mileage": "3937", "Difference in miles from deployment date": "3437", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "Missing MOT date", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KS26ZZD", "Ownership": "Ayvens", "VIN ": "W1V3UBFZ4TP922858", "MOT Due Date ": "", "Road Tax": "01/08/2027", "Deployment date": "04/08/2026", "Today ": "15/10/2026", "Tenure (completed months)": "2", "Deployment mileage": "500", "Current mileage": "3933", "Difference in miles from deployment date": "3433", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 24000.0, "Service interval (months)": 12.0, "Fleet status": "Needs review", "Mileage reading date": "14/10/2026", "Days until MOT": "Missing MOT date", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LG71OHL", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREMR88091", "MOT Due Date ": "18/09/2027", "Road Tax": "01/11/2026", "Deployment date": "21/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "35", "Deployment mileage": "12060", "Current mileage": "54,447", "Difference in miles from deployment date": "42387", "Last service date": "10/08/2026", "Last service mileage": 52362.0, "Miles since last service": "2085", "Months since last service": "2", "Service status": "Not in service", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Off hire", "Mileage reading date": "14/10/2026", "Days until MOT": "338", "Next service date": "10/08/2028", "Next service mileage": 77362.0, "Tax date status": "Due within 30 days", "Action required": "Not in service"}, {"Van Reg": "LG71OLB", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREMR87995", "MOT Due Date ": "16/09/2027", "Road Tax": "01/10/2027", "Deployment date": "22/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "35", "Deployment mileage": "13671", "Current mileage": "58,800", "Difference in miles from deployment date": "45129", "Last service date": "10/08/2026", "Last service mileage": 55606.0, "Miles since last service": "3194", "Months since last service": "2", "Service status": "Not in service", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Off hire", "Mileage reading date": "14/10/2026", "Days until MOT": "336", "Next service date": "10/08/2028", "Next service mileage": 80606.0, "Tax date status": "Future date", "Action required": "Not in service"}, {"Van Reg": "LG71PWY", "Ownership": "Ayvens", "VIN ": "WF0EXXTTREMR03194", "MOT Due Date ": "04/11/2026", "Road Tax": "01/11/2026", "Deployment date": "23/10/2023", "Today ": "15/10/2026", "Tenure (completed months)": "35", "Deployment mileage": "5528", "Current mileage": "44,936", "Difference in miles from deployment date": "39408", "Last service date": "10/03/2026", "Last service mileage": 38853.0, "Miles since last service": "6083", "Months since last service": "7", "Service status": "Not in service", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Off hire", "Mileage reading date": "14/10/2026", "Days until MOT": "20", "Next service date": "10/03/2028", "Next service mileage": 63853.0, "Tax date status": "Due within 30 days", "Action required": "Not in service"}, {"Van Reg": "LG17GKU", "Ownership": "Self owned", "VIN ": "WF0XXXTTGXHU73849", "MOT Due Date ": "30/07/2027", "Road Tax": "01/08/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "63,278", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "03/09/2025", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "13", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "", "Days until MOT": "288", "Next service date": "03/09/2027", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "BT17KLD", "Ownership": "Self owned", "VIN ": "WF0XXXTTGXHP42538", "MOT Due Date ": "17/09/2025", "Road Tax": "SORN", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "70,081", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Not in service", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "SORN", "Mileage reading date": "", "Days until MOT": "-393", "Next service date": "", "Next service mileage": "", "Tax date status": "SORN", "Action required": "Not in service"}, {"Van Reg": "LG17GMO", "Ownership": "Self owned", "VIN ": "WF0XXXTTGXHU87517", "MOT Due Date ": "28/09/2027", "Road Tax": "01/08/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "72,018", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "02/09/2025", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "13", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "", "Days until MOT": "348", "Next service date": "02/09/2027", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "BJ22TFV", "Ownership": "Self owned", "VIN ": "WF0EXXTTRENL05315", "MOT Due Date ": "15/04/2027", "Road Tax": "01/01/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "90,008", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "12/09/2025", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "13", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "", "Days until MOT": "182", "Next service date": "12/09/2027", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "LO66BVG", "Ownership": "Self owned", "VIN ": "WF0XXXTTGXGY70265", "MOT Due Date ": "17/12/2026", "Road Tax": "01/08/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "119,752", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "20/08/2025", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "13", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "", "Days until MOT": "63", "Next service date": "20/08/2027", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "BG19LLC", "Ownership": "Self owned", "VIN ": "WF0XXXTTGXJY22574", "MOT Due Date ": "20/10/2026", "Road Tax": "01/08/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "121,810", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "", "Days until MOT": "5", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "MA22PVD", "Ownership": "Self owned", "VIN ": "WF0EXXTTREMK30759", "MOT Due Date ": "15/04/2027", "Road Tax": "01/08/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "144,378", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "11/09/2025", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "13", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "", "Days until MOT": "182", "Next service date": "11/09/2027", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "BP65WPN", "Ownership": "Self owned", "VIN ": "WF0XXXTTGXFM20960", "MOT Due Date ": "17/07/2027", "Road Tax": "01/08/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "162,500", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "", "Days until MOT": "275", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "V720EWJ", "Ownership": "Personal", "VIN ": "", "MOT Due Date ": "04/11/2026", "Road Tax": "01/12/2026", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": "", "Service interval (months)": "", "Fleet status": "Personal", "Mileage reading date": "", "Days until MOT": "20", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "DA16DTV", "Ownership": "Personal", "VIN ": "", "MOT Due Date ": "13/12/2026", "Road Tax": "01/08/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": "", "Service interval (months)": "", "Fleet status": "Personal", "Mileage reading date": "", "Days until MOT": "59", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "KU66XTT", "Ownership": "Personal", "VIN ": "", "MOT Due Date ": "07/01/2027", "Road Tax": "01/12/2026", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": "", "Service interval (months)": "", "Fleet status": "Personal", "Mileage reading date": "", "Days until MOT": "84", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "GL68DSU", "Ownership": "Personal", "VIN ": "", "MOT Due Date ": "07/01/2027", "Road Tax": "01/04/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": "", "Service interval (months)": "", "Fleet status": "Personal", "Mileage reading date": "", "Days until MOT": "84", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "BG17PNJ", "Ownership": "Self owned", "VIN ": "WF0XXXTTGXHM03902", "MOT Due Date ": "19/01/2027", "Road Tax": "01/09/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "16/09/2025", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "12", "Service status": "Missing service data", "Notes": "Service done  | Logbook/deployment note: New keeper slip ", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "", "Days until MOT": "96", "Next service date": "16/09/2027", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "RK11WGE", "Ownership": "Personal", "VIN ": "", "MOT Due Date ": "27/01/2027", "Road Tax": "01/03/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": "", "Service interval (months)": "", "Fleet status": "Personal", "Mileage reading date": "", "Days until MOT": "104", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "WT18DOH", "Ownership": "Self owned", "VIN ": "WF0XXXTTGXJJ15805", "MOT Due Date ": "15/05/2027", "Road Tax": "01/08/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "26/09/2025", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "12", "Service status": "Missing service data", "Notes": "Brake pads x4, calliper.  Clutch May 2026 | Logbook/deployment note: sent off 21//08", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "", "Days until MOT": "212", "Next service date": "26/09/2027", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "PF18BLX", "Ownership": "Self owned", "VIN ": "WF0XXXTTGXJJ13548", "MOT Due Date ": "04/06/2027", "Road Tax": "01/08/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "22/08/2025", "Last service mileage": 120456.0, "Miles since last service": "Missing mileage", "Months since last service": "13", "Service status": "Missing service data", "Notes": "Logbook/deployment note: sent off 21/08", "Spare key": "", "Service interval (miles)": 25000.0, "Service interval (months)": 24.0, "Fleet status": "Needs review", "Mileage reading date": "", "Days until MOT": "232", "Next service date": "22/08/2027", "Next service mileage": 145456.0, "Tax date status": "Future date", "Action required": "Complete data"}, {"Van Reg": "SL18EYZ", "Ownership": "Personal", "VIN ": "", "MOT Due Date ": "02/09/2027", "Road Tax": "01/11/2027", "Deployment date": "", "Today ": "15/10/2026", "Tenure (completed months)": "Missing deployment date", "Deployment mileage": "", "Current mileage": "", "Difference in miles from deployment date": "Missing mileage", "Last service date": "", "Last service mileage": "", "Miles since last service": "Missing mileage", "Months since last service": "Missing service date", "Service status": "Missing service data", "Notes": "", "Spare key": "", "Service interval (miles)": "", "Service interval (months)": "", "Fleet status": "Personal", "Mileage reading date": "", "Days until MOT": "322", "Next service date": "", "Next service mileage": "", "Tax date status": "Future date", "Action required": "Complete data"}];
+
+function statusClass(s) {
+  if (!s) return 'status-neutral';
+  s = s.toLowerCase();
+  if (s.includes('ok') || s.includes('complete')) return 'status-ok';
+  if (s.includes('missing') || s.includes('needs review') || s.includes('review')) return 'status-warning';
+  if (s.includes('not in service') || s.includes('sorn') || s.includes('off hire')) return 'status-danger';
+  return 'status-info';
+}
+
+function renderDashboard() {
+  const total = VEHICLES.length;
+  const needsReview = VEHICLES.filter(v => (v['Fleet status']||'').includes('Needs review')).length;
+  const missingService = VEHICLES.filter(v => (v['Service status']||'').includes('Missing')).length;
+
+  const motSoon = VEHICLES.filter(v => {
+    const d = parseInt(v['Days until MOT']);
+    return !isNaN(d) && d <= 30;
+  }).length;
+
+  document.getElementById('kpi-total').textContent = total;
+  document.getElementById('kpi-review').textContent = needsReview;
+  document.getElementById('kpi-mot').textContent = motSoon;
+  document.getElementById('kpi-missing').textContent = missingService;
+
+  // Status breakdown
+  const statuses = {};
+  VEHICLES.forEach(v => {
+    const s = v['Fleet status'] || 'Unknown';
+    statuses[s] = (statuses[s]||0) + 1;
+  });
+  const breakdown = document.getElementById('status-breakdown');
+  breakdown.innerHTML = Object.entries(statuses).map(([k,v]) => `
+    <div class="flex justify-between items-center">
+      <span class="px-2 py-1 rounded-full text-xs ${statusClass(k)}">${k}</span>
+      <span class="font-medium">${v}</span>
+    </div>
+  `).join('');
+
+  // Priorities
+  const priorities = VEHICLES.filter(v => {
+    const d = parseInt(v['Days until MOT']);
+    return (!isNaN(d) && d <= 14) || (v['Service status']||'').includes('Missing') || (v['Action required']||'').includes('Not in service');
+  }).slice(0, 8);
+
+  document.getElementById('priority-list').innerHTML = priorities.map(v => `
+    <div class="flex justify-between items-center py-2 border-b border-slate-100">
+      <div>
+        <span class="font-medium">${v['Van Reg']}</span>
+        <span class="text-slate-400 text-xs ml-2">${v['Ownership']||''}</span>
+      </div>
+      <span class="text-xs px-2 py-1 rounded-full ${statusClass(v['Fleet status'])}">${v['Days until MOT']||'—'} days MOT</span>
+    </div>
+  `).join('') || '<div class="text-slate-400">No urgent items</div>';
+}
+
+function renderFleet() {
+  const search = document.getElementById('fleet-search').value.toLowerCase();
+  const filter = document.getElementById('fleet-filter').value;
+
+  let filtered = VEHICLES.filter(v => {
+    const text = `${v['Van Reg']} ${v['VIN ']} ${v['Ownership']} ${v['Fleet status']} ${v['Service status']}`.toLowerCase();
+    const matchesSearch = !search || text.includes(search);
+    const matchesFilter = !filter || (v['Fleet status']||'') === filter;
+    return matchesSearch && matchesFilter;
+  });
+
+  const tbody = document.getElementById('fleet-table');
+  tbody.innerHTML = filtered.map(v => {
+    const days = v['Days until MOT'] || '—';
+    const daysNum = parseInt(days);
+    const daysClass = (!isNaN(daysNum) && daysNum < 0) ? 'text-red-600 font-semibold' : (!isNaN(daysNum) && daysNum <= 30) ? 'text-amber-600 font-medium' : '';
+    return `
+      <tr class="border-t border-slate-100 hover:bg-slate-50">
+        <td class="p-4 font-medium">${v['Van Reg']||'—'}</td>
+        <td class="p-4">${v['Ownership']||'—'}</td>
+        <td class="p-4">${v['MOT Due Date ']||'—'}</td>
+        <td class="p-4 ${daysClass}">${days}</td>
+        <td class="p-4"><span class="px-2 py-1 rounded-full text-xs ${statusClass(v['Service status'])}">${v['Service status']||'—'}</span></td>
+        <td class="p-4"><span class="px-2 py-1 rounded-full text-xs ${statusClass(v['Fleet status'])}">${v['Fleet status']||'—'}</span></td>
+        <td class="p-4 text-xs">${v['Action required']||'—'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderOnboarding() {
+  const sample = [
+    { name: "Driver A", status: "Road Ready", contract: "Amazon", progress: 100 },
+    { name: "Driver B", status: "Training", contract: "Evri", progress: 70 },
+    { name: "Driver C", status: "Documents", contract: "Amazon", progress: 40 },
+    { name: "Driver D", status: "Invited", contract: "Multi", progress: 10 },
+  ];
+  document.getElementById('onboarding-list').innerHTML = sample.map(d => `
+    <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl">
+      <div>
+        <div class="font-medium">${d.name}</div>
+        <div class="text-xs text-slate-500">${d.contract} · ${d.status}</div>
+      </div>
+      <div class="w-32 bg-slate-100 rounded-full h-2">
+        <div class="bg-emerald-500 h-2 rounded-full" style="width:${d.progress}%"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderAlerts() {
+  const urgent = VEHICLES.filter(v => {
+    const d = parseInt(v['Days until MOT']);
+    return (!isNaN(d) && d <= 30) || (v['Service status']||'').includes('Missing');
+  }).sort((a,b) => (parseInt(a['Days until MOT'])||999) - (parseInt(b['Days until MOT'])||999));
+
+  document.getElementById('alerts-list').innerHTML = urgent.slice(0,15).map(v => `
+    <div class="flex items-center justify-between p-4 border-b border-slate-100">
+      <div>
+        <span class="font-medium">${v['Van Reg']}</span>
+        <span class="text-slate-500 text-sm ml-2">${v['Ownership']}</span>
+        <div class="text-xs text-slate-400 mt-1">${v['Notes'] || v['Service status'] || ''}</div>
+      </div>
+      <div class="text-right">
+        <div class="text-sm font-medium ${parseInt(v['Days until MOT']) < 0 ? 'text-red-600' : 'text-amber-600'}">MOT: ${v['Days until MOT']||'Missing'}</div>
+        <div class="text-xs text-slate-500">${v['Fleet status']}</div>
+      </div>
+    </div>
+  `).join('') || '<p class="text-slate-400">No alerts</p>';
+}
+
+function showSection(name) {
+  ['dashboard','fleet','onboarding','alerts'].forEach(id => {
+    document.getElementById(id).classList.toggle('hidden', id !== name);
+  });
+  const titles = {
+    dashboard: 'Operations Dashboard',
+    fleet: 'Fleet & Compliance',
+    onboarding: 'Driver Onboarding',
+    alerts: 'Compliance Priorities'
+  };
+  document.getElementById('page-title').textContent = titles[name];
+  document.getElementById('mobile-nav').value = name;
+  document.querySelectorAll('aside nav a').forEach(link => {
+    const active = link.getAttribute('onclick').includes("'" + name + "'");
+    link.classList.toggle('bg-slate-800', active);
+    link.classList.toggle('text-white', active);
+    link.classList.toggle('text-slate-300', !active);
+  });
+  if (name === 'fleet') renderFleet();
+  if (name === 'alerts') renderAlerts();
+}
+
+// Init
+document.getElementById('fleet-search').addEventListener('input', renderFleet);
+document.getElementById('fleet-filter').addEventListener('change', renderFleet);
+
+renderDashboard();
+renderOnboarding();
+</script>
 <script src="config.js?v=login-fix-20261015"></script>
 <script>
+
 async function login(event) {
   event.preventDefault();
   const email = document.getElementById('email').value.trim();
@@ -74,22 +391,46 @@ async function inviteDriver() {
 }
 
 async function loadDrivers() {
-  const { data } = await besaClient.from('drivers').select('*').order('created_at', { ascending: false }).limit(20);
-  document.getElementById('drivers-list').innerHTML = (data || []).map(d => 
-    `<div class="py-2 border-b">${d.email} â€” <span class="text-slate-500">${d.status}</span></div>`
-  ).join('') || 'No applications yet';
+  const { data, error } = await besaClient.from('drivers').select('*').order('created_at', { ascending: false }).limit(20);
+  if (error) {
+    document.getElementById('drivers-list').textContent = error.message;
+    return;
+  }
+  const list = document.getElementById('drivers-list');
+  list.replaceChildren();
+  for (const driver of data || []) {
+    const row = document.createElement('div');
+    row.className = 'py-2 border-b';
+    row.textContent = `${driver.email} — ${driver.status}`;
+    list.appendChild(row);
+  }
+  if (!data?.length) list.textContent = 'No applications yet';
 }
 
-besaClient.auth.onAuthStateChange((event, session) => {
-  if (session) {
-    document.getElementById('auth-section').classList.add('hidden');
-    document.getElementById('admin-section').classList.remove('hidden');
-    setTimeout(loadDrivers, 0);
-  } else {
-    document.getElementById('auth-section').classList.remove('hidden');
-    document.getElementById('admin-section').classList.add('hidden');
-  }
+function updateSession(session) {
+  document.getElementById('login-screen').hidden = Boolean(session);
+  document.getElementById('app-shell').hidden = !session;
+  document.getElementById('account-email').textContent = session?.user?.email || '';
+  if (session) setTimeout(() => loadDrivers().catch(error => {
+    document.getElementById('drivers-list').textContent = error.message || 'Unable to load applications.';
+  }), 0);
+}
+
+async function signOut() {
+  const { error } = await besaClient.auth.signOut();
+  if (error) document.getElementById('account-status').textContent = error.message;
+  else updateSession(null);
+}
+
+besaClient.auth.onAuthStateChange((_event, session) => updateSession(session));
+besaClient.auth.getSession().then(({ data, error }) => {
+  if (error) throw error;
+  updateSession(data.session);
+}).catch(error => {
+  updateSession(null);
+  document.getElementById('auth-status').textContent = error.message || 'Unable to restore sign-in. Please sign in again.';
 });
+
 </script>
 </body>
 </html>
