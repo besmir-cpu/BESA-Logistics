@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onboarding · Besa Logistics</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+<div class="max-w-2xl mx-auto p-6">
+  <h1 class="text-2xl font-bold mb-2">Driver Onboarding</h1>
+  <p class="text-slate-600 mb-6">Please complete your details and upload the required documents.</p>
+
+  <form id="onboard-form" class="bg-white p-6 rounded-xl border space-y-4">
+    <div>
+      <label class="text-sm font-medium">First Name</label>
+      <input name="first_name" required class="w-full border rounded px-3 py-2">
+    </div>
+    <div>
+      <label class="text-sm font-medium">Last Name</label>
+      <input name="last_name" required class="w-full border rounded px-3 py-2">
+    </div>
+    <div>
+      <label class="text-sm font-medium">Phone</label>
+      <input name="phone" class="w-full border rounded px-3 py-2">
+    </div>
+    <div>
+      <label class="text-sm font-medium">Driving Licence (front & back)</label>
+      <input type="file" name="licence" accept="image/*,.pdf" multiple class="w-full">
+    </div>
+    <div>
+      <label class="text-sm font-medium">Passport / Right to Work</label>
+      <input type="file" name="passport" accept="image/*,.pdf" multiple class="w-full">
+    </div>
+
+    <div class="border-t pt-4">
+      <label class="flex items-start gap-2">
+        <input type="checkbox" required class="mt-1">
+        <span class="text-sm">I have read and understood the training materials and agree to follow them.</span>
+      </label>
+    </div>
+    <div>
+      <label class="flex items-start gap-2">
+        <input type="checkbox" required class="mt-1">
+        <span class="text-sm">I have read and agree to the Service Level Agreement and company terms.</span>
+      </label>
+    </div>
+    <div>
+      <label class="text-sm font-medium">Type your full name to sign</label>
+      <input name="signed_name" required class="w-full border rounded px-3 py-2" placeholder="Full legal name">
+    </div>
+
+    <button type="submit" class="bg-slate-900 text-white px-6 py-2 rounded">Submit application</button>
+    <div id="status" class="text-sm text-slate-600"></div>
+  </form>
+</div>
+
+<script src="config.js"></script>
+<script>
+document.getElementById('onboard-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const status = document.getElementById('status');
+  status.textContent = 'Submitting…';
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    status.textContent = 'Please use the link from your invitation email.';
+    return;
+  }
+
+  // Update driver record
+  await supabase.from('drivers').update({
+    first_name: form.first_name.value,
+    last_name: form.last_name.value,
+    phone: form.phone.value,
+    status: 'submitted',
+    submitted_at: new Date().toISOString()
+  }).eq('email', user.email);
+
+  // Record signature
+  await supabase.from('signatures').insert({
+    driver_id: user.id, // adjust if using separate id
+    document_name: 'Training + SLA',
+    signed_name: form.signed_name.value
+  });
+
+  status.textContent = 'Application submitted. Thank you.';
+  form.reset();
+});
+</script>
+</body>
+</html>

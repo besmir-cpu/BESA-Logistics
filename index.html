@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Besa Logistics · Secure Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+<div class="max-w-4xl mx-auto p-6">
+  <h1 class="text-2xl font-bold mb-6">Besa Logistics</h1>
+
+  <!-- Login / Invite section -->
+  <div id="auth-section" class="bg-white p-6 rounded-xl border mb-6">
+    <h2 class="font-semibold mb-4">Admin Login</h2>
+    <input id="email" type="email" placeholder="Your email" class="w-full border rounded px-3 py-2 mb-3">
+    <button onclick="login()" class="bg-slate-900 text-white px-4 py-2 rounded">Send magic link</button>
+    <div id="auth-status" class="text-sm mt-3 text-slate-600"></div>
+  </div>
+
+  <div id="admin-section" class="hidden bg-white p-6 rounded-xl border">
+    <h2 class="font-semibold mb-4">Invite new driver</h2>
+    <div class="flex gap-2 mb-4">
+      <input id="invite-email" type="email" placeholder="Driver email" class="flex-1 border rounded px-3 py-2">
+      <button onclick="inviteDriver()" class="bg-emerald-600 text-white px-4 py-2 rounded">Send invite</button>
+    </div>
+    <div id="invite-status" class="text-sm text-slate-600"></div>
+
+    <h3 class="font-medium mt-6 mb-2">Recent applications</h3>
+    <div id="drivers-list" class="text-sm"></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+async function login() {
+  const email = document.getElementById('email').value;
+  const { error } = await supabase.auth.signInWithOtp({ email });
+  document.getElementById('auth-status').textContent = error ? error.message : 'Check your email for the login link';
+}
+
+async function inviteDriver() {
+  const email = document.getElementById('invite-email').value;
+  if (!email) return;
+  // Create driver record then send magic link / invite
+  const { error: dbError } = await supabase.from('drivers').insert({ email, status: 'invited' });
+  if (dbError) {
+    document.getElementById('invite-status').textContent = dbError.message;
+    return;
+  }
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.origin + '/onboard.html' }
+  });
+  document.getElementById('invite-status').textContent = error ? error.message : 'Invite sent to ' + email;
+  loadDrivers();
+}
+
+async function loadDrivers() {
+  const { data } = await supabase.from('drivers').select('*').order('created_at', { ascending: false }).limit(20);
+  document.getElementById('drivers-list').innerHTML = (data || []).map(d => 
+    `<div class="py-2 border-b">${d.email} — <span class="text-slate-500">${d.status}</span></div>`
+  ).join('') || 'No applications yet';
+}
+
+supabase.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    document.getElementById('auth-section').classList.add('hidden');
+    document.getElementById('admin-section').classList.remove('hidden');
+    loadDrivers();
+  }
+});
+</script>
+</body>
+</html>
