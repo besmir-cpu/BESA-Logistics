@@ -189,7 +189,7 @@
       const values = sheetValues(vehicle);
       return '<tr>' + sheetColumns.map(([field, heading, type]) => {
         const value = sheetDisplay(values, field, type);
-        if (field === 'registration') return `<td><strong class="reg">${escape(value)}</strong><span class="secondary">${editButton('vehicle', vehicle.id, 'Edit vehicle')}</span></td>`;
+        if (field === 'registration') return `<td class="vehicle-registration-cell"><button class="vehicle-reg-edit" type="button" data-edit="vehicle" data-id="${escape(vehicle.id)}" aria-label="Edit ${escape(value)}" title="Edit vehicle details"><span class="reg">${escape(value)}</span><span class="vehicle-edit-icon" aria-hidden="true">↗</span></button></td>`;
         return `<td title="${escape(value)}" class="${field === 'notes' ? 'sheet-notes' : ''}">${escape(value === '' ? '—' : value)}</td>`;
       }).join('') + '</tr>';
     }).join('');
