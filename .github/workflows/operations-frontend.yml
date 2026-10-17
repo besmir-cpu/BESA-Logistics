@@ -5,6 +5,9 @@ on:
       - 'index.html'
       - 'app.js'
       - 'styles.css'
+      - 'besa-theme.css'
+      - 'onboard.html'
+      - 'design/**'
       - 'rota.html'
       - 'rota/**'
       - 'payments.html'
@@ -16,6 +19,9 @@ on:
       - 'index.html'
       - 'app.js'
       - 'styles.css'
+      - 'besa-theme.css'
+      - 'onboard.html'
+      - 'design/**'
       - 'rota.html'
       - 'rota/**'
       - 'payments.html'
@@ -44,6 +50,8 @@ jobs:
         run: node --input-type=module --check < payments/tracker.js
       - name: Test Google payment tracker import
         run: node --test payments/tracker.test.mjs
+      - name: Test Horizon design consistency and accessibility
+        run: node --test design/theme.test.mjs
       - name: Confirm normal website workspaces exist
         run: |
           test -f rota.html
