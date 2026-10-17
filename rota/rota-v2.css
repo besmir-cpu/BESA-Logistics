@@ -64,3 +64,53 @@ a{color:inherit}
 .rota-modal button{min-height:42px;padding:9px 15px;border:1px solid #bdd0c2;background:#f7faf8;color:#214633;border-radius:8px;font-weight:700;cursor:pointer}
 .rota-modal .actions .primary{background:#15583c;color:white}
 @media(max-width:650px){.besa-rota{padding:10px}.rota-top h1{font-size:22px}.rota-toolbar{padding:10px}.xl-scroll{height:65vh}.xlsx-rota .name-col{min-width:140px;width:140px;max-width:140px}.xlsx-rota th,.xlsx-rota td{min-width:64px;width:64px;max-width:64px}}
+
+/* Workbook-style tab strip and controls */
+.besa-sheet-tabs{display:flex;gap:3px;margin:14px 0 0;border-bottom:2px solid #bed1c3}
+.besa-sheet-tabs button{cursor:pointer;border:1px solid #c8d7cd;border-bottom:0;padding:12px 22px;font-weight:750;background:#e8f0eb;color:#3d5646;border-radius:8px 8px 0 0}
+.besa-sheet-tabs button.active{background:#17523c;color:#fff;border-color:#17523c}
+.freeze-setting{display:flex;align-items:center;gap:7px;font-size:12px;white-space:nowrap}
+.freeze-setting input{width:17px;height:17px;accent-color:#17523c}
+.licence-fieldset{border:1px solid #c9d9cd;border-radius:9px;padding:11px 12px;display:flex;gap:18px;flex-wrap:wrap}
+.licence-fieldset legend{font-weight:750;font-size:13px;color:#27513c;padding:0 4px}
+.rota-modal .licence-fieldset label{display:flex;flex-direction:row;align-items:center;gap:6px;white-space:nowrap}
+.rota-modal .licence-fieldset input{width:18px;min-height:18px;height:18px;accent-color:#17523c}
+.licence-tag{display:inline-flex;align-items:center;margin-left:6px;border-radius:5px;padding:2px 5px;background:#e4f1ec;color:#1b6245;font-size:10px;font-weight:800}
+.licence-tag.manual{background:#edf0fc;color:#324b87}
+.licence-tag.unknown{background:#f0f0f0;color:#777}
+/* Original ROTA summary rows are frozen above the driver list, with a thick boundary. */
+.xlsx-rota .metric-row td{height:24px;min-height:24px;max-height:24px;padding-top:1px;padding-bottom:1px;position:sticky;top:var(--metric-top,93px);z-index:10}
+.xlsx-rota .metric-row td.name-col{z-index:18;box-shadow:2px 0 0 #baccc2}
+.xlsx-rota .metric-row:last-of-type td{border-bottom:5px solid #16523b!important}
+.xlsx-rota .metric-row.summary-last td{border-bottom:5px solid #16523b!important}
+.xlsx-rota .metric-row td.weekly-total{background:#e0ebe4}
+.xlsx-rota tbody tr.driver-row:first-of-type td{border-top:2px solid #1d6147}
+.xlsx-rota tbody tr.driver-row td.name-col{background:#fff;white-space:nowrap}
+.xlsx-rota tbody tr.driver-row:nth-child(even) td.name-col{background:#f2f6f3}
+.freeze-r .xlsx-rota tr.row-day > .frozen-col,
+.freeze-r .xlsx-rota tr.row-date > .frozen-col,
+.freeze-r .xlsx-rota tbody tr > .frozen-col {position:sticky!important;left:var(--frozen-left)!important;z-index:16;box-shadow:2px 0 0 #a1b7ac}
+.freeze-r .xlsx-rota thead tr.row-day > .frozen-col,
+.freeze-r .xlsx-rota thead tr.row-date > .frozen-col{z-index:23}
+.freeze-r .xlsx-rota .metric-row > .frozen-col{z-index:24}
+.freeze-r .xlsx-rota .frozen-col.frozen-last{border-right:5px solid #19543b!important}
+.freeze-r .xlsx-rota tbody .driver-row > .frozen-col{background:#fff}
+/* Van Allocation is a separate worksheet with A-E frozen as in the source. */
+.van-sheet-table{border-spacing:0;border-collapse:separate;table-layout:fixed;width:max-content;min-width:100%;font:12px Arial,Helvetica,sans-serif;color:#223c31}
+.van-sheet-table td,.van-sheet-table th{height:30px;padding:4px 7px;border-right:1px solid #d3e0d7;border-bottom:1px solid #d3e0d7;min-width:125px;max-width:125px;width:125px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.van-sheet-table thead th{position:sticky;top:0;background:#dcebe0;color:#19422f;font-weight:800;z-index:11;height:31px}
+.van-sheet-table thead tr:nth-child(2) th{top:31px;background:#e3efe6}
+.van-sheet-table thead tr:nth-child(3) th{top:62px;background:#f0f6f1}
+.van-sheet-table thead tr:nth-child(4) th{top:93px;background:#e6f0ea;border-bottom:4px solid #1a6343!important}
+.van-sheet-table .van-fixed{position:sticky!important;left:var(--van-left)!important;background:#f5faf6;z-index:15;min-width:105px;width:105px;max-width:105px;text-align:left}
+.van-sheet-table thead .van-fixed{z-index:23}
+.van-sheet-table .van-fixed.van-boundary{border-right:4px solid #1a6343!important}
+.van-sheet-table thead tr:nth-child(4) th:first-child,.van-sheet-table tbody td:first-child{min-width:125px;width:125px;max-width:125px;font-weight:750}
+.van-sheet-table th.legacy-notes,.van-sheet-table td.legacy-notes{min-width:180px;width:180px;max-width:180px;text-align:left}
+.van-sheet-table td.assignment{text-align:left;padding:0 4px;background:#fff}
+.van-sheet-table td.assignment button{width:100%;min-height:29px;text-align:left;font:inherit;border:0;cursor:pointer;background:transparent;padding:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.van-sheet-table td.assignment button:hover{background:#dff0e4;outline:2px solid #3c8058;outline-offset:-2px}
+.van-sheet-table tr:nth-child(even) td.assignment{background:#f7faf8}
+.van-sheet-table .van-heading{background:#ebf2ed;font-weight:700}
+.van-sheet-table .van-week-start{border-left:3px solid #83a991}
+@media(max-width:700px){.besa-sheet-tabs button{padding:10px 14px;font-size:12px}.van-sheet-table .van-fixed{min-width:95px;width:95px;max-width:95px}.xl-scroll{height:75vh}}
