@@ -10,16 +10,16 @@ _Last reviewed 17 October 2026. Read-only inventory. No Google Sheets or financi
 ## Located source documents (metadata only)
 These are *candidate sources*: verify which are currently authoritative and current before migration.
 
-| Business workflow | Drive spreadsheet | Relevant tabs seen | Spreadsheet ID |
+| Business workflow | Drive spreadsheet | Relevant tabs seen | Source confirmation |
 | --- | --- | --- | --- |
-| Weekly rota and allocations | ROTA | ROTA; Van Allocation; Drivers; other inventory tabs | `1XgTCYhm827X8LnOyWnXe54kZYfWql5rCNEQbJbAzBOY` |
-| Driver onboarding | Onboarding tracker | Onboarding DA tracker; MOTs/ services; DT log; Performance tracker | `1jQQ7Sh_CWUuRSb3hKACxNWqMEr8HFL5A6wjHJ1jZxvs` |
-| Fleet history | Van archive | Fleet Tracker; Vehicle archive | `19xDTz_ENYu2uRVikWC-d7mLPPvsM-0gcydyBgKiJCIY` |
-| Vehicle checks | Weekly Van checks | Summary; week-specific checks | `1JPs2T1R5uyw4iLd0umJFKZtqk8HnV9JVD8W_qh0pfdg` |
-| Payments | BESA PAYMENT TRACKER | Week-specific sheets | `1jil7MkVLaRCZ4ICQy8mb5jrdHzZV3Tjqj5emmowesU4` |
-| Weekly payment submissions | Weekly payment details | Week-specific sheets | `1y58qGupKErcEc_2iPhoJ4Pfkc51kskcn5oq0YpJdjqY` |
+| Weekly rota and allocations | ROTA | ROTA; Van Allocation; Drivers; other inventory tabs | Candidate; confirm current |
+| Driver onboarding | Onboarding tracker | Onboarding DA tracker; MOTs/ services; DT log; Performance tracker | Candidate; confirm current |
+| Fleet history | Van archive | Fleet Tracker; Vehicle archive | Candidate; confirm current |
+| Vehicle checks | Weekly Van checks | Summary; week-specific checks | Candidate; confirm current |
+| Payments | BESA PAYMENT TRACKER | Week-specific sheets | Candidate; confirm current |
+| Weekly payment submissions | Weekly payment details | Week-specific sheets | Candidate; confirm current |
 
-Other candidate records include VAN DAMAGE TRACKER, BESA onboarding form responses and invoice templates. **Do not migrate any password-storage tabs, credentials or unrelated personal data.**
+Other candidate records include vehicle damage records, onboarding form responses and invoice templates. **Exclude unrelated records, credentials and sensitive data not necessary for operations.** No private Drive IDs, document contents or signed links should be committed to this public repository.
 
 ## Target workflows, in build order
 1. **Reliable platform**: private backend, role-based access, per-driver isolation, audit trail, database + storage backups, restore exercise, staging environment, monitoring, immutable ledger-style payment records, tests and migration plan.
