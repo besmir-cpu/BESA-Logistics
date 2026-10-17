@@ -110,6 +110,9 @@ export function setupVanAllocation() {
     }
     return tr;
   }
+  function isVanProblem(vehicle){
+    return !vehicle.isNote && [1,2].some(i=>vehicle.cells[i]?.trim().toLowerCase()==='no');
+  }
   function render(){
     if(!state.start)return;
     const tableWeeks=weeks();
@@ -121,13 +124,41 @@ export function setupVanAllocation() {
     head.replaceChildren();body.replaceChildren();
     for(let row=1;row<=4;row++)head.append(constructRow(row,tableWeeks,true));
     const dates=tableWeeks.flat();
+    const issues=state.rows.filter(isVanProblem).length;
+    $('van-status').textContent=issues
+      ?issues+' van(s) marked amber: Insurance or Works set to No. Review before allocation.'
+      :'Van Allocation: no Insurance/Works values marked No.';
     for(const vehicle of state.rows){
       const tr=document.createElement('tr');
+      const problem=isVanProblem(vehicle);
+      if(problem)tr.classList.add('van-problem');
       for(let i=0;i<6;i++){
-        const td=textCell('td',vehicle.cells[i]||'',fixedCol(i+1));
+        const td=textCell('td',null,fixedCol(i+1));
         if(i===5)td.className='legacy-notes';
         setFrozenLeft(td,i+1);
-        td.title=vehicle.cells[i]||'';
+        const raw=String(vehicle.cells[i]||'').trim();
+        if(!vehicle.isNote&&(i===1||i===2)){
+          const select=document.createElement('select');
+          select.className='van-flag-select';
+          select.dataset.vanStatus=vehicle.id;
+          select.dataset.field=String(i);
+          select.setAttribute('aria-label',(i===1?'Insurance':'Works')+' for '+vehicle.cells[0]);
+          const values=['','Yes','No'];
+          if(raw&&!values.some(v=>v.toLowerCase()===raw.toLowerCase()))values.push(raw);
+          for(const value of values){
+            const option=document.createElement('option');option.value=value;
+            option.textContent=value||'—';
+            select.append(option);
+          }
+          select.value=values.find(v=>v.toLowerCase()===raw.toLowerCase())||'';
+          td.append(select);
+        } else if(i===0&&problem){
+          td.append(textCell('span','⚠ '+raw,'van-problem-label'));
+          td.title='Van problem: Insurance or Works marked No';
+        } else {
+          td.textContent=vehicle.cells[i]||'';
+          td.title=vehicle.cells[i]||'';
+        }
         tr.append(td);
       }
       for(let j=0;j<dates.length;j++){
@@ -307,6 +338,18 @@ export function setupVanAllocation() {
       const button=e.target.closest('button[data-vehicle][data-day]');
       if(button)openEdit(button.dataset.vehicle,button.dataset.day);
     });
+    $('van-body').addEventListener('change',e=>{
+      const select=e.target.closest('select[data-van-status]');
+      if(!select)return;
+      const vehicle=state.rows.find(v=>v.id===select.dataset.vanStatus);
+      const field=Number(select.dataset.field);
+      if(!vehicle||vehicle.isNote||![1,2].includes(field))return;
+      vehicle.cells[field]=select.value;
+      render();
+      const issue=isVanProblem(vehicle);
+      show(issue?vehicle.cells[0]+' marked AMBER: Insurance or Works is No.':
+        vehicle.cells[0]+' status updated. Save Van Allocation CSV to keep changes.');
+    });
     $('van-edit-form').addEventListener('submit',e=>{e.preventDefault();saveEdit();});
     $('van-edit-clear').addEventListener('click',()=>saveEdit(true));
     $('van-edit-cancel').addEventListener('click',()=>$('van-edit-modal').close());
@@ -337,6 +380,11 @@ export function setupVanAllocation() {
       finally{e.target.value='';}
     });
     sample();
+    if(window.location.hash==='#vans')$('show-vans-tab').click();
+    window.addEventListener('hashchange',()=>{
+      if(window.location.hash==='#vans')$('show-vans-tab').click();
+      else if(window.location.hash==='#rota')$('show-rota-tab').click();
+    });
   }
   setup();
   return { importFromWorkbook, updateDriverSuggestions, reset:()=>{
