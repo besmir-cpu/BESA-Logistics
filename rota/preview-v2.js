@@ -181,6 +181,7 @@ function configureFrozenColumns(){
   // Original Excel columns B through R: name + first two weeks.
   for(const tr of document.querySelectorAll('.xlsx-rota tr.row-day, .xlsx-rota tr.row-date, .xlsx-rota tbody tr')){
     let left=210;
+    const compact=$('freeze-r').checked;
     [...tr.children].forEach((cell,index)=>{
       if(index===0)return;
       if(index<=16){
@@ -188,7 +189,7 @@ function configureFrozenColumns(){
         cell.style.setProperty('--frozen-left',left+'px');
         if(index===16)cell.classList.add('frozen-last');
       }
-      left+=(index%8===0)?83:72;
+      left+=(index%8===0)?(compact?62:83):(compact?52:72);
     });
   }
 }
@@ -347,15 +348,15 @@ async function valueGetterFromXlsx(file){
   if(!sheet)throw new Error('This Excel file needs a worksheet named ROTA.');
   const maxCol=Math.min(400,sheet.columnCount);
   const maxRow=Math.min(1000,sheet.rowCount);
-  return {get:(r,c)=>unwrapped(sheet.getRow(r).getCell(c).value),maxCol,maxRow};
+  return {get:(r,c)=>unwrapped(sheet.getRow(r).getCell(c).value),maxCol,maxRow,workbook};
 }
 async function importRota(file){
   if(!file)return;
   if(file.size>25*1024*1024)throw new Error('This file is too large. Upload a ROTA sheet under 25 MB.');
   const name=file.name.toLowerCase();
-  let get,maxCol,maxRow;
+  let get,maxCol,maxRow,workbook;
   if(name.endsWith('.xlsx')){
-    ({get,maxCol,maxRow}=await valueGetterFromXlsx(file));
+    ({get,maxCol,maxRow,workbook}=await valueGetterFromXlsx(file));
   }else if(name.endsWith('.csv')){
     const rows=parseCsv(await file.text());
     if(rows.length>2000)throw new Error('CSV is too large for this private browser preview.');
@@ -414,7 +415,13 @@ async function importRota(file){
   $('preview-notice').textContent='PRIVATE IMPORT LOADED — '+drivers.length+' driver names and '+columns.length+' dated columns ('+
     dates[0]+' to '+dates[dates.length-1]+'). Edits exist only in this browser tab. Download a draft CSV to keep your work; nothing is saved to GitHub or BESA’s database.';
   render();
-  message('Imported '+drivers.length+' driver names and targets for '+columns.length+' dates.'+
+  vans.updateDriverSuggestions(state.drivers);
+  let vanImportIssue='';
+  if(workbook){
+    try{vans.importFromWorkbook(workbook)}
+    catch(error){vanImportIssue=' Van Allocation sheet: '+error.message;}
+  }
+  message('Imported '+drivers.length+' driver names and targets for '+columns.length+' dates.'+vanImportIssue+
     (unknown.size?' Review other codes: '+[...unknown].slice(0,8).join(', ')+'.':''));
 }
 function rowField(field,date){
@@ -450,7 +457,11 @@ function exportCsv(){
     const totalCol=3+wi*8+7;place(19,totalCol,'Total days');
     for(let k=0;k<state.drivers.length;k++)place(21+k,totalCol,weekTotalForDriver(state.drivers[k],weeks[wi]));
   }
-  for(let i=0;i<state.drivers.length;i++)place(21+i,2,state.drivers[i].name);
+  place(20,1,'Auto DL');
+  for(let i=0;i<state.drivers.length;i++){
+    place(21+i,2,state.drivers[i].name);
+    place(21+i,1,state.drivers[i].licence==='Auto'?'Auto':state.drivers[i].licence==='Manual'?'Manual':'');
+  }
   // Use Sunday-based week dates; output makes imported edits reversible by reimport.
   const escapeCsv=value=>{
     const str=String(value??'');
@@ -478,6 +489,14 @@ function start(){
   });
   $('jump-date').addEventListener('change',e=>{if(e.target.value)setWeek(e.target.value);});
   $('search-driver').addEventListener('input',makeBody);
+  const frozen=$('freeze-r');
+  frozen.checked=window.innerWidth>=1220;
+  const setFrozen=()=>{
+    $('xl-scroller').classList.toggle('freeze-r',frozen.checked);
+    makeBody();
+  };
+  frozen.addEventListener('change',setFrozen);
+  setFrozen();
   $('sheet-body').addEventListener('click',e=>{
     const btn=e.target.closest('button');
     if(!btn)return;
