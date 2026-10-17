@@ -38,3 +38,59 @@ input[readonly]{background:#f1f4ee;color:#68796d;cursor:default}
 
 /* Use the page's vertical scrollbar for the vehicle list. */
 #vehicles .vehicle-scroll{max-height:none;overflow-x:auto;overflow-y:hidden;overscroll-behavior:auto;scrollbar-gutter:auto}
+
+/* BESA Operations visual refresh — presentation only; existing data/actions unchanged. */
+:root{--ink:#17392e;--muted:#687e72;--green:#175b40;--line:#e1ebe3;--bg:#f3f7f3;--accent:#d9ed84;--radius:16px}
+body{background:var(--bg);font-feature-settings:"ss01" on}
+.sidebar{width:244px;background:linear-gradient(185deg,#12372a,#0d2921 76%);padding:27px 18px 22px;box-shadow:6px 0 26px #102d2110}
+.sidebar .brand{font-size:15px;letter-spacing:-.35px;margin-bottom:40px}
+.sidebar .brand-mark{border-radius:11px;background:#d9ed84}
+.sidebar nav{gap:5px}
+.sidebar nav a{border:1px solid transparent;padding:12px 13px;border-radius:10px;color:#c7d9ce;font-weight:600;transition:background .2s,color .2s}
+.sidebar nav a:hover{background:#ffffff13;color:#fff}
+.sidebar nav a.active{background:#d9ed84;color:#183d2c;box-shadow:0 3px 14px #00000012}
+.sidebar-bottom{border-top:1px solid #ffffff18}
+.workspace{margin-left:244px}
+.topbar{background:#fdfefdcc;backdrop-filter:blur(12px);min-height:73px;border-bottom:1px solid #dfebe0}
+.topbar .breadcrumb strong{color:#1c4e38;font-weight:800}
+main{max-width:1900px}
+.page-heading h1{font-size:32px;letter-spacing:-1.15px}
+.page-heading .eyebrow{color:#54886d;letter-spacing:2px}
+.stats-grid{gap:15px}
+.stat{border:1px solid #dfeae0;border-radius:17px;box-shadow:0 6px 22px #153a2a09;background:linear-gradient(155deg,#fff 45%,#f8fbf7);transition:transform .16s,box-shadow .16s}
+.stat:hover{transform:translateY(-1px);box-shadow:0 9px 28px #153a2a12}
+.stat strong{color:#193f2f;letter-spacing:-1.75px}
+.stat .amber-text{color:#ad7320}
+.panel{border-color:#e1e9e2;border-radius:17px;box-shadow:0 5px 25px #19482c09}
+.panel-heading{background:linear-gradient(110deg,#fff,#f9fcf8);padding:23px 24px}
+.button{border-radius:10px;transition:background .16s,color .16s,box-shadow .16s}
+.button.primary{background:#175b40;border-color:#175b40;box-shadow:0 3px 9px #16583b25}
+.button.primary:hover{background:#104b34}
+.button.quiet:hover{background:#edf4eb}
+.stat-label span{color:#4b916e}
+input,select,textarea{border-color:#d1dfd4;border-radius:10px;background:#fff}
+input:focus,select:focus,textarea:focus{outline-color:#3c9364}
+.vehicle-filters{background:#f1f7f1;border-color:#dce9dc;border-radius:13px}
+#vehicles .vehicle-scroll{border-radius:0 0 14px 14px}
+#vehicles th{background:#e7f0e8;color:#446651;font-weight:750}
+#vehicles th:first-child{background:#e7f0e8}
+#vehicles .vehicle-registration-cell{padding:5px 9px!important}
+#vehicles .vehicle-reg-edit{display:inline-flex;align-items:center;justify-content:space-between;gap:9px;width:100%;min-width:125px;padding:7px 9px;border-radius:9px;background:transparent;color:#20553b;text-align:left;transition:background .14s}
+#vehicles .vehicle-reg-edit:hover,#vehicles .vehicle-reg-edit:focus-visible{background:#dceee0}
+#vehicles .vehicle-reg-edit .reg{font-size:12px;font-weight:800;white-space:nowrap}
+#vehicles .vehicle-edit-icon{font-size:15px;color:#5c886c;opacity:.75;line-height:1}
+#vehicles td:first-child .vehicle-reg-edit{box-shadow:none;border:0}
+#vehicles tbody tr:hover td{background:#f7fbf8}
+#vehicles tbody tr:hover td:first-child{background:#eef7f0}
+#record-dialog{border-radius:18px;box-shadow:0 24px 95px #112c2350}
+.dialog-heading{background:#f8fbf8}
+@media(max-width:1150px){.sidebar{width:205px}.workspace{margin-left:205px}}
+@media(max-width:750px){
+ .sidebar{width:auto;padding:14px 15px 0;box-shadow:none}
+ .workspace{margin-left:0}
+ .sidebar .brand{margin-bottom:14px}
+ .sidebar nav a{padding:9px 11px;font-size:11px}
+ .page-heading h1{font-size:28px}
+ .stat:hover{transform:none}
+ .topbar{min-height:58px}
+}
