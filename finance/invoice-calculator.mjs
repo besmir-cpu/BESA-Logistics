@@ -87,8 +87,10 @@ export function calculateDraftInvoice({
  * cancel, while preserving the visible breakdown expected by the office.
  *
  * The £15 weekly admin charge is represented separately and charged ONCE
- * per invoice (not per route). Defaults are draft business assumptions until
- * the office/accountant verifies exemptions, negative payments, and VAT.
+ * per invoice (not per route). BESA confirmed rental applies to EVERY driver,
+ * irrespective of van ownership; the invoice builder does not inspect that.
+ * The £5 and £15 are defaults for the current draft rate card; rate changes
+ * require date-effective policy review. Zero-route weeks and VAT need review.
  */
 export function calculateSamStyleDraft({
   routeCount,
@@ -116,6 +118,8 @@ export function calculateSamStyleDraft({
   const baseRatePence = poundsToPence(sheetRouteRate);
   const rentalRatePence = poundsToPence(vanRentalPerRoute);
   const adminFeePence = poundsToPence(weeklyAdminFee);
+  if (rentalRatePence === 0) throw new Error('Van rental is mandatory for every driver with routes.');
+  if (adminFeePence === 0) throw new Error('Weekly administration fee is mandatory for invoiced driver weeks.');
   const displayedRatePence = baseRatePence + rentalRatePence;
   if (!Number.isSafeInteger(displayedRatePence)) throw new RangeError('Displayed route rate is too large.');
   const gbp = pennies => (pennies / 100).toFixed(2);
@@ -126,12 +130,10 @@ export function calculateSamStyleDraft({
       ...otherIncome
     ],
     deductions: [
-      ...(rentalRatePence > 0 ? [{ description: rentalDescription, quantity: routeCount, rate: gbp(rentalRatePence) }] : []),
+      { description: rentalDescription, quantity: routeCount, rate: gbp(rentalRatePence) },
       ...otherDeductions
     ],
-    adminFees: adminFeePence > 0
-      ? [{ description: 'Admin Fees RA', quantity: 1, rate: gbp(adminFeePence) }]
-      : [],
+    adminFees: [{ description: 'Admin Fees RA', quantity: 1, rate: gbp(adminFeePence) }],
     vatStatus
   });
   // A negative net must never be approved automatically.
