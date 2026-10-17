@@ -1,53 +1,46 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0e3329"><title>BESA — Rota Scheduling Preview</title>
-<link rel="stylesheet" href="driver/portal.css"><link rel="stylesheet" href="rota/rota.css">
-<script type="module" src="rota/preview.js"></script>
-</head><body>
-<header class="top"><div class="brand"><span class="monogram">B</span><span><strong>BESA LOGISTICS</strong><small>ROTA & SCHEDULING</small></span></div>
-<a class="top-link" href="index.html">← Office dashboard</a></header>
-<main class="container rota-container">
-<section id="rota-app">
-<div class="welcome"><div><p class="eyebrow">BESA OFFICE · PLANNING WORKSPACE</p><h1>Rota & Scheduling</h1><p class="subtle">Try the Sunday–Saturday rota design using fictional drivers and vans.</p></div>
-<a class="outline" style="text-decoration:none;padding:12px 16px;border-radius:10px" href="index.html">Office dashboard ↗</a></div>
-<div class="draft-banner" role="note"><strong>INTERACTIVE PREVIEW — SAMPLE DATA ONLY.</strong> All driver names, vans and shifts shown here are fictional. Changes work in this browser tab only, are <strong>never saved</strong> and disappear when you refresh. Your real rota, payments and Google Sheets remain unchanged.</div>
-
-<div class="card rota-actions">
-<div class="week-controls"><button class="outline" id="prev-week" type="button" aria-label="Previous week">← Previous</button>
-<div><strong id="week-title">Loading week…</strong><label class="jump-label" for="week-picker">Jump to date <input type="date" id="week-picker"></label></div>
-<button class="outline" id="next-week" type="button" aria-label="Next week">Next →</button>
-<button class="outline" id="this-week" type="button">This week</button></div>
-<div class="filter-controls"><label for="driver-search">Search driver <input type="search" id="driver-search" placeholder="Search by name"></label>
-<label for="status-filter">Driver status<select id="status-filter"><option value="Active">Active only</option><option value="all">All drivers</option></select></label>
-<button type="button" class="outline" id="export-week">Export SAMPLE CSV</button>
-<button type="button" class="outline" id="refresh-week">↻ Reset sample</button></div>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BESA Logistics | Rota & Scheduling Preview</title><meta name="theme-color" content="#10382d">
+<link rel="stylesheet" href="driver/portal.css"><link rel="stylesheet" href="rota/rota-v2.css">
+<script defer src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script type="module" src="rota/preview-v2.js"></script></head>
+<body><header class="top"><div class="brand"><span class="monogram">B</span><span><strong>BESA LOGISTICS</strong><small>OPERATIONS</small></span></div>
+<a class="top-link" href="index.html" style="color:#fff;text-decoration:none">← Main dashboard</a></header>
+<main class="besa-rota">
+<div class="rota-top"><div><p class="eyebrow" style="margin:0">BESA OFFICE · SCHEDULING</p><h1>Rota / Scheduling</h1></div>
+<span class="rota-tag" style="background:#215341;padding:8px 12px;border-radius:6px">4-WEEK SPREADSHEET VIEW</span></div>
+<div id="preview-notice" class="rota-intro"><strong>PREVIEW — fictional data only.</strong> Import your own ROTA Excel/CSV file privately in this browser to show actual names, shift codes and daily targets. The imported data stays in this tab; it is never uploaded to GitHub or BESA's database. Save a draft CSV before leaving.</div>
+<div class="rota-toolbar" aria-label="Rota tools">
+<label class="file-button" for="import-file" title="Import the ROTA worksheet from XLSX or CSV">
+📥 Import ROTA (.xlsx / .csv)<input type="file" id="import-file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"></label>
+<button class="primary" type="button" id="add-driver">+ Add driver</button>
+<button type="button" id="prev-4">← Previous 4 weeks</button>
+<div class="week-status" id="range-title">Calculating weeks…</div>
+<button type="button" id="next-4">Next 4 weeks →</button>
+<button type="button" id="add-4">+ Populate 4 more weeks</button>
+<label>Jump to date <input id="jump-date" type="date"></label>
+<label>Find driver <input id="search-driver" type="search" placeholder="Name…"></label>
+<button type="button" id="export-rota">⬇ Save rota CSV</button>
+<button type="button" id="reset-demo">↻ Reset preview</button>
 </div>
-
-<section aria-label="Daily targets and coverage" class="card summary-panel"><h2>Daily coverage</h2>
-<p class="subtle">Working codes: W, RA, NL1–NL3, C1, C2 and EW. Cycle 1: C1 + RA + EW. Cycle 2: C2. Office, Rest and Standby are excluded from working totals.</p>
-<div id="coverage-days" class="coverage-grid" aria-live="polite"></div>
-<p id="coverage-warning" class="hint" aria-live="polite"></p>
-</section>
-
-<section class="card planner"><div class="planner-header"><div><h2>Driver schedule</h2><p class="subtle">Select any day to try editing a sample shift. Blank cells are unassigned.</p></div><div id="driver-count" class="tag"></div></div>
-<div class="roster-viewport" role="region" aria-label="Scrollable driver scheduling grid" tabindex="0">
-<table id="rota-table" class="rota-table"><thead id="roster-head"></thead><tbody id="roster-body"></tbody></table>
-</div><p class="hint">Codes: C1, C2, RA, EW, W, NL1–NL3 (working); SB (standby), R (rest), NOT R (not rostered), Office, OFF (not counted as driving work).</p></section>
-</section>
-<p class="notice" id="status" role="status" aria-live="polite"></p>
-<footer>Preview only · Fictitious data · BESA Google Sheets remain the operational record.</footer>
+<div class="rota-help"><span><b>Week numbers</b> match Google ROTA's Sunday-based WEEKNUM.</span>
+<span><b>Freeze:</b> Week, Day, Date rows and driver names.</span><span><b>Change shift:</b> click a cell. Weekly working days recalculate.</span><span><b>Edit targets:</b> click the yellow C1/C2 cells.</span></div>
+<div id="xl-scroller" class="xl-scroll" role="region" tabindex="0" aria-label="Four week Excel-style rota, scroll horizontally and vertically">
+<table class="xlsx-rota" aria-label="BESA rota planning matrix" id="roster-table"><thead id="sheet-head"></thead><tbody id="sheet-body"></tbody></table>
+</div>
+<p class="rota-msg" id="rota-status" aria-live="polite" role="status"></p>
+<p class="rota-footnotes">Working codes: <b>W, RA, NL1, NL2, NL3, C1, C2, EW.</b> C1 coverage counts C1 + RA + EW, C2 coverage counts C2. SB, R, H, Office and NOT R do not count as working. Weekly totals are calculated from edited daily shifts. Imported historic EW totals may differ from formulas that reference the next day in the old Google Sheet.</p>
 </main>
-
-<dialog id="shift-dialog" aria-labelledby="edit-title"><form id="shift-form">
-<div class="dialog-heading"><div><p class="eyebrow">EDIT SHIFT</p><h2 id="edit-title">Driver • Date</h2></div><button class="outline small-button" id="close-editor" type="button">Close</button></div>
-<label for="shift-code">Shift code<select id="shift-code" required>
-<option value="">Unassigned (clear shift)</option><option>C1</option><option>C2</option><option>RA</option><option>EW</option><option>W</option>
-<option>NL1</option><option>NL2</option><option>NL3</option><option>SB</option><option>R</option><option>NOT R</option><option>Office</option><option>OFF</option>
-</select></label>
-<label for="shift-vehicle">Vehicle (optional)<select id="shift-vehicle"><option value="">No vehicle assigned</option></select></label>
-<label for="shift-note">Note (optional)<input id="shift-note" maxlength="500"></label>
-<p class="hint" id="shift-detail-warning"></p>
-<div class="dialog-buttons"><button type="button" class="outline" id="remove-shift">Clear shift</button><button type="submit" id="save-shift">Try shift (not saved)</button></div>
+<dialog id="shift-modal" class="rota-modal"><form id="shift-form"><h2 id="shift-title">Edit shift</h2>
+<label>Shift code<select id="shift-code"><option value="">— Unassigned —</option><option>C1</option><option>C2</option><option>RA</option><option>EW</option><option>W</option><option>NL1</option><option>NL2</option><option>NL3</option><option>SB</option><option>R</option><option>H</option><option>NOT R</option><option>Office</option><option>OFF</option><option value="__other__">Other / custom code…</option></select></label>
+<label id="custom-code-row" hidden>Custom shift code<input id="custom-code" maxlength="16" placeholder="Code from your rota"></label>
+<div class="actions"><button type="button" id="cancel-shift">Cancel</button><button type="button" id="clear-shift">Clear</button><button class="primary" type="submit">Apply change</button></div>
 </form></dialog>
+<dialog id="driver-modal" class="rota-modal"><form id="driver-form"><h2>Add driver</h2><label>Driver name<input type="text" id="new-driver-name" maxlength="90" required placeholder="Full name"></label>
+<div class="actions"><button type="button" id="cancel-driver">Cancel</button><button class="primary" type="submit">Add driver to rota</button></div></form></dialog>
+<dialog id="target-modal" class="rota-modal"><form id="target-form"><h2 id="target-title">Edit targets</h2>
+<label>C1 target<input id="c1-target" type="number" min="0" max="999" step="1" required></label>
+<label>C2 target<input id="c2-target" type="number" min="0" max="999" step="1" required></label>
+<label>Vans available (optional)<input id="van-target" type="number" min="0" max="999" step="1"></label>
+<div class="actions"><button type="button" id="cancel-target">Cancel</button><button class="primary" type="submit">Apply targets</button></div></form></dialog>
 </body></html>
