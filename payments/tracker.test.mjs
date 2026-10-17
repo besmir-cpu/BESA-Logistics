@@ -6,12 +6,12 @@ import vm from 'node:vm';
 const source=readFileSync(new URL('./tracker.js',import.meta.url),'utf8').replace(/\ninit\(\);\s*$/,'');
 function editor(){
   const context=vm.createContext({Intl,Date,Map,Set,Array,Number,String,JSON,RegExp,Error,window:{confirm:()=>true}});
-  vm.runInContext(source+\`
+  vm.runInContext(source+`
     render=function(){};
     message=function(){};
     state.start='2026-10-11';
     globalResult={parseDelimited,parseSourceDate,weekNumber,classifyMetric,classifySection,looksLikeWholeTab,importFullTab,parseDelimited,get,state};
-  \`,context);
+  `,context);
   return context.globalResult;
 }
 test('week numbers match BESA Sunday-based sheet',()=>{
