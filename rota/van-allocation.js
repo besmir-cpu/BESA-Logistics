@@ -8,7 +8,7 @@ export function setupVanAllocation() {
   const SEC = 86400000;
   const state = {
     start: null, imported: false, rows: [], dateCols: new Map(),
-    sourceHead: new Map(), assigns: new Map(), edit: null, next: 0,
+    sourceHead: new Map(), assigns: new Map(), edit: null, next: 0, generatedDates:new Set(),
     driverNames: []
   };
   const textCell = (tag,text,klass='') => {
@@ -117,6 +117,7 @@ export function setupVanAllocation() {
   function render(){
     if(!state.start)return;
     const tableWeeks=weeks();
+    for(const day of tableWeeks.flat())state.generatedDates.add(day);
     $('van-range-title').textContent='W'+numberWeek(tableWeeks[0][0])+'–W'+numberWeek(tableWeeks[3][0])+
       ' · '+dateLabel(tableWeeks[0][0],'long')+' – '+dateLabel(tableWeeks[3][6],'long');
     $('van-jump').value=tableWeeks[0][0];
@@ -159,7 +160,7 @@ export function setupVanAllocation() {
     state.rows=Array.from({length:12},(_,i)=>({
       id:'demo-van-'+i,cells:['SAMPLE VAN '+String(i+1).padStart(2,'0'),'Yes','Yes','','',''],isNote:false
     }));
-    state.assigns.clear();state.sourceHead.clear();state.dateCols.clear();
+    state.assigns.clear();state.sourceHead.clear();state.dateCols.clear();state.generatedDates.clear();
     state.rows.forEach((van,i)=>{
       for(const day of weeks().flat()){
         const n=dateUTC(day).getUTCDay();
@@ -215,6 +216,7 @@ export function setupVanAllocation() {
       }
     }
     if(!rows.some(r=>!r.isNote))throw new Error('No vehicle registrations were found in column A.');
+    state.generatedDates.clear();
     state.rows=rows;state.assigns=assigns;state.sourceHead=sourceHead;
     state.dateCols=new Map(sourceDates.map(s=>[s.date,s.col]));
     const ordered=sourceDates.map(x=>x.date).sort();
@@ -253,7 +255,7 @@ export function setupVanAllocation() {
     }
   }
   function saveCsv(){
-    const dates=[...state.dateCols.keys()].sort();
+    const dates=[...new Set([...state.dateCols.keys(),...state.generatedDates])].sort();
     const first=dates.length?sundayOfWeek(dates[0]):state.start;
     const last=dates.length?sundayOfWeek(dates[dates.length-1]):offsetWeeks(state.start,3);
     const weeksToSave=[];
