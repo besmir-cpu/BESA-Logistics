@@ -85,15 +85,26 @@ test('rental gross-up and rental deductions cancel for any positive number of ro
   assert.equal(r.adminFees.totalPence, 1500);
 });
 
-test('weekly admin is not repeated per route; no rental can be configured explicitly', () => {
-  const r = calculateSamStyleDraft({
-    routeCount: 7, sheetRouteRate: '100.00',
-    vanRentalPerRoute: '0.00', weeklyAdminFee: '15.00'
-  });
-  assert.equal(r.income.totalPence, 70000);
-  assert.equal(r.deductions.totalPence, 0);
-  assert.equal(r.adminFees.totalPence, 1500);
-  assert.equal(r.netPence, 68500);
+test('all drivers have van rental and admin fee regardless of vehicle ownership', () => {
+  for (const ownership of ['BESA', 'rented', 'own van']) {
+    // Deliberately no ownership-based exception is passed into the calculator.
+    const r = calculateSamStyleDraft({
+      routeCount: 7, sheetRouteRate: '100.00'
+    });
+    assert.equal(r.income.totalPence, 73500, ownership);
+    assert.equal(r.deductions.totalPence, 3500, ownership);
+    assert.equal(r.adminFees.totalPence, 1500, ownership);
+    assert.equal(r.netPence, 68500, ownership);
+  }
+});
+
+test('zero-rate rental and zero weekly admin fees are rejected', () => {
+  assert.throws(() => calculateSamStyleDraft({
+    routeCount: 1, sheetRouteRate: '100.00', vanRentalPerRoute: '0.00'
+  }), /mandatory for every driver/);
+  assert.throws(() => calculateSamStyleDraft({
+    routeCount: 1, sheetRouteRate: '100.00', weeklyAdminFee: '0.00'
+  }), /administration fee is mandatory/);
 });
 
 test('zero-route, bad routes and VAT-registered supplier are blocked for manual review', () => {
