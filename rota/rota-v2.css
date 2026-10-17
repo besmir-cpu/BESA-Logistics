@@ -170,3 +170,15 @@ body{background:#f4f7f5;color:#213f33}
  .xlsx-rota .licence-col{left:145px}
  .rota-top h1{font-size:22px}
 }
+
+/* Normal section navigation for office Rota, Van Allocation and Payments */
+.operation-tabs{display:flex;align-items:center;gap:3px;margin:11px 0 8px;border-bottom:2px solid #d1e3d6}
+.operation-tabs a{display:inline-flex;align-items:center;padding:11px 16px;border-radius:10px 10px 0 0;font-size:12px;font-weight:800;color:#506b5c;text-decoration:none;background:#edf4ee}
+.operation-tabs a:hover{background:#e0eee4}
+.operation-tabs a[aria-current=page]{background:#1c5842;color:#fff}
+.top{background:#11382b;box-shadow:0 3px 20px #16392820}
+.top-link{color:#e3f1e8;text-decoration:none;font-weight:700}
+.besa-rota .rota-top{margin-bottom:3px}
+.besa-rota .rota-top .eyebrow{font-weight:800;letter-spacing:.12em;color:#448263}
+.besa-rota .week-status{min-width:155px}
+@media(max-width:700px){.operation-tabs{overflow-x:auto}.operation-tabs a{flex-shrink:0;padding:10px 13px;font-size:11px}}
