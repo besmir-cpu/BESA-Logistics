@@ -114,3 +114,19 @@ a{color:inherit}
 .van-sheet-table .van-heading{background:#ebf2ed;font-weight:700}
 .van-sheet-table .van-week-start{border-left:3px solid #83a991}
 @media(max-width:700px){.besa-sheet-tabs button{padding:10px 14px;font-size:12px}.van-sheet-table .van-fixed{min-width:95px;width:95px;max-width:95px}.xl-scroll{height:75vh}}
+
+/* Compact B–R freeze lets the first two weeks remain visible while scrolling weeks three and four. */
+.freeze-r .xlsx-rota th:not(.name-col),.freeze-r .xlsx-rota td:not(.name-col){min-width:52px;width:52px;max-width:52px}
+.freeze-r .xlsx-rota .weekly-total{min-width:62px;width:62px;max-width:62px}
+.freeze-r .xlsx-rota thead tr.row-week th[colspan]{width:426px;min-width:426px;max-width:426px}
+.freeze-r .xlsx-rota .metric-row > .frozen-col{z-index:19}
+.freeze-r .xlsx-rota thead tr.row-day > .frozen-col,.freeze-r .xlsx-rota thead tr.row-date > .frozen-col{z-index:25}
+.xlsx-rota tbody tr.metric-row.summary-last td{border-bottom:5px solid #15533a!important}
+.van-sheet-table thead th{z-index:26}
+.van-sheet-table thead .van-fixed{z-index:32}
+.van-sheet-table tr > :nth-child(1){min-width:125px;width:125px;max-width:125px}
+.van-sheet-table tr > :nth-child(2),.van-sheet-table tr > :nth-child(3){min-width:105px;width:105px;max-width:105px}
+.van-sheet-table tr > :nth-child(4){min-width:185px;width:185px;max-width:185px}
+.van-sheet-table tr > :nth-child(5){min-width:135px;width:135px;max-width:135px}
+.van-sheet-table tr > :nth-child(6){min-width:180px;width:180px;max-width:180px}
+@media(max-width:980px){.freeze-r .xlsx-rota .frozen-col:not(.name-col){position:static!important}.freeze-r .xlsx-rota th:not(.name-col),.freeze-r .xlsx-rota td:not(.name-col){min-width:64px;width:64px;max-width:64px}}
