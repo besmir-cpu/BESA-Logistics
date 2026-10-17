@@ -348,7 +348,7 @@ function start(){
   $('close-editor').addEventListener('click',()=>{$('shift-dialog').close();state.edit=null;});
   $('shift-code').addEventListener('change',toggleVehicle);
   $('shift-dialog').addEventListener('close',()=>{state.edit=null;});
-  db().auth.onAuthStateChange((_event,session)=>{sessionChanged(session);});
+  db().auth.onAuthStateChange((_event,session)=>{setTimeout(()=>sessionChanged(session),0);});
   db().auth.getSession().then(({data,error})=>{
     if(error)throw error;return sessionChanged(data.session);
   }).catch(e=>show(e.message,true));
