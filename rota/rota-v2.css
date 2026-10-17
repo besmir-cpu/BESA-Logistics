@@ -1,0 +1,66 @@
+:root{--green:#154637;--grid:#dae1e0;--head:#eef4f0;--head2:#dfece4;--yellow:#fff2c9;--pink:#fce8ec;--blue:#e7eefb}
+*{box-sizing:border-box}
+button,input,select{font:inherit}
+a{color:inherit}
+.besa-rota{max-width:none;width:100%;padding:18px 26px}
+.rota-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+.rota-top h1{font-size:28px;margin:5px 0 0}
+.rota-tag{color:#d6e9df;font-size:11px;letter-spacing:.09em}
+.rota-intro{margin:14px 0;background:#fff6dc;color:#694c07;border:1px solid #e2cc85;border-radius:12px;padding:12px 16px;font-size:14px}
+.rota-intro.imported{background:#e8f5ef;color:#175339;border-color:#9ecab0}
+.rota-toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:12px 0;padding:15px;background:#fff;border:1px solid #e1e8e2;border-radius:12px}
+.rota-toolbar button,.rota-toolbar .file-button{min-height:42px;padding:9px 13px;border:1px solid #c8d5cb;color:#1e4836;background:white;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer}
+.rota-toolbar button.primary,.rota-toolbar .file-button{background:#15583c;color:#fff;border-color:#15583c}
+.rota-toolbar label{font-size:12px;font-weight:700;color:#415949}
+.rota-toolbar input[type=search],.rota-toolbar input[type=date]{margin-top:5px;padding:8px 10px;min-height:42px;border:1px solid #bdcdc3;border-radius:8px}
+.rota-toolbar .file-button{display:inline-flex;align-items:center;gap:7px}
+.rota-toolbar .file-button input{display:none}
+.week-status{font-weight:800;color:#193f30;min-width:185px;text-align:center;font-size:14px}
+.rota-help{display:flex;flex-wrap:wrap;gap:7px 18px;color:#607368;font-size:12px;margin:8px 0}
+.rota-help b{color:#174b34}
+.xl-scroll{width:100%;height: min(66vh,710px);min-height:340px;overflow:auto;border:1px solid #a8bdb1;border-radius:9px;background:white;scrollbar-gutter:stable}
+.xlsx-rota{border-spacing:0;border-collapse:separate;table-layout:fixed;width:max-content;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#1e3030}
+.xlsx-rota th,.xlsx-rota td{height:29px;min-width:72px;width:72px;max-width:72px;white-space:nowrap;text-align:center;border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);padding:2px 4px}
+.xlsx-rota .name-col{min-width:210px;width:210px;max-width:210px;position:sticky;left:0;text-align:left;padding:0 9px;background:#fff;z-index:6;overflow:hidden;text-overflow:ellipsis;box-shadow:2px 0 0 #baccc2}
+.xlsx-rota thead th{background:var(--head);font-weight:700;color:#183f2d;position:sticky;z-index:12}
+.xlsx-rota thead .name-col{z-index:20;background:var(--head2)}
+.xlsx-rota .row-week th{height:35px;top:0;background:#cadfce;color:#15402e;font-size:13px}
+.xlsx-rota .row-day th{height:29px;top:35px;background:#e1ece4}
+.xlsx-rota .row-date th{height:29px;top:64px;background:#f4f8f5;border-bottom:2px solid #93b09b}
+.xlsx-rota .week-end{border-right:3px solid #90afa1!important}
+.xlsx-rota .weekly-total{min-width:83px;width:83px;max-width:83px;background:#f0f4f2;font-weight:700}
+.xlsx-rota .metric-row .name-col{background:#e5eee8;font-weight:700;color:#304d38}
+.xlsx-rota .metric-row td{background:#f5faf7;color:#425947;font-weight:650}
+.xlsx-rota .metric-row.target-row td{background:#fffaf0}
+.xlsx-rota .metric-row.warn-row td{background:#fdf0e8}
+.xlsx-rota .metric-row .weekly-total{background:#e6ede8}
+.xlsx-rota .metric-row td button{display:block;width:100%;height:100%;border:1px dashed #c7a35d;border-radius:3px;background:#fff3d4;color:#5b431a;cursor:pointer;padding:2px;font-weight:800}
+.xlsx-rota .driver-row:nth-of-type(2n) td{background:#fcfdfc}
+.xlsx-rota .driver-row:nth-of-type(2n) td.name-col{background:#f2f6f3}
+.xlsx-rota .driver-row .weekly-total{background:#eff5f0!important;font-weight:800}
+.xlsx-rota .driver-row td{height:32px}
+.xlsx-rota .driver-row button{display:block;width:100%;height:28px;border:0;background:transparent;color:#41544e;cursor:pointer;font-size:12px;padding:2px;white-space:nowrap}
+.xlsx-rota .driver-row button:hover,.xlsx-rota .metric-row td button:hover{outline:2px solid #489b6b;outline-offset:-2px}
+.xlsx-rota .driver-row button.C1,.xlsx-rota .driver-row button.RA,.xlsx-rota .driver-row button.EW{background:#d8ede0;color:#1f5e39;font-weight:800}
+.xlsx-rota .driver-row button.C2{background:#dce7ff;color:#274c91;font-weight:800}
+.xlsx-rota .driver-row button.SB{background:#fff0ba;color:#775900}
+.xlsx-rota .driver-row button.R,.xlsx-rota .driver-row button.OFF{background:#f1eded;color:#755757}
+.xlsx-rota .driver-row button.H{background:#ffe4ec;color:#913f59}
+.xlsx-rota .driver-row button.Office{background:#e8e4fb;color:#5c4b93}
+.xlsx-rota .driver-row button.W,.xlsx-rota .driver-row button.NL1,.xlsx-rota .driver-row button.NL2,.xlsx-rota .driver-row button.NL3{background:#cceadd;color:#1a563d}
+.xlsx-rota .driver-row .name-col{font-weight:650}
+.xlsx-rota .driver-row .name-col span{font-size:10px;color:#728a7a;margin-left:7px;font-weight:400}
+.xlsx-rota .driver-row .weekly-total button{font-weight:800;cursor:default;background:transparent;color:#1d5339}
+.rota-footnotes{font-size:12px;color:#667b6e;margin:10px 0 16px}
+.rota-msg{margin:8px 0;color:#18613d;min-height:25px;font-size:13px}
+.rota-msg.error{color:#af2525}
+.rota-modal{border:1px solid #cddbd1;border-radius:16px;width:min(94vw,440px);padding:24px;box-shadow:0 20px 85px #102f2855}
+.rota-modal::backdrop{background:#0e3329aa}
+.rota-modal h2{font-size:22px;margin:0 0 18px}
+.rota-modal form{margin:0;display:grid;gap:13px}
+.rota-modal label{display:grid;gap:6px;font-size:13px;color:#234b38;font-weight:700}
+.rota-modal input,.rota-modal select{width:100%;min-height:44px;padding:10px;border:1px solid #bccfc3;border-radius:8px}
+.rota-modal .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:end}
+.rota-modal button{min-height:42px;padding:9px 15px;border:1px solid #bdd0c2;background:#f7faf8;color:#214633;border-radius:8px;font-weight:700;cursor:pointer}
+.rota-modal .actions .primary{background:#15583c;color:white}
+@media(max-width:650px){.besa-rota{padding:10px}.rota-top h1{font-size:22px}.rota-toolbar{padding:10px}.xl-scroll{height:65vh}.xlsx-rota .name-col{min-width:140px;width:140px;max-width:140px}.xlsx-rota th,.xlsx-rota td{min-width:64px;width:64px;max-width:64px}}
