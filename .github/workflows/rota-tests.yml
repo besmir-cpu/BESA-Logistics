@@ -22,3 +22,5 @@ jobs:
           node-version: '22'
       - name: Validate scheduling codes and dates
         run: node --test rota/*.test.mjs
+      - name: Validate office script syntax
+        run: node --input-type=module --check < rota/office.js
