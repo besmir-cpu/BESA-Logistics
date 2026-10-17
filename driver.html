@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0e3329"><title>BESA Driver Portal</title>
+<link rel="stylesheet" href="driver/portal.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script defer src="config.js"></script><script defer src="driver/portal.js"></script>
+</head><body>
+<header class="top"><div class="brand"><span class="monogram">B</span><span><strong>BESA</strong><small>DRIVER PORTAL</small></span></div><span class="badge">PRIVATE ACCESS</span></header>
+<main class="container">
+<section id="login-panel" class="card hero">
+<p class="eyebrow">WELCOME TO BESA</p><h1>Your work, in one place.</h1>
+<p>Sign in to manage your profile, submit your documents and see your published shifts.</p>
+<form id="login-form"><label for="email">Your invited email address</label><input type="email" id="email" autocomplete="email" required placeholder="driver@example.com">
+<button id="login-button" type="submit">Send secure sign-in link</button></form>
+<p class="hint">Your office administrator must create your account before you can sign in.</p>
+</section>
+<section id="app" hidden>
+<div class="welcome"><div><p class="eyebrow">BESA DRIVER</p><h1>My workspace</h1><p id="account" class="subtle"></p></div><button id="logout" class="outline" type="button">Sign out</button></div>
+<div class="tabs" role="tablist" aria-label="Driver sections">
+<button type="button" data-tab="profile" class="active">My details</button><button type="button" data-tab="documents">Documents</button><button type="button" data-tab="rota">My rota</button>
+</div>
+<section id="tab-profile" class="card tab-panel">
+<h2>My details</h2><p class="subtle">Your details are private to you and the authorised BESA office team.</p>
+<form id="profile-form" class="stack">
+<div class="two"><label>First name<input name="first_name" maxlength="100" required></label><label>Last name<input name="last_name" maxlength="100" required></label></div>
+<label>Contact number<input name="phone" type="tel" maxlength="40"></label>
+<button type="submit" id="save-profile">Save my details</button>
+</form><p class="hint" id="profile-state"></p>
+</section>
+<section id="tab-documents" class="card tab-panel" hidden>
+<h2>Documents</h2><p class="subtle">Upload a clear image or PDF. Files are private and must be reviewed by BESA.</p>
+<form id="document-form" class="stack">
+<label>Document category<select id="document-type" required><option value="licence_front">Driving licence – front</option><option value="licence_back">Driving licence – back</option><option value="right_to_work">Right to work evidence</option><option value="other">Other requested document</option></select></label>
+<label>Choose file<input type="file" id="document-file" accept=".pdf,image/jpeg,image/png,image/webp" required></label>
+<p class="hint">JPEG, PNG, WEBP or PDF • Maximum 10 MB • Do not upload documents from a shared device.</p>
+<button id="upload-button" type="submit">Upload securely</button>
+</form><h3>My submitted documents</h3><div id="document-list" class="items"><p class="subtle">No documents uploaded yet.</p></div>
+</section>
+<section id="tab-rota" class="card tab-panel" hidden>
+<h2>My published rota</h2><p class="subtle">Shifts are published by the office. Contact your manager if something is incorrect.</p>
+<div id="rota-list" class="items"></div><p class="hint">Working codes: EW, RA, C1 and C2. Office and OFF are not counted as driving working days.</p>
+</section>
+</section>
+<p id="status" class="notice" role="status" aria-live="polite"></p>
+<footer>© BESA Logistics • Driver access • Please contact the office for account assistance.</footer>
+</main></body></html>
