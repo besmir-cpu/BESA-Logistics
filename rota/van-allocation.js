@@ -31,10 +31,6 @@ export function setupVanAllocation() {
       part==='long'?{day:'numeric',month:'short',year:'numeric'}:{day:'2-digit',month:'2-digit',year:'numeric'};
     return new Intl.DateTimeFormat('en-GB',{timeZone:'UTC',...opts}).format(dateUTC(day));
   }
-  function weekNum(date){
-    const d=dateUTC(date),jan1=new Date(Date.UTC(d.getUTCFullYear(),0,1));
-    return 1+Math.floor((d.getTime()-jan1.getUTCDay()*SEC-jan1.getTime()+2*jan1.getUTCDay()*SEC)/(7*SEC));
-  }
   function numberWeek(day){
     const d=dateUTC(day),jan1=new Date(Date.UTC(d.getUTCFullYear(),0,1));
     const start=jan1.getTime()-jan1.getUTCDay()*SEC;
@@ -343,5 +339,11 @@ export function setupVanAllocation() {
     sample();
   }
   setup();
-  return { importFromWorkbook, updateDriverSuggestions };
+  return { importFromWorkbook, updateDriverSuggestions, reset:()=>{
+    state.generatedDates.clear();
+    sample();
+    $('van-preview-notice').classList.remove('imported');
+    $('van-preview-notice').textContent='Van Allocation preview — fictional vehicles and assignments only. Import the same ROTA Excel workbook to display your real Van Allocation worksheet.';
+    show('Van Allocation reset to sample data.');
+  } };
 }
