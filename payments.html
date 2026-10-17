@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102f29"><title>BESA Logistics | Payments Work Summary</title>
+<link rel="stylesheet" href="driver/portal.css"><link rel="stylesheet" href="rota/rota-v2.css">
+<link rel="stylesheet" href="payments/payments.css">
+<script defer src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script type="module" src="payments/summary.js"></script>
+</head><body>
+<header class="top"><div class="brand"><span class="monogram">B</span><span><strong>BESA LOGISTICS</strong><small>OPERATIONS CONTROL</small></span></div>
+<a href="index.html" class="top-link">← Dashboard</a></header>
+<main class="payment-shell">
+<div class="payment-heading"><div><p class="eyebrow">BESA OPERATIONS · FINANCE</p>
+<h1>Work summary</h1><p>Review driver hours and activity before preparing weekly payments.</p></div>
+<div class="payment-heading-side"><span class="payment-status-pill">REVIEW ONLY</span><a class="payment-minilink" href="rota.html">Open Rota →</a></div></div>
+<nav class="operation-tabs" aria-label="Operations sections">
+<a href="rota.html">Rota</a><a href="rota.html#vans">Van Allocation</a><a href="payments.html" aria-current="page">Payments</a></nav>
+<div class="finance-note"><strong>Safe workspace:</strong> Import a Work Summary Tool export to calculate a driver-hours summary in this browser. No money is sent, no invoices are issued and nothing is written to BESA's database or Google Sheets. <strong>Keep an exported copy of your work.</strong></div>
+<section class="payment-upload-card"><div class="payment-drop" id="payment-drop" role="group" aria-label="Work Summary Tool file import">
+<div class="payment-upload-icon" aria-hidden="true">↥</div><h2>Drop your Work Summary Tool file here</h2>
+<p>Excel (.xlsx) or CSV · up to 15 MB · processed on your device</p>
+<label for="payment-file" class="payment-pick">Choose file <input type="file" id="payment-file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></label></div>
+<div id="payment-file-meta" class="payment-file-meta" hidden></div>
+</section>
+<section id="mapping-panel" class="payment-mapping" hidden>
+<div class="payment-section-title"><div><p class="eyebrow">STEP 2</p><h2>Match the columns in your file</h2></div><span id="mapping-info" class="subtle"></span></div>
+<div class="payment-fields">
+<label>Worksheet <select id="payment-sheet"></select></label>
+<label>Header row <input id="payment-header-row" type="number" min="1" max="50" value="1"></label>
+<label>Driver name <select id="payment-driver-column"></select></label>
+<label>Date (optional) <select id="payment-date-column"></select></label>
+<label>Hours / duration <select id="payment-hours-column"></select></label>
+<label>Shift start (optional) <select id="payment-start-column"></select></label>
+<label>Shift finish (optional) <select id="payment-end-column"></select></label>
+<label>Hours format <select id="payment-hours-format"><option value="decimal">Decimal hours (8.5 = 8h 30m)</option><option value="duration">Duration HH:MM or Excel time fraction</option></select></label>
+</div>
+<p class="payment-hint">Select either a total-hours column, or both start and finish columns. Check the preview before accepting figures: export formats vary.</p>
+<button id="payment-build" class="payment-build">Calculate work summary</button>
+</section>
+<section id="payment-results" hidden>
+<div class="payment-section-title"><div><p class="eyebrow">WEEKLY OPERATIONS</p><h2>Imported hours summary</h2></div><div class="payment-actions"><button id="payment-export" class="secondary">Export CSV</button><button id="payment-clear" class="secondary">Clear file</button></div></div>
+<div class="payment-kpis"><article><span>Drivers</span><strong id="payment-drivers-count">0</strong></article>
+<article><span>Total hours</span><strong id="payment-hours-total">0</strong></article>
+<article><span>Included shifts</span><strong id="payment-shifts-total">0</strong></article>
+<article><span>Rows to review</span><strong id="payment-errors-total">0</strong></article></div>
+<div class="payment-breakdown">
+<div class="payment-summary-head"><label>Find driver <input id="payment-search" type="search" placeholder="Search driver…"></label>
+<label>Week <select id="payment-week-filter"><option value="">All weeks</option></select></label></div>
+<div class="payment-table-wrap"><table class="payment-table"><thead><tr><th>Driver</th><th>Week (Sunday)</th><th>Hours</th><th>Shifts</th><th>Worked dates</th></tr></thead><tbody id="payment-table-body"></tbody></table></div></div>
+<details class="payment-checks"><summary id="payment-review-summary">Review skipped or questionable rows</summary><div id="payment-review-rows"></div></details>
+<p class="payment-hint">This is a work-hours summary, not a payroll calculation or SAM invoice. It cannot establish payable routes, rates, deductions or VAT without approved input rules.</p>
+</section>
+<p id="payment-message" class="payment-message" aria-live="polite" role="status"></p>
+<footer class="payment-footer">BESA Logistics · Internal planning interface · Files are not uploaded to BESA servers.</footer>
+</main></body></html>
