@@ -33,6 +33,29 @@ create table if not exists public.besa_rota_targets (
 comment on table public.besa_rota_targets is
   'Daily C1 and C2 targets. Total target is target_c1 + target_c2, as in the source Google rota.';
 
+
+-- Server-controlled audit fields so clients cannot falsify timestamps
+-- or the identity of the last person editing a shift/target.
+create or replace function public.besa_rota_set_audit()
+returns trigger language plpgsql
+set search_path = ''
+as $
+begin
+  if TG_OP = 'UPDATE' and TG_TABLE_NAME = 'besa_rota_shifts' then
+    new.created_at = old.created_at;
+  end if;
+  new.updated_at := clock_timestamp();
+  new.updated_by := auth.uid();
+  return new;
+end;
+$;
+drop trigger if exists besa_rota_shift_audit on public.besa_rota_shifts;
+create trigger besa_rota_shift_audit before insert or update on public.besa_rota_shifts
+  for each row execute function public.besa_rota_set_audit();
+drop trigger if exists besa_rota_target_audit on public.besa_rota_targets;
+create trigger besa_rota_target_audit before insert or update on public.besa_rota_targets
+  for each row execute function public.besa_rota_set_audit();
+
 alter table public.besa_rota_shifts enable row level security;
 alter table public.besa_rota_targets enable row level security;
 
