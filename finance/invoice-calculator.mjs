@@ -77,3 +77,70 @@ export function calculateDraftInvoice({
     requiresAccountantApprovedInvoiceTemplate: true
   };
 }
+
+
+/**
+ * Create a SAM-style preview from the NET route rate used by BESA's sheet.
+ *
+ * Example for medium van: spreadsheet route rate £137.70; SAM shows £142.70
+ * income and separately deducts £5.00 van rental PER route. These two lines
+ * cancel, while preserving the visible breakdown expected by the office.
+ *
+ * The £15 weekly admin charge is represented separately and charged ONCE
+ * per invoice (not per route). Defaults are draft business assumptions until
+ * the office/accountant verifies exemptions, negative payments, and VAT.
+ */
+export function calculateSamStyleDraft({
+  routeCount,
+  sheetRouteRate,
+  vanRentalPerRoute = '5.00',
+  weeklyAdminFee = '15.00',
+  routeDescription = 'Standard Route Parcel Medium Van',
+  rentalDescription = 'Van Rental - Standard Route Parcel Medium Van',
+  otherIncome = [],
+  otherDeductions = [],
+  vatStatus = 'not_registered'
+} = {}) {
+  if (!Number.isSafeInteger(routeCount) || routeCount < 0) {
+    throw new TypeError('Route count must be a non-negative whole number.');
+  }
+  // If there are no routes, whether a fixed weekly fee is due must be
+  // explicitly reviewed rather than producing an automatically negative bill.
+  if (routeCount === 0) {
+    throw new Error('Zero-route weeks require a manual decision on weekly fees.');
+  }
+  if (typeof routeDescription !== 'string' || !routeDescription.trim() ||
+      typeof rentalDescription !== 'string' || !rentalDescription.trim()) {
+    throw new TypeError('Route and van-rental descriptions are required.');
+  }
+  const baseRatePence = poundsToPence(sheetRouteRate);
+  const rentalRatePence = poundsToPence(vanRentalPerRoute);
+  const adminFeePence = poundsToPence(weeklyAdminFee);
+  const displayedRatePence = baseRatePence + rentalRatePence;
+  if (!Number.isSafeInteger(displayedRatePence)) throw new RangeError('Displayed route rate is too large.');
+  const gbp = pennies => (pennies / 100).toFixed(2);
+
+  const invoice = calculateDraftInvoice({
+    income: [
+      { description: routeDescription, quantity: routeCount, rate: gbp(displayedRatePence) },
+      ...otherIncome
+    ],
+    deductions: [
+      ...(rentalRatePence > 0 ? [{ description: rentalDescription, quantity: routeCount, rate: gbp(rentalRatePence) }] : []),
+      ...otherDeductions
+    ],
+    adminFees: adminFeePence > 0
+      ? [{ description: 'Admin Fees RA', quantity: 1, rate: gbp(adminFeePence) }]
+      : [],
+    vatStatus
+  });
+  // A negative net must never be approved automatically.
+  return {
+    ...invoice,
+    sheetRouteRatePence: baseRatePence,
+    samDisplayedRouteRatePence: displayedRatePence,
+    rentalPerRoutePence: rentalRatePence,
+    weeklyAdminFeePence: adminFeePence,
+    requiresManualReview: invoice.netPence < 0
+  };
+}
