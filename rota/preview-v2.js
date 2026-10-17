@@ -529,7 +529,7 @@ function start(){
     clearData();state.start=sundayOfWeek(todayUK());
     $('preview-notice').classList.remove('imported');
     $('preview-notice').textContent='PREVIEW — fictional data only. Import your ROTA Excel or CSV file to load real names and daily targets. No information is uploaded or stored.';
-    $('search-driver').value='';initSample();vans.updateDriverSuggestions(state.drivers);render();message('Preview reset. Your original Google Sheet was not changed.');
+    $('search-driver').value='';initSample();vans.reset();vans.updateDriverSuggestions(state.drivers);render();message('Preview reset. Your original Google Sheet was not changed.');
   });
   message('Four-week preview ready. Click any cell to edit or import your ROTA workbook.');
 }
