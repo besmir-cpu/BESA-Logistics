@@ -1,4 +1,6 @@
 import { WORK_CODES, CYCLE_1_CODES, CYCLE_2_CODES, weekDates, sundayOfWeek, offsetWeeks, summarizeDay } from './rules.mjs';
+import { setupVanAllocation } from './van-allocation.js';
+const vans = setupVanAllocation();
 
 const $ = id => document.getElementById(id);
 const MS_DAY = 86400000;
@@ -11,6 +13,15 @@ const TABLE_ROWS = [
 ];
 const SAMPLE_NAMES = Array.from({length:24},(_,i)=>'Sample Driver '+String(i+1).padStart(2,'0'));
 const state = { start:null,drivers:[],shifts:new Map(),daily:new Map(),calendar:new Set(),imported:false,edit:null,nextId:0 };
+function alphabetiseDrivers(){
+  state.drivers.sort((a,b)=>a.name.localeCompare(b.name,'en-GB',{sensitivity:'base',numeric:true}));
+}
+function licenceType(value){
+  const v=String(value??'').trim().toLowerCase();
+  if(['auto','automatic','a','auto dl'].includes(v))return 'Auto';
+  if(['manual','m','man'].includes(v))return 'Manual';
+  return 'Unknown';
+}
 const key=(id,date)=>id+'|'+date;
 function dom(tag,text,cls){
   const e=document.createElement(tag);
@@ -48,7 +59,7 @@ function weeksInView(){
 }
 function flatDates(){return weeksInView().flat();}
 function initSample(){
-  state.drivers=SAMPLE_NAMES.map(name=>({id:'sample-'+(++state.nextId),name}));
+  state.drivers=SAMPLE_NAMES.map((name,i)=>({id:'sample-'+(++state.nextId),name,licence:i%4===0?'Auto':'Manual'}));
   const days=flatDates();
   days.forEach((date,index)=>{
     state.calendar.add(date);
@@ -113,8 +124,9 @@ function makeBody(){
   const weeks=weeksInView();
   const cache=new Map(flatDates().map(day=>[day,dailyStats(day)]));
   const visible=state.drivers.filter(d=>d.name.toLocaleLowerCase('en-GB').includes($('search-driver').value.trim().toLocaleLowerCase('en-GB')));
-  for(const [field,title] of TABLE_ROWS){
-    const row=dom('tr',null,'metric-row'+(['c1target','c2target','vans'].includes(field)?' target-row':''));
+  for(const [index,[field,title]] of TABLE_ROWS.entries()){
+    const row=dom('tr',null,'metric-row'+(['c1target','c2target','vans'].includes(field)?' target-row':'')+(index===TABLE_ROWS.length-1?' summary-last':''));
+    row.style.setProperty('--metric-top',(93+index*24)+'px');
     row.append(dom('td',title,'name-col'));
     for(const week of weeks){
       for(const day of week){
@@ -142,7 +154,9 @@ function makeBody(){
     nameBtn.type='button';nameBtn.dataset.rename=driver.id;
     nameBtn.title='Rename this driver in the preview';
     nameBtn.style.cssText='text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;color:#244e38';
-    nameCell.append(nameBtn);row.append(nameCell);
+    const licence=dom('span',driver.licence==='Auto'?'AUTO':driver.licence==='Manual'?'MAN':'—','licence-tag '+(driver.licence==='Manual'?'manual':driver.licence==='Auto'?'':'unknown'));
+    licence.title='Driving licence: '+(driver.licence||'Unknown');
+    nameCell.append(nameBtn,licence);row.append(nameCell);
     for(const week of weeks){
       for(const date of week){
         const td=dom('td'),code=state.shifts.get(key(driver.id,date))||'';
@@ -157,9 +171,25 @@ function makeBody(){
     }
     body.append(row);
   }
+  configureFrozenColumns();
   if(!visible.length){
     const row=dom('tr');const cell=dom('td','No drivers match. Add a driver or clear the search.','name-col');
     cell.colSpan=33;row.append(cell);body.append(row);
+  }
+}
+function configureFrozenColumns(){
+  // Original Excel columns B through R: name + first two weeks.
+  for(const tr of document.querySelectorAll('.xlsx-rota tr.row-day, .xlsx-rota tr.row-date, .xlsx-rota tbody tr')){
+    let left=210;
+    [...tr.children].forEach((cell,index)=>{
+      if(index===0)return;
+      if(index<=16){
+        cell.classList.add('frozen-col');
+        cell.style.setProperty('--frozen-left',left+'px');
+        if(index===16)cell.classList.add('frozen-last');
+      }
+      left+=(index%8===0)?83:72;
+    });
   }
 }
 function render(){
@@ -229,6 +259,8 @@ function editDriver(id=null){
   const d=state.drivers.find(x=>x.id===id);
   $('driver-modal').querySelector('h2').textContent=d?'Rename driver':'Add driver';
   $('new-driver-name').value=d?.name||'';
+  $('driver-licence-auto').checked=d?.licence==='Auto';
+  $('driver-licence-manual').checked=d?.licence==='Manual';
   $('driver-modal').showModal();
 }
 function applyDriver(){
@@ -237,9 +269,15 @@ function applyDriver(){
   const ed=state.edit;
   const exists=state.drivers.some(d=>d.name.toLocaleLowerCase('en-GB')===name.toLocaleLowerCase('en-GB')&&d.id!==ed.id);
   if(exists){message('That driver name is already present in this rota.',true);return;}
+  const licence=document.querySelector('input[name="licenceType"]:checked')?.value;
+  if(!['Auto','Manual'].includes(licence)){
+    message('Choose Automatic or Manual licence.',true);return;
+  }
   if(ed.id){
-    state.drivers.find(d=>d.id===ed.id).name=name;
-  }else state.drivers.push({id:'local-'+(++state.nextId),name});
+    const driver=state.drivers.find(d=>d.id===ed.id);
+    driver.name=name;driver.licence=licence;
+  }else state.drivers.push({id:'local-'+(++state.nextId),name,licence});
+  alphabetiseDrivers();
   $('driver-modal').close();state.edit=null;render();
   message('Driver '+name+' '+(ed.id?'renamed':'added')+' in the local preview. Save draft CSV to keep.');
 }
@@ -339,7 +377,8 @@ async function importRota(file){
     const normalized=name.toLowerCase();
     if(names.has(normalized))continue;
     names.add(normalized);
-    drivers.push({id:'import-'+row,name,row});
+    const licence=licenceType(unwrapped(get(row,1)));
+    drivers.push({id:'import-'+row,name,row,licence});
   }
   if(!drivers.length)throw new Error('No driver names found in column B, from row 21.');
   if(drivers.length>400)throw new Error('More than 400 driver rows. Please check that this is the ROTA tab.');
@@ -363,7 +402,8 @@ async function importRota(file){
   }
   // Do not change the existing preview until the input is validated in full.
   clearData();
-  state.drivers=drivers.map(({id,name})=>({id,name}));
+  state.drivers=drivers.map(({id,name,licence})=>({id,name,licence}));
+  alphabetiseDrivers();
   state.shifts=shifts;state.daily=targets;state.calendar=calendar;state.imported=true;
   state.nextId=500;
   const dates=columns.map(x=>x.date).sort(),current=sundayOfWeek(todayUK());
