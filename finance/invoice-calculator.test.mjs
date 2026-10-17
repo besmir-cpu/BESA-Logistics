@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateDraftInvoice, poundsToPence } from './invoice-calculator.mjs';
+import { calculateDraftInvoice, calculateSamStyleDraft, poundsToPence } from './invoice-calculator.mjs';
 
 test('money parser is exact to pennies', () => {
   assert.equal(poundsToPence('3.05'), 305);
@@ -51,4 +51,54 @@ test('empty, non-VAT supplier draft remains zero and cannot be issued', () => {
   assert.equal(result.netPence, 0);
   assert.equal(result.vatPence, 0);
   assert.equal(result.requiresAccountantApprovedInvoiceTemplate, true);
+});
+
+
+test('SAM-style rental is shown separately and £15 admin is charged once per invoiced driver week', () => {
+  // Example from the supplied Week 40 SAM invoice; no personal data included.
+  const r = calculateSamStyleDraft({
+    routeCount: 3,
+    sheetRouteRate: '137.70',
+    otherDeductions: [{ description: 'Other deduction', quantity: 1, rate: '20.00' }]
+  });
+  assert.equal(r.sheetRouteRatePence, 13770);
+  assert.equal(r.samDisplayedRouteRatePence, 14270);
+  assert.equal(r.income.totalPence, 42810);
+  assert.equal(r.deductions.lines[0].totalPence, 1500);
+  assert.equal(r.deductions.totalPence, 3500);
+  assert.equal(r.adminFees.lines.length, 1);
+  assert.equal(r.adminFees.lines[0].totalPence, 1500);
+  assert.equal(r.netPence, 37810);
+  assert.equal(r.netPence + r.weeklyAdminFeePence, 39310);
+  assert.equal(r.vatPence, 0);
+  assert.equal(r.status, 'DRAFT_ONLY');
+});
+
+test('rental gross-up and rental deductions cancel for any positive number of routes', () => {
+  const r = calculateSamStyleDraft({
+    routeCount: 4, sheetRouteRate: '150.00', vanRentalPerRoute: '7.50',
+    weeklyAdminFee: '15.00'
+  });
+  assert.equal(r.income.totalPence, 63000);
+  assert.equal(r.deductions.totalPence, 3000);
+  assert.equal(r.netPence, 58500);
+  assert.equal(r.adminFees.totalPence, 1500);
+});
+
+test('weekly admin is not repeated per route; no rental can be configured explicitly', () => {
+  const r = calculateSamStyleDraft({
+    routeCount: 7, sheetRouteRate: '100.00',
+    vanRentalPerRoute: '0.00', weeklyAdminFee: '15.00'
+  });
+  assert.equal(r.income.totalPence, 70000);
+  assert.equal(r.deductions.totalPence, 0);
+  assert.equal(r.adminFees.totalPence, 1500);
+  assert.equal(r.netPence, 68500);
+});
+
+test('zero-route, bad routes and VAT-registered supplier are blocked for manual review', () => {
+  assert.throws(() => calculateSamStyleDraft({routeCount: 0, sheetRouteRate: '137.70'}), /manual decision/);
+  assert.throws(() => calculateSamStyleDraft({routeCount: 1.5, sheetRouteRate: '137.70'}), /whole number/);
+  assert.throws(() => calculateSamStyleDraft({routeCount: 1, sheetRouteRate: '137.70', vanRentalPerRoute: '-5'}), /non-negative/);
+  assert.throws(() => calculateSamStyleDraft({routeCount: 1, sheetRouteRate: '137.70', vatStatus:'registered'}), /accountant-approved/);
 });
