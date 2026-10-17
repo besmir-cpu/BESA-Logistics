@@ -32,7 +32,7 @@ function addDays(day,count){
   const d=utc(day);d.setUTCDate(d.getUTCDate()+count);return iso(d);
 }
 function labelDate(day,format='day'){
-  const config=format==='short'?{day:'2-digit',month:'2-digit'}:format==='long'?{day:'numeric',month:'short',year:'numeric'}:{weekday:'short'};
+  const config=format==='short'?{day:'2-digit',month:'2-digit'}:format==='long'?{day:'numeric',month:'short',year:'numeric'}:format==='weekdaylong'?{weekday:'long'}:{weekday:'short'};
   return new Intl.DateTimeFormat('en-GB',{timeZone:'UTC',...config}).format(utc(day));
 }
 // Google Sheets WEEKNUM(date, 1): weeks start Sunday; the one containing Jan 1 is week 1.
@@ -400,7 +400,7 @@ function exportCsv(){
         place(r,col,rowField(keyname,date));
       }
       place(18,col,googleWeekNumber(date));
-      place(19,col,labelDate(date,{weekday:'long'})); // overridden below to full weekday
+      place(19,col,labelDate(date,'weekdaylong'));
       place(20,col,date.split('-').reverse().join('/'));
       for(let k=0;k<state.drivers.length;k++){
         const driver=state.drivers[k];
