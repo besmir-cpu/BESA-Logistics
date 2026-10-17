@@ -130,3 +130,43 @@ a{color:inherit}
 .van-sheet-table tr > :nth-child(5){min-width:135px;width:135px;max-width:135px}
 .van-sheet-table tr > :nth-child(6){min-width:180px;width:180px;max-width:180px}
 @media(max-width:980px){.freeze-r .xlsx-rota .frozen-col:not(.name-col){position:static!important}.freeze-r .xlsx-rota th:not(.name-col),.freeze-r .xlsx-rota td:not(.name-col){min-width:64px;width:64px;max-width:64px}}
+
+/* Refined operations workspace: full-height planning surface and compact frozen summary. */
+body{background:#f4f7f5;color:#213f33}
+.besa-rota{padding:18px 25px 12px}
+.rota-top h1{font:800 27px/1.12 Manrope,'DM Sans',sans-serif;letter-spacing:-.9px}
+.rota-intro{margin:10px 0;font-size:12px;padding:10px 15px;border-radius:10px}
+.rota-toolbar{padding:10px 13px;margin:10px 0 8px;gap:8px;border-radius:11px}
+.rota-toolbar button,.rota-toolbar .file-button{min-height:37px;font-size:12px;padding:7px 11px}
+.rota-toolbar input[type=search],.rota-toolbar input[type=date]{min-height:37px;margin-top:2px}
+.rota-help{margin:5px 0 8px;font-size:11px}
+.besa-sheet-tabs{margin-top:8px}
+.xl-scroll{height:calc(100dvh - 279px);min-height:510px;border:1px solid #b1c7b8;box-shadow:0 8px 30px #0c382311}
+.xlsx-rota th,.xlsx-rota td{height:26px}
+.xlsx-rota .row-week th{height:30px;top:0}
+.xlsx-rota .row-day th{height:23px;top:30px}
+.xlsx-rota .row-date th{height:23px;top:53px}
+.xlsx-rota .metric-row td{height:20px;min-height:20px;max-height:20px}
+.xlsx-rota .metric-row td button{font-size:11px;padding:0}
+.xlsx-rota .metric-row.summary-last td{border-bottom:5px solid #15533a!important}
+.xlsx-rota .driver-row td{height:29px}
+.xlsx-rota .driver-row button{height:24px}
+.xlsx-rota .licence-col{position:sticky;left:210px;min-width:69px;width:69px;max-width:69px;z-index:7;background:#f6faf6;box-shadow:2px 0 0 #b9cdbd;text-align:center!important;font-size:11px}
+.xlsx-rota thead .licence-col{z-index:20;background:#dce9de}
+.xlsx-rota tbody tr.metric-row td.licence-col{z-index:19;background:#e5eee8}
+.xlsx-rota tbody tr.driver-row td.licence-col{background:#f2f8f3;z-index:7}
+.xlsx-rota .licence-col .licence-tag{margin:0;padding:4px 5px;font-size:10px}
+.xlsx-rota tbody tr.driver-row .name-col button{font-size:12px}
+.besa-rota .top-link{color:white}
+.van-sheet-table .van-problem td:not(.assignment){background:#fff3d1!important;color:#664600}
+.van-sheet-table .van-problem td.van-fixed:first-child{background:#fce3a5!important;border-left:4px solid #d99310;font-weight:800}
+.van-sheet-table .van-problem-label{color:#89530b;font-weight:850}
+.van-sheet-table .van-flag-select{width:100%;max-width:100%;height:28px;padding:2px 4px;background:#fff;border:1px solid #c1d3c4;border-radius:5px;color:#315a41;font-size:12px;font-weight:750}
+.van-sheet-table .van-problem .van-flag-select{border-color:#d59511;color:#89530b;background:#ffefc7}
+@media(max-width:800px){
+ .besa-rota{padding:10px}
+ .xl-scroll{height:calc(100dvh - 225px);min-height:440px}
+ .xlsx-rota .name-col{min-width:145px;width:145px;max-width:145px}
+ .xlsx-rota .licence-col{left:145px}
+ .rota-top h1{font-size:22px}
+}
