@@ -1,0 +1,26 @@
+name: Rota scheduling tests
+on:
+  pull_request:
+    paths:
+      - 'rota/**'
+      - '.github/workflows/rota-tests.yml'
+  push:
+    branches:
+      - 'development/verion-foundation'
+    paths:
+      - 'rota/**'
+      - '.github/workflows/rota-tests.yml'
+permissions:
+  contents: read
+jobs:
+  calendar-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate scheduling codes and dates
+        run: node --test rota/*.test.mjs
+      - name: Validate office script syntax
+        run: node --input-type=module --check < rota/office.js
