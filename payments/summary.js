@@ -127,7 +127,10 @@ function excelDate(value){
   return '';
 }
 function isoDate(dt){return dt.toISOString().slice(0,10)}
-function validISO(s){return isoDate(new Date(s+'T00:00:00Z'))===s}
+function validISO(s){
+  const date=new Date(s+'T00:00:00Z');
+  return !Number.isNaN(date.getTime())&&isoDate(date)===s;
+}
 function weekOf(date){
   if(!date)return 'Unspecified week';
   const d=new Date(date+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-d.getUTCDay());
