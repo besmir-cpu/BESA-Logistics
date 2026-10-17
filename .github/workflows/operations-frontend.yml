@@ -1,0 +1,47 @@
+name: Operations frontend checks
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'app.js'
+      - 'styles.css'
+      - 'rota.html'
+      - 'rota/**'
+      - 'payments.html'
+      - 'payments/**'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'app.js'
+      - 'styles.css'
+      - 'rota.html'
+      - 'rota/**'
+      - 'payments.html'
+      - 'payments/**'
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check core website syntax
+        run: node --check app.js
+      - name: Check rota scripts
+        run: |
+          node --input-type=module --check < rota/preview-v2.js
+          node --input-type=module --check < rota/van-allocation.js
+          node --input-type=module --check < rota/rules.mjs
+      - name: Check Work Summary import script
+        run: node --input-type=module --check < payments/summary.js
+      - name: Confirm normal website workspaces exist
+        run: |
+          test -f rota.html
+          test -f payments.html
+          grep -q 'href="rota.html"' index.html
+          grep -q 'href="rota.html#vans"' index.html
+          grep -q 'href="payments.html"' index.html
