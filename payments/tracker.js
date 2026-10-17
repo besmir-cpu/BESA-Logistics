@@ -191,12 +191,14 @@ function parseSourceDate(value){
   return dt.getUTCFullYear()===yyyy&&dt.getUTCMonth()+1===month&&dt.getUTCDate()===day?iso(dt):null;
 }
 function classifySection(value){
-  const text=String(value||'').toLowerCase().replace(/\s+/g,' ');
-  if(/ridealong occurred/.test(text))return 'ridealong';
-  if(/deductions?/.test(text))return 'deductions';
-  if(/extra pay/.test(text))return 'extra';
-  if(/no call no show|no[-\s]?show/.test(text))return 'nocall';
-  if(/damages?/.test(text))return 'damages';
+  // Match only a section-heading cell. "No show" and "van damages" may
+  // be ordinary driver notes and must never be mistaken for new sections.
+  const text=String(value||'').toLowerCase().trim().replace(/\s+/g,' ');
+  if(/^ridealongs? occurred$/.test(text))return 'ridealong';
+  if(/^deductions?$/.test(text))return 'deductions';
+  if(/^extra pay$/.test(text))return 'extra';
+  if(/^no call no show$/.test(text))return 'nocall';
+  if(/^damages?$/.test(text))return 'damages';
   return null;
 }
 function classifyMetric(value){
