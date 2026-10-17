@@ -279,6 +279,7 @@ function applyDriver(){
     driver.name=name;driver.licence=licence;
   }else state.drivers.push({id:'local-'+(++state.nextId),name,licence});
   alphabetiseDrivers();
+  vans.updateDriverSuggestions(state.drivers);
   $('driver-modal').close();state.edit=null;render();
   message('Driver '+name+' '+(ed.id?'renamed':'added')+' in the local preview. Save draft CSV to keep.');
 }
@@ -479,6 +480,7 @@ function exportCsv(){
 function start(){
   state.start=sundayOfWeek(todayUK());
   initSample();render();
+  vans.updateDriverSuggestions(state.drivers);
   $('next-4').addEventListener('click',()=>setWeek(offsetWeeks(state.start,4)));
   $('prev-4').addEventListener('click',()=>setWeek(offsetWeeks(state.start,-4)));
   $('add-4').addEventListener('click',()=>{
@@ -527,7 +529,7 @@ function start(){
     clearData();state.start=sundayOfWeek(todayUK());
     $('preview-notice').classList.remove('imported');
     $('preview-notice').textContent='PREVIEW — fictional data only. Import your ROTA Excel or CSV file to load real names and daily targets. No information is uploaded or stored.';
-    $('search-driver').value='';initSample();render();message('Preview reset. Your original Google Sheet was not changed.');
+    $('search-driver').value='';initSample();vans.updateDriverSuggestions(state.drivers);render();message('Preview reset. Your original Google Sheet was not changed.');
   });
   message('Four-week preview ready. Click any cell to edit or import your ROTA workbook.');
 }
