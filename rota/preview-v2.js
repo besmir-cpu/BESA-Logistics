@@ -99,15 +99,18 @@ function makeHead(){
   const thead=$('sheet-head');thead.replaceChildren();
   const weeks=weeksInView();
   const weekRow=dom('tr',null,'row-week');
-  weekRow.append(dom('th','WEEK NO / DRIVER','name-col'));
+  weekRow.append(dom('th','DRIVER','name-col'));
+  weekRow.append(dom('th','LICENCE','licence-col'));
   for(const week of weeks){
     const th=dom('th','WEEK '+googleWeekNumber(week[0])+' · '+week[0].slice(0,4));
     th.colSpan=8;th.scope='colgroup';th.classList.add('week-end');weekRow.append(th);
   }
   const dayRow=dom('tr',null,'row-day');
   dayRow.append(dom('th','DAY','name-col'));
+  dayRow.append(dom('th','TYPE','licence-col'));
   const dateRow=dom('tr',null,'row-date');
   dateRow.append(dom('th','DATE','name-col'));
+  dateRow.append(dom('th','AUTO / MAN','licence-col'));
   for(const week of weeks){
     for(const day of week){
       const dayTh=dom('th',labelDate(day));dayTh.scope='col';dayRow.append(dayTh);
@@ -126,8 +129,9 @@ function makeBody(){
   const visible=state.drivers.filter(d=>d.name.toLocaleLowerCase('en-GB').includes($('search-driver').value.trim().toLocaleLowerCase('en-GB')));
   for(const [index,[field,title]] of TABLE_ROWS.entries()){
     const row=dom('tr',null,'metric-row'+(['c1target','c2target','vans'].includes(field)?' target-row':'')+(index===TABLE_ROWS.length-1?' summary-last':''));
-    row.style.setProperty('--metric-top',(93+index*24)+'px');
+    row.style.setProperty('--metric-top',(76+index*20)+'px');
     row.append(dom('td',title,'name-col'));
+    row.append(dom('td','', 'licence-col'));
     for(const week of weeks){
       for(const day of week){
         const value=cache.get(day)[field];
@@ -156,7 +160,10 @@ function makeBody(){
     nameBtn.style.cssText='text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;color:#244e38';
     const licence=dom('span',driver.licence==='Auto'?'AUTO':driver.licence==='Manual'?'MAN':'—','licence-tag '+(driver.licence==='Manual'?'manual':driver.licence==='Auto'?'':'unknown'));
     licence.title='Driving licence: '+(driver.licence||'Unknown');
-    nameCell.append(nameBtn,licence);row.append(nameCell);
+    nameCell.append(nameBtn);row.append(nameCell);
+    const licenceCell=dom('td',null,'licence-col');
+    licenceCell.append(licence);
+    row.append(licenceCell);
     for(const week of weeks){
       for(const date of week){
         const td=dom('td'),code=state.shifts.get(key(driver.id,date))||'';
@@ -171,26 +178,9 @@ function makeBody(){
     }
     body.append(row);
   }
-  configureFrozenColumns();
   if(!visible.length){
     const row=dom('tr');const cell=dom('td','No drivers match. Add a driver or clear the search.','name-col');
-    cell.colSpan=33;row.append(cell);body.append(row);
-  }
-}
-function configureFrozenColumns(){
-  // Original Excel columns B through R: name + first two weeks.
-  for(const tr of document.querySelectorAll('.xlsx-rota tr.row-day, .xlsx-rota tr.row-date, .xlsx-rota tbody tr')){
-    let left=210;
-    const compact=$('freeze-r').checked;
-    [...tr.children].forEach((cell,index)=>{
-      if(index===0)return;
-      if(index<=16){
-        cell.classList.add('frozen-col');
-        cell.style.setProperty('--frozen-left',left+'px');
-        if(index===16)cell.classList.add('frozen-last');
-      }
-      left+=(index%8===0)?(compact?62:83):(compact?52:72);
-    });
+    cell.colSpan=34;row.append(cell);body.append(row);
   }
 }
 function render(){
@@ -491,14 +481,6 @@ function start(){
   });
   $('jump-date').addEventListener('change',e=>{if(e.target.value)setWeek(e.target.value);});
   $('search-driver').addEventListener('input',makeBody);
-  const frozen=$('freeze-r');
-  frozen.checked=window.innerWidth>=1220;
-  const setFrozen=()=>{
-    $('xl-scroller').classList.toggle('freeze-r',frozen.checked);
-    makeBody();
-  };
-  frozen.addEventListener('change',setFrozen);
-  setFrozen();
   $('sheet-body').addEventListener('click',e=>{
     const btn=e.target.closest('button');
     if(!btn)return;
