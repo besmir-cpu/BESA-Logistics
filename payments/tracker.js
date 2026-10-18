@@ -349,7 +349,7 @@ function draftSnapshot(){
 function draftRestore(data){
   if(data?.schema!==1||data.week!==state.start||
      !Array.isArray(data.entries)||data.entries.length>450||
-     data.entries.some(([pos,value])=>!/^(?:[3-6]|1[2-8]|2[1-9]|3[2-9]|40|4[3-5]|4[8-9]|5[0-9])\\|(?:[4-9]|10)$/.test(pos)||
+     data.entries.some(([pos,value])=>!/^(?:[3-6]|1[2-8]|2[1-9]|3[2-9]|40|4[3-5]|4[8-9]|5[0-9])\|(?:[4-9]|10)$/.test(pos)||
        typeof value!=='string'||value.length>350))
     throw new Error('The saved tracker does not match this week or its expected worksheet cells.');
   state.weeks.set(state.start,new Map(data.entries));
