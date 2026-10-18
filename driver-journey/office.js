@@ -599,10 +599,12 @@ function extractSource(workbook,kind){
     const get=i=>importValue(val[i]);
     const name=kind==='rec'?get(0):get(2);
     if(!name)continue;
-    const item={name,email:kind==='on'?get(0):'',phone:kind==='rec'?get(1):get(1),flags:{},details:{}};
+    const item={name,email:kind==='on'?get(0):'',phone:get(1),flags:{},details:{},progress:{}};
     if(kind==='rec'){
-      for(const [idx,key] of [[2,'requirements'],[3,'sam1'],[4,'amazon'],[5,'dbs'],[6,'amiigo'],[7,'sam2']])
+      for(const [idx,key] of [[2,'requirements'],[3,'sam1'],[4,'amazon'],[5,'dbs'],[6,'amiigo'],[7,'sam2']]){
         item.flags[key]=sourceYes(get(idx));
+        item.progress[key]=get(idx).slice(0,60);
+      }
       item.details.recruitmentNotes=get(8);item.details.recruitmentStatus=get(9);
     }else{
       for(const [idx,key] of [[7,'ctdone'],[8,'samOn'],[9,'dvla'],[12,'radone'],[13,'active'],[17,'hs']])
@@ -633,9 +635,10 @@ async function importTracker(file,kind){
     if(m.index<0){unmatched++;if(m.reason!=='new')ambiguous++;continue;}
     matched++;
     const id=refs[m.index].id;
-    const staging=state.pending.get(id)||{checklist:{},details:{},sources:[]};
+    const staging=state.pending.get(id)||{checklist:{},details:{},progress:{},sources:[]};
     for(const [k,v] of Object.entries(row.flags))staging.checklist[k]=v;
     for(const [k,v] of Object.entries(row.details))if(v)staging.details[k]=v;
+    for(const [k,v] of Object.entries(row.progress||{}))if(v)staging.progress[k]=v;
     staging.sources.push(SHEETS[kind].name);
     state.pending.set(id,staging);
   }
@@ -675,8 +678,13 @@ function applyImported(id){
   const record=stored(id);
   Object.assign(record.checklist,pending.checklist);
   Object.assign(record.details,pending.details);
+  record.details.recruitmentProgress??={};
+  for(const [key,value] of Object.entries(pending.progress||{})){
+    // Preserve existing historical dropdown labels even when customised.
+    record.details.recruitmentProgress[key]=value;
+  }
   state.pending.delete(id);
-  checklist();queueWrite();
+  checklist();renderTracker();queueWrite(id);
 }
 function setup(){
   window.addEventListener('besa:driver-session-reset',clearSensitive);
