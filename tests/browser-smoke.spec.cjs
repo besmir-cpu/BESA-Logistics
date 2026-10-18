@@ -42,3 +42,21 @@ test('Navigation prefetch does not remove office sidebar on mobile',async({page}
   await expect(page.locator('.besa-standalone-sidebar nav')).toBeVisible();
   await expect(page.locator('#payment-grid')).toBeVisible();
 });
+
+test('Synthetic 400-driver rota renders without a major desktop freeze',async({page})=>{
+  await page.goto(url+'/rota.html',{waitUntil:'domcontentloaded'});
+  await expect(page.locator('#sheet-body tr').first()).toBeVisible({timeout:20000});
+  const milliseconds=await page.evaluate(()=>{
+    const drivers=Array.from({length:400},(_,i)=>({
+      id:'test-'+(i+1),name:'Synthetic Driver '+String(i+1).padStart(3,'0'),licence:i%2?'Auto':'Manual'
+    }));
+    const synthetic={schema:1,start:'2026-10-11',drivers,shifts:[],daily:[],calendar:[],nextId:400};
+    const started=performance.now();
+    window.besaDraftAPI.restore(synthetic);
+    return performance.now()-started;
+  });
+  console.log('SYNTHETIC_400_DRIVER_ROTA_RENDER_MS='+Math.round(milliseconds));
+  await expect(page.locator('#sheet-body tr.driver-row')).toHaveCount(400);
+  // CI desktop threshold, not an Android guarantee. Log before tightening.
+  expect(milliseconds).toBeLessThan(3000);
+});
