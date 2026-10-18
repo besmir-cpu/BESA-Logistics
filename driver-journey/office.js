@@ -92,6 +92,137 @@ function updateCounters(){
   $('journey-active-count').textContent=String(state.drivers.filter(d=>d.status==='Active').length);
   $('journey-todo-count').textContent='—';
 }
+
+// Excel-style recruitment tracker. Uses existing driver IDs — no second register.
+function filteredTrackerDrivers(){
+  const search=$('driver-search').value.trim().toLocaleLowerCase('en-GB');
+  const status=$('driver-filter').value;
+  return state.drivers.filter(d=>
+    (status?d.status===status:d.status!=='Archived') &&
+    (!search||[labelName(d),d.phone,d.email].join(' ').toLocaleLowerCase('en-GB').includes(search))
+  ).sort((a,b)=>labelName(a).localeCompare(labelName(b),'en-GB',{sensitivity:'base',numeric:true}));
+}
+function makeDropdown(id,key,value,choices,name){
+  const select=document.createElement('select');
+  select.dataset.trackerDriver=String(id);
+  select.dataset.trackerField=key;
+  select.className='journey-pill-select tone-'+pillTone(value,key);
+  select.setAttribute('aria-label',name+' — '+(COLUMNS.find(c=>c.key===key)?.label||'Recruitment status'));
+  for(const optionValue of sourceOptions(choices,value)){
+    const option=document.createElement('option');
+    option.value=optionValue;
+    option.textContent=optionValue||'—';
+    select.append(option);
+  }
+  select.value=value||'';
+  return select;
+}
+function renderTracker(){
+  const body=$('journey-tracker-body');
+  if(!body||!state.drivers.length){
+    body?.replaceChildren();
+    if($('journey-tracker-count'))$('journey-tracker-count').textContent='0 drivers';
+    if($('journey-tracker-empty'))$('journey-tracker-empty').hidden=state.drivers.length!==0;
+    return;
+  }
+  const all=filteredTrackerDrivers(),rows=all.slice(0,750);
+  body.replaceChildren();
+  $('journey-tracker-count').textContent=rows.length===all.length?
+    rows.length+' drivers':('Showing '+rows.length+' of '+all.length+' drivers — narrow your search');
+  $('journey-tracker-empty').hidden=all.length!==0;
+  const frag=document.createDocumentFragment();
+  for(const d of rows){
+    const id=String(d.id),record=stored(id);
+    const tr=document.createElement('tr');
+    tr.dataset.trackerRow=id;
+    const nameCell=textEl('td',null,'journey-name-cell');
+    const nameBtn=textEl('button',labelName(d),'journey-grid-name');
+    nameBtn.type='button';
+    nameBtn.dataset.driverProfile=id;
+    nameBtn.title='Open full driver profile and documents';
+    nameCell.append(nameBtn);
+    const phone=textEl('td',d.phone||'—','journey-phone-cell');
+    phone.title=d.phone||'No phone recorded';
+    tr.append(nameCell,phone);
+    for(const col of COLUMNS){
+      const cell=textEl('td',null,'journey-pill-cell');
+      const value=statusValue(record,col.key);
+      cell.append(makeDropdown(id,col.key,value,col.options,labelName(d)));
+      tr.append(cell);
+    }
+    const notesCell=textEl('td',null,'journey-notes-cell');
+    const notes=document.createElement('textarea');
+    notes.rows=1;
+    notes.maxLength=1000;
+    notes.placeholder='Add notes…';
+    notes.value=record.details?.recruitmentNotes||'';
+    notes.setAttribute('aria-label','Recruitment notes for '+labelName(d));
+    notes.dataset.trackerDriver=id;
+    notes.dataset.trackerField='notes';
+    notesCell.append(notes);
+    tr.append(notesCell);
+    const statusCell=textEl('td',null,'journey-pill-cell journey-final-status');
+    const recStatus=record.details?.recruitmentStatus||'';
+    statusCell.append(makeDropdown(id,'recruitmentStatus',recStatus,TRACKER_STATUSES,labelName(d)));
+    tr.append(statusCell);
+    frag.append(tr);
+  }
+  body.append(frag);
+}
+function trackerFieldChanged(event){
+  const input=event.target.closest('[data-tracker-driver][data-tracker-field]');
+  if(!input)return;
+  const id=String(input.dataset.trackerDriver);
+  if(!driver(id))return;
+  const key=input.dataset.trackerField;
+  const value=String(input.value||'').trim();
+  const record=stored(id);
+  if(key==='notes'){
+    record.details.recruitmentNotes=value.slice(0,1000);
+  }else if(key==='recruitmentStatus'){
+    record.details.recruitmentStatus=value.slice(0,90);
+  }else{
+    try{setTaskValue(record,key,value);}
+    catch(error){msg('Invalid recruitment task value.',true);return;}
+  }
+  if(input.matches('select')){
+    input.className='journey-pill-select tone-'+pillTone(value,key);
+  }
+  if(state.profileId===id){overview();checklist();}
+  queueWrite(id);
+}
+function exportTracker(){
+  if(!state.drivers.length){msg('No driver records are loaded to export.',true);return;}
+  const rows=[
+    ['Driver','Phone Number',...COLUMNS.map(c=>c.label),'Notes','Status'],
+    ...filteredTrackerDrivers().map(d=>{
+      const r=stored(String(d.id));
+      return [labelName(d),d.phone||'',...COLUMNS.map(c=>statusValue(r,c.key)),
+        r.details?.recruitmentNotes||'',r.details?.recruitmentStatus||''];
+    })
+  ];
+  const csv='\uFEFF'+rows.map(row=>row.map(displayCsvSafe).join(',')).join('\r\n');
+  const link=document.createElement('a');
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  link.href=url;
+  link.download='BESA-DRIVER-RECRUITMENT-TRACKER-DRAFT.csv';
+  link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  msg('Recruitment tracker exported to CSV. This contains driver contact details — keep it private.');
+}
+function switchDriverView(name){
+  const grid=name!=='drivers';
+  state.trackerView=grid?'spreadsheet':'drivers';
+  $('journey-tracker-section').hidden=!grid;
+  $('journey-driver-list').hidden=grid;
+  for(const [id,on] of [['journey-show-tracker',grid],['journey-show-drivers',!grid]]){
+    const button=$(id);
+    button.classList.toggle('active',on);
+    button.setAttribute('aria-pressed',on?'true':'false');
+  }
+  if(grid)renderTracker();
+}
+
 function profileMessage(text,error=false){msg(text,error,'driver-profile-feedback')}
 function tabs(selected='overview'){
   for(const button of document.querySelectorAll('[data-journey-tab]')){
@@ -553,7 +684,9 @@ function setup(){
     state.drivers=event.detail.drivers||[];
     state.vehicles=event.detail.vehicles||[];
     updateCounters();
+    renderTracker();
     if(!state.checked){state.checked=true;void probe();}
+    else if(state.checklistReady)void loadTrackerChecklists(state.rev);
     if(state.profileId&&driver(state.profileId)){overview();checklist();}
   });
   window.addEventListener('besa:driver-created',event=>{
@@ -572,6 +705,13 @@ function setup(){
     window.dispatchEvent(new CustomEvent('besa:edit-driver',{detail:{id}}));
   });
   $('driver-profile-export').addEventListener('click',exportChecklist);
+  $('journey-tracker-body').addEventListener('change',trackerFieldChanged);
+  $('journey-export-tracker').addEventListener('click',exportTracker);
+  $('journey-show-tracker').addEventListener('click',()=>switchDriverView('spreadsheet'));
+  $('journey-show-drivers').addEventListener('click',()=>switchDriverView('drivers'));
+  $('driver-search').addEventListener('input',renderTracker);
+  $('driver-filter').addEventListener('change',renderTracker);
+  switchDriverView('spreadsheet');
   for(const tab of document.querySelectorAll('[data-journey-tab]')){
     tab.addEventListener('click',()=>tabs(tab.dataset.journeyTab));
   }
