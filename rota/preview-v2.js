@@ -482,7 +482,7 @@ function rotaRestore(data){
      !Array.isArray(data.shifts)||data.shifts.length>250000||
      !Array.isArray(data.daily)||data.daily.length>1500||
      !Array.isArray(data.calendar)||data.calendar.length>1500||
-     !/^\\d{4}-\\d{2}-\\d{2}$/.test(data.start||''))
+     !/^\d{4}-\d{2}-\d{2}$/.test(data.start||''))
     throw new Error('This saved rota has an unsupported structure.');
   state.start=data.start;
   state.drivers=data.drivers.map(d=>({
