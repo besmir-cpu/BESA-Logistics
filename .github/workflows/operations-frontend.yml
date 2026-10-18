@@ -11,6 +11,7 @@ on:
       - '.github/workflows/operations-frontend.yml'
       - 'rota.html'
       - 'rota/**'
+      - 'operations/**'
       - 'payments.html'
       - 'payment-tracker.html'
       - 'recruitment.html'
@@ -30,6 +31,7 @@ on:
       - '.github/workflows/operations-frontend.yml'
       - 'rota.html'
       - 'rota/**'
+      - 'operations/**'
       - 'payments.html'
       - 'payment-tracker.html'
       - 'recruitment.html'
@@ -71,6 +73,10 @@ jobs:
           node --input-type=module --check < driver-journey/office.js
           node --test driver-journey/profile.test.mjs
           node --test driver-journey/tracker-rules.test.mjs
+      - name: Check sidebar navigation stays available
+        run: |
+          node --check operations/sidebar.js
+          node --test operations/sidebar.test.mjs
       - name: Confirm normal website workspaces exist
         run: |
           test -f rota.html
