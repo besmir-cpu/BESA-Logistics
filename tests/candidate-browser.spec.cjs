@@ -58,6 +58,6 @@ test('candidate submits personal details and mock passport/licence photos with m
  await page.locator('#declaration').check();
  await page.locator('#candidate-submit').click();
  await expect(page.locator('#candidate-finished')).toBeVisible();
- expect(calls).toEqual(['status','upload','upload','submit']);
+ expect(calls).toEqual(['status','upload','upload','upload','submit']);
  expect(errors).toEqual([]);
 });
