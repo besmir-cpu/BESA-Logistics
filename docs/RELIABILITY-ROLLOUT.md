@@ -87,3 +87,14 @@ For ongoing production monitoring, select a privacy-reviewed error/performance m
 - Leaked-password protection disabled; review authentication mode and settings before changing anything.
 - Performance Advisor flags legacy drivers policies, two foreign-key indexes missing on empty legacy tables, one unused driver index. These are not evidence of current 3-second page navigation latency with such a small database.
 - The read-only audit changed NO live data, policies, permissions or backup settings.
+
+## Approved database deployment — 2026-10-18
+The BESA owner explicitly authorised controlled secure database changes, separate from website release. Supabase migrations were applied to the existing **BESA LOGISTICS** project:
+- `besa_secure_workspace_drafts` — created only new `besa_workspace_drafts` and `besa_workspace_draft_history` tables, administrator-only SELECT RLS policies, and approved write RPC with version checks. Reuses the existing `public.besa_is_admin()` gate; no existing vehicle, driver, payment or invoice records were modified.
+- `besa_restrict_rls_maintenance_function` — revoked public, anonymous and authenticated EXECUTE on the existing SECURITY DEFINER RLS-maintenance function; did not remove its event-trigger use.
+
+Checks completed: no anonymous table read permissions; no direct authenticated INSERT to either new table; only authenticated users can invoke the explicitly admin-gated save RPC; synthetic unauthorised request rejected; synthetic authorised save v1, stale-write conflict and update v2 validated with two audit revisions inside a rolled-back transaction. No test records remain: both new tables contain **zero records**.
+
+Supabase Security Advisor no longer flags anonymous SECURITY DEFINER execution. Remaining auth password-protection, legacy documents/signatures RLS and approved authenticated definer warnings need separate review. Auth gateway behaviour with genuine signed-in staff JWTs, concurrent editors, file imports, backup restoration and mobile performance remain release gates.
+
+**The development frontend remains in a draft PR and is NOT published to the live website.** No automatic saving, Google Sheet replacement, SAM invoice issuance or financial processing was enabled. Production database setup alone does not make the secure save buttons available on the live site.
