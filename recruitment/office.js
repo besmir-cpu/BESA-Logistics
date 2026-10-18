@@ -223,6 +223,7 @@ function mergeRows(incoming,sourceName){
 }
 async function importWorkbook(file,type){
   if(!state.verified)return;
+  const authAttempt=state.authGeneration,originalUser=state.user?.id;
   if(!file||!file.name.toLowerCase().endsWith('.xlsx'))throw new Error('Download the Google Sheet as a Microsoft Excel (.xlsx) file.');
   if(file.size>MAX_MB*1024*1024)throw new Error('The import must be smaller than 20 MB.');
   if(!window.ExcelJS)throw new Error('Excel importer did not load. Refresh the page.');
@@ -231,6 +232,7 @@ async function importWorkbook(file,type){
   const sheetName=type==='recruitment'?'Driver Recruitment Tracker':'Onboarding DA tracker';
   const sourceName=type==='recruitment'?'Recruitment tracker':'Onboarding tracker';
   const rows=readSheet(workbook,sheetName);
+  if(!state.verified||authAttempt!==state.authGeneration||state.user?.id!==originalUser)return;
   if(!rows.length)throw new Error('The '+sheetName+' sheet contains no readable driver rows.');
   const result=mergeRows(rows,sourceName);
   if(type==='recruitment')state.importedRecruitment=true;
@@ -302,6 +304,9 @@ function locked(message){
   state.importedRecruitment=false;state.importedOnboarding=false;
   ++state.generation;++state.authGeneration;
   if($('recruit-editor').open)$('recruit-editor').close();
+  $('recruit-rows').replaceChildren();
+  $('recruit-summary').textContent='Administrator sign-in required.';
+  for(const elem of Object.values(FIELDS))$(elem).value='';
   $('recruit-locked').hidden=false;$('recruit-workspace').hidden=true;
   $('recruit-lock-status').textContent=message;
 }
