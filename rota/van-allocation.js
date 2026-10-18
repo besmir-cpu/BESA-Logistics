@@ -321,12 +321,14 @@ export function setupVanAllocation() {
       $('show-rota-tab').classList.add('active');$('show-vans-tab').classList.remove('active');
       $('show-rota-tab').setAttribute('aria-selected','true');
       $('show-vans-tab').setAttribute('aria-selected','false');
+      if(window.location.hash!=='#rota')window.location.hash='#rota';
     });
     $('show-vans-tab').addEventListener('click',()=>{
       $('vans-tab-panel').hidden=false;$('rota-tab-panel').hidden=true;
       $('show-vans-tab').classList.add('active');$('show-rota-tab').classList.remove('active');
       $('show-vans-tab').setAttribute('aria-selected','true');
       $('show-rota-tab').setAttribute('aria-selected','false');
+      if(window.location.hash!=='#vans')window.location.hash='#vans';
     });
     $('van-prev').addEventListener('click',()=>changeWeek(offsetWeeks(state.start,-4)));
     $('van-next').addEventListener('click',()=>changeWeek(offsetWeeks(state.start,4)));
