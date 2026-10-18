@@ -1,4 +1,5 @@
 import {findMergeIndex,sourceYes,cleanText,normalizedPhone,displayCsvSafe} from '../recruitment/rules.mjs';
+import {COLUMNS,TRACKER_STATUSES,statusValue,setTaskValue,pillTone,sourceOptions} from './tracker-rules.mjs';
 
 // BESA Drivers & Onboarding. The main dashboard remains the source of truth
 // for driver creation/editing. The optional secure checklist/evidence backend
@@ -48,7 +49,8 @@ const DOCS=[
 ];
 const BUCKET='besa-driver-private-evidence';
 const state={drivers:[],vehicles:[],checklists:new Map(),pending:new Map(),files:[],profileId:null,
-  checklistReady:false,evidenceReady:false,checked:false,rev:0,writeQueue:Promise.resolve()};
+  checklistReady:false,evidenceReady:false,checked:false,rev:0,writeQueue:Promise.resolve(),
+  trackerView:'spreadsheet',dirty:new Set()};
 const msg=(text,err=false,id='journey-status')=>{
   const n=$(id);if(!n)return;n.textContent=text;n.classList.toggle('error',Boolean(err));
 };
@@ -109,7 +111,9 @@ function closeProfile(){
 function clearSensitive(){
   state.rev++;
   state.drivers=[];state.vehicles=[];state.profileId=null;
-  state.checklists.clear();state.pending.clear();state.files=[];
+  state.checklists.clear();state.pending.clear();state.files=[];state.dirty.clear();
+  $('journey-tracker-body').replaceChildren();
+  $('journey-tracker-count').textContent='0 drivers';
   state.checklistReady=false;state.evidenceReady=false;state.checked=false;
   state.writeQueue=Promise.resolve();
   closeProfile();
@@ -134,7 +138,38 @@ async function probe(){
     if(rev!==state.rev)return;
     state.evidenceReady=!error;
   }catch{state.evidenceReady=false;}
-  if(rev===state.rev)mode();
+  if(rev===state.rev){
+    mode();
+    if(state.checklistReady)await loadTrackerChecklists(rev);
+    renderTracker();
+  }
+}
+async function loadTrackerChecklists(rev=state.rev){
+  if(!state.checklistReady)return;
+  try{
+    // Only rows for the currently authorised drivers. RLS also restricts access.
+    const ids=new Set(state.drivers.map(d=>String(d.id)));
+    if(!ids.size)return;
+    for(let offset=0;offset<Math.min(state.drivers.length,5000);offset+=500){
+      const {data,error}=await window.besaClient.from('besa_driver_journey')
+        .select('driver_id,checklist,details')
+        .range(offset,offset+499).order('driver_id');
+      if(error)throw error;
+      if(rev!==state.rev)return;
+      for(const record of data||[]){
+        const id=String(record.driver_id);
+        if(!ids.has(id)||state.dirty.has(id))continue;
+        state.checklists.set(id,{
+          checklist:record.checklist&&typeof record.checklist==='object'?record.checklist:{},
+          details:record.details&&typeof record.details==='object'?record.details:{}
+        });
+      }
+      if((data||[]).length<500)break;
+    }
+    if(rev===state.rev)renderTracker();
+  }catch(error){
+    if(rev===state.rev)msg('Could not load saved recruitment progress: '+(error.message||'Unavailable')+'. Check the secure database setup.',true);
+  }
 }
 async function loadChecklist(id){
   const rev=state.rev;
@@ -154,11 +189,15 @@ async function loadChecklist(id){
   }
   return stored(id);
 }
-function queueWrite(){
-  if(!state.profileId)return;
-  const id=state.profileId,data=stored(id),rev=state.rev;
+function queueWrite(id=state.profileId){
+  if(!id)return;
+  id=String(id);
+  state.dirty.add(id);
+  const data=stored(id),rev=state.rev;
   if(!state.checklistReady){
-    profileMessage('Draft change only. Secure checklist storage has not been installed; changes disappear when you refresh.');
+    const warning='Local draft only — secure checklist storage has not been installed. Export your tracker before refreshing.';
+    if(state.profileId===id)profileMessage(warning);
+    else msg(warning);
     return;
   }
   const payload={driver_id:id,checklist:{...data.checklist},details:{...data.details}};
@@ -166,9 +205,17 @@ function queueWrite(){
     if(rev!==state.rev)return;
     const {error}=await window.besaClient.from('besa_driver_journey').upsert(payload,{onConflict:'driver_id'});
     if(error)throw error;
-    if(rev===state.rev&&state.profileId===id)profileMessage('Checklist saved securely for this driver.');
+    if(rev===state.rev){
+      state.dirty.delete(id);
+      if(state.profileId===id)profileMessage('Checklist saved securely for this driver.');
+      else msg('Recruitment tracker updated and securely saved for '+labelName(driver(id)||{} )+'.');
+    }
   }).catch(error=>{
-    if(rev===state.rev)profileMessage('Could not save checklist: '+(error?.message||'Unknown error')+'. Export your notes and contact your administrator.',true);
+    if(rev===state.rev){
+      const note='Could not save checklist: '+(error?.message||'Unknown error')+'. Export a draft before refreshing.';
+      if(state.profileId===id)profileMessage(note,true);
+      else msg(note,true);
+    }
   });
 }
 function overview(){
@@ -267,6 +314,12 @@ function detailsChange(ev){
   const key=ev.target.dataset.check;
   if(key){
     stored(state.profileId).checklist[key]=Boolean(ev.target.checked);
+    const recruit=COLUMNS.find(c=>c.key===key);
+    if(recruit){
+      const value=ev.target.checked?(key==='requirements'?'Yes':'Done'):'Pending';
+      setTaskValue(stored(state.profileId),key,value);
+      renderTracker();
+    }
     checklist();queueWrite();
   }else if(field){
     const original=String(ev.target.value||'').trim().slice(0,500);
