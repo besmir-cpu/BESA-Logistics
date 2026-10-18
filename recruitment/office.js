@@ -7,7 +7,7 @@ import {
 // Recruitment office: admin-authenticated view of current 'Onboarding'
 // driver records and private, in-memory imports. Deliberately no mutation API.
 const $=id=>document.getElementById(id);
-const state={user:null,verified:false,records:[],editing:null,seq:0,generation:0,importedRecruitment:false,importedOnboarding:false};
+const state={user:null,verified:false,records:[],editing:null,seq:0,generation:0,authGeneration:0,importedRecruitment:false,importedOnboarding:false};
 const FIELDS={
   name:'rec-name',phone:'rec-phone',email:'rec-email',stage:'rec-stage',status:'rec-status',
   requirements:'rec-requirements',sam1:'rec-sam1',amazon:'rec-amazon',dbs:'rec-dbs',
@@ -298,7 +298,10 @@ async function refreshExisting(){
   }
 }
 function locked(message){
-  state.verified=false;state.records=[];++state.generation;
+  state.verified=false;state.records=[];state.editing=null;
+  state.importedRecruitment=false;state.importedOnboarding=false;
+  ++state.generation;++state.authGeneration;
+  if($('recruit-editor').open)$('recruit-editor').close();
   $('recruit-locked').hidden=false;$('recruit-workspace').hidden=true;
   $('recruit-lock-status').textContent=message;
 }
@@ -309,15 +312,23 @@ async function authorize(session){
     return;
   }
   if(state.user?.id===next.id&&state.verified)return;
+  if(state.user?.id&&state.user.id!==next.id){
+    state.records=[];state.editing=null;
+    state.importedRecruitment=false;state.importedOnboarding=false;
+  }
   state.user=next;
+  const attempt=++state.authGeneration;
   try{
     const {data,error}=await window.besaClient.from('besa_admins').select('email').eq('email',String(next.email||'').toLowerCase()).limit(1);
+    if(attempt!==state.authGeneration||state.user?.id!==next.id)return;
     if(error)throw error;
     if(!data?.length){locked('This account does not have administrator access.');return;}
     state.verified=true;
     $('recruit-locked').hidden=true;$('recruit-workspace').hidden=false;
     await refreshExisting();
-  }catch(error){locked('Unable to verify administrator permission. Please retry from the dashboard.');}
+  }catch(error){
+    if(attempt===state.authGeneration)locked('Unable to verify administrator permission. Please retry from the dashboard.');
+  }
 }
 function setup(){
   if(!window.besaClient){
