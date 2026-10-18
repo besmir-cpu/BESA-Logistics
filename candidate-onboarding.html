@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#202f65">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://xyicnwfwsmbfcputqrbn.supabase.co; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<title>BESA Logistics | Private Candidate Onboarding</title>
+<link rel="stylesheet" href="candidate-onboarding.css?v=1">
+<script defer type="module" src="candidate-onboarding.js?v=1"></script>
+</head><body>
+<header class="candidate-header"><div class="candidate-brand"><span class="logo">B</span><span><strong>BESA LOGISTICS</strong><small>SECURE DRIVER ONBOARDING</small></span></div><span class="secure-label">Private invitation</span></header>
+<main class="candidate-container">
+  <section class="candidate-hero">
+    <p class="eyebrow">WELCOME TO BESA</p><h1>Let's get you ready for the road.</h1>
+    <p>Complete your personal information and upload the evidence BESA needs to review your driver application. You can use your mobile phone to take document photos.</p>
+  </section>
+  <div id="candidate-loading" class="candidate-notice">Checking your private invitation…</div>
+  <div id="candidate-invalid" class="candidate-notice error" hidden>We couldn't verify your invitation. Please ask your BESA contact for a fresh link.</div>
+  <section id="candidate-finished" hidden class="candidate-finished">
+    <div class="success-mark" aria-hidden="true">✓</div><h2>Information sent to BESA</h2>
+    <p>Thank you. Your information and documents have been submitted securely for the office team to review.</p>
+    <p><strong>Important:</strong> Submission is not confirmation of employment or proof that your right-to-work checks have been approved. BESA will contact you if anything else is needed.</p>
+  </section>
+  <div id="candidate-workspace" hidden>
+    <div class="candidate-intro"><span class="avatar">↗</span><span id="candidate-welcome">Complete your onboarding</span>
+      <span id="candidate-expiry" class="expiry"></span></div>
+    <div class="steps" aria-label="Application sections">
+      <button type="button" class="step active" data-step="1" aria-current="step"><span>1</span> Personal information</button>
+      <button type="button" class="step" data-step="2"><span>2</span> Licence & eligibility</button>
+      <button type="button" class="step" data-step="3"><span>3</span> Documents & submit</button>
+    </div>
+    <form id="candidate-form" novalidate>
+      <section class="candidate-card" data-panel="1">
+        <div class="card-title"><span class="symbol">01</span><div><h2>Personal details</h2><p>Details that help our recruitment team identify and contact you.</p></div></div>
+        <div class="fields">
+          <label>First name <span class="required">*</span><input name="first_name" required autocomplete="given-name" maxlength="60"></label>
+          <label>Last name <span class="required">*</span><input name="last_name" required autocomplete="family-name" maxlength="60"></label>
+          <label>Date of birth <span class="required">*</span><input name="date_of_birth" type="date" required></label>
+          <label>Email address <span class="required">*</span><input name="email" type="email" required autocomplete="email" maxlength="150"></label>
+          <label>Mobile number <span class="required">*</span><input name="phone" type="tel" required autocomplete="tel" maxlength="40"></label>
+          <label>Address line 1 <span class="required">*</span><input name="address_1" required autocomplete="address-line1" maxlength="160"></label>
+          <label>Address line 2 <input name="address_2" autocomplete="address-line2" maxlength="160"></label>
+          <label>Town / city <span class="required">*</span><input name="city" required autocomplete="address-level2" maxlength="100"></label>
+          <label>Postcode <span class="required">*</span><input name="postcode" required autocomplete="postal-code" maxlength="20"></label>
+          <label>Emergency contact name <input name="emergency_contact_name" autocomplete="off" maxlength="120"></label>
+          <label>Emergency contact phone <input name="emergency_contact_phone" type="tel" autocomplete="off" maxlength="40"></label>
+        </div>
+        <div class="form-actions"><span class="hint">* Required fields</span><button type="button" class="primary" id="next-1">Next: Licence details <span aria-hidden="true">→</span></button></div>
+      </section>
+      <section class="candidate-card" data-panel="2" hidden>
+        <div class="card-title"><span class="symbol">02</span><div><h2>Driving licence & right to work</h2><p>These details help BESA arrange the necessary checks. Your documents are reviewed separately.</p></div></div>
+        <div class="fields">
+          <label>Driving licence type <span class="required">*</span><select name="licence_type" required>
+            <option value="">Select licence type</option><option>Manual</option><option>Automatic</option>
+          </select></label>
+          <label>Licence issuing country <input name="licence_issuing_country" maxlength="80" placeholder="e.g. United Kingdom"></label>
+          <label>Licence issue date <input name="licence_issue_date" type="date"></label>
+          <label>Licence expiry date <span class="required">*</span><input name="licence_expiry" type="date" required></label>
+          <label>Right-to-work evidence type <span class="required">*</span><select name="right_to_work_type" required>
+            <option value="">Select an option</option>
+            <option>UK or Irish passport</option><option>Share code / immigration status</option><option>Other evidence</option>
+          </select></label>
+          <label>Right-to-work expiry (if applicable)<input name="right_to_work_expiry" type="date"></label>
+          <label>Right-to-work share code (if applicable)<input name="right_to_work_share_code" autocomplete="off" maxlength="40"></label>
+          <label>Passport expiry (if applicable)<input name="passport_expiry" type="date"></label>
+        </div>
+        <div class="candidate-advice"><strong>Right-to-work checks:</strong> Uploading a passport or share code does not automatically complete a statutory right-to-work check. BESA must verify your eligibility using the correct process.</div>
+        <div class="form-actions"><button type="button" class="secondary" id="back-2">← Back</button><button type="button" class="primary" id="next-2">Next: Upload documents <span aria-hidden="true">→</span></button></div>
+      </section>
+      <section class="candidate-card" data-panel="3" hidden>
+        <div class="card-title"><span class="symbol">03</span><div><h2>Upload your documents</h2><p>Use a clear photograph or a PDF. Files are stored privately. We accept JPG, PNG, WEBP and PDF, up to 8 MB per file.</p></div></div>
+        <p class="documents-required">Required before submission: <strong>driving licence front</strong> and <strong>either passport or other right-to-work evidence</strong>.</p>
+        <div class="document-list" id="candidate-documents">
+          <div class="document-card" data-doc="driving-licence-front"><span class="doc-symbol">▣</span><div class="doc-desc"><strong>Driving licence — front <span class="required">*</span></strong><small>Clear photo of the front of your driving licence</small><span class="upload-state">Not uploaded</span></div><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-label="Driving licence front file"><button type="button" class="upload-button">Upload</button></div>
+          <div class="document-card" data-doc="driving-licence-back"><span class="doc-symbol">▣</span><div class="doc-desc"><strong>Driving licence — back</strong><small>Photo of the back of your driving licence</small><span class="upload-state">Not uploaded</span></div><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-label="Driving licence back file"><button type="button" class="upload-button">Upload</button></div>
+          <div class="document-card" data-doc="passport"><span class="doc-symbol">▤</span><div class="doc-desc"><strong>Passport / identity page</strong><small>Photo of the details page showing your photo and dates</small><span class="upload-state">Not uploaded</span></div><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-label="Passport photo file"><button type="button" class="upload-button">Upload</button></div>
+          <div class="document-card" data-doc="right-to-work"><span class="doc-symbol">▤</span><div class="doc-desc"><strong>Other right-to-work evidence</strong><small>Relevant immigration or eligibility documents, if applicable</small><span class="upload-state">Not uploaded</span></div><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-label="Right to work evidence file"><button type="button" class="upload-button">Upload</button></div>
+          <div class="document-card" data-doc="dvla-evidence"><span class="doc-symbol">▥</span><div class="doc-desc"><strong>DVLA check evidence</strong><small>Licence check evidence, if requested</small><span class="upload-state">Not uploaded</span></div><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-label="DVLA document file"><button type="button" class="upload-button">Upload</button></div>
+          <div class="document-card" data-doc="proof-of-address"><span class="doc-symbol">⌂</span><div class="doc-desc"><strong>Proof of address</strong><small>Document showing your address, if requested</small><span class="upload-state">Not uploaded</span></div><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-label="Proof of address file"><button type="button" class="upload-button">Upload</button></div>
+        </div>
+        <div class="candidate-privacy">
+          <h3>How BESA will use your information</h3>
+          <p>BESA Logistics uses the details and documents you provide to assess your driver application and carry out onboarding and eligibility checks. They will be available to authorised BESA office staff, not other candidates. Do not upload bank statements, National Insurance documents or unrelated personal information unless BESA specifically requests them.</p>
+          <p>Your link is private but works for anyone who has it. Only open it yourself, don't forward it, and close this page on a shared device. Contact BESA to ask how long your information will be kept or to request a correction.</p>
+        </div>
+        <label class="consent"><input id="privacy_acknowledged" type="checkbox" required><span>I have read the information about how my details and documents will be used. <span class="required">*</span></span></label>
+        <label class="consent"><input id="declaration" type="checkbox" required><span>I confirm the information is accurate and the uploaded documents belong to me. <span class="required">*</span></span></label>
+        <p class="candidate-status" id="candidate-status" role="status" aria-live="polite"></p>
+        <div class="form-actions"><button type="button" class="secondary" id="back-3">← Back</button><button type="submit" class="primary" id="candidate-submit">Submit securely to BESA <span aria-hidden="true">✓</span></button></div>
+      </section>
+    </form>
+  </div>
+  <footer class="candidate-footer">BESA Logistics · Confidential recruitment application · Document approval is completed by BESA office staff.</footer>
+</main>
+</body></html>
