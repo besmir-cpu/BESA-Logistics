@@ -48,7 +48,7 @@ test('candidate submits personal details and mock passport/licence photos with m
  await page.locator('#next-2').click();
  await expect(page.locator('[data-panel="3"]')).toBeVisible();
  const pdf={name:'synthetic.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 synthetic only')};
- for(const kind of ['driving-licence-front','passport']){
+ for(const kind of ['driving-licence-front','driving-licence-back','passport']){
   const card=page.locator('.document-card[data-doc="'+kind+'"]');
   await card.locator('input[type=file]').setInputFiles(pdf);
   await card.locator('.upload-button').click();
