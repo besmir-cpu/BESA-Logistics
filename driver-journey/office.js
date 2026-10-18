@@ -1,5 +1,6 @@
 import {findMergeIndex,sourceYes,cleanText,normalizedPhone,displayCsvSafe} from '../recruitment/rules.mjs';
 import {COLUMNS,TRACKER_STATUSES,statusValue,setTaskValue,pillTone,sourceOptions} from './tracker-rules.mjs';
+import { loadExcelJS } from '../operations/lazy-excel.mjs';
 
 // BESA Drivers & Onboarding. The main dashboard remains the source of truth
 // for driver creation/editing. The optional secure checklist/evidence backend
@@ -622,7 +623,7 @@ function extractSource(workbook,kind){
 async function importTracker(file,kind){
   if(!file||!file.name.toLowerCase().endsWith('.xlsx')||file.size>20*1024*1024)
     throw new Error('Choose the matching Excel (.xlsx) workbook, under 20 MB.');
-  if(!window.ExcelJS)throw new Error('The Excel import library is unavailable.');
+  await loadExcelJS();
   const rev=state.rev;
   const book=new window.ExcelJS.Workbook();
   await book.xlsx.load(await file.arrayBuffer());
