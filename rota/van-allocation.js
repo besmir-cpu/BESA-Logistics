@@ -1,4 +1,5 @@
 // Client-only Van Allocation worksheet. No network calls or persistent storage.
+import { loadExcelJS } from '../operations/lazy-excel.mjs';
 // Workbook import reads only the 'Van Allocation' sheet. The source workbook
 // may contain other private tabs, which are never inspected or displayed.
 import { weekDates, sundayOfWeek, offsetWeeks } from './rules.mjs';
@@ -372,7 +373,7 @@ export function setupVanAllocation() {
       const file=e.target.files?.[0];if(!file)return;
       try{
         if(file.size>25*1024*1024)throw new Error('File must be under 25 MB.');
-        if(!window.ExcelJS)throw new Error('Workbook import library unavailable.');
+        await loadExcelJS();
         const wb=new window.ExcelJS.Workbook();
         await wb.xlsx.load(await file.arrayBuffer());
         importFromWorkbook(wb);
