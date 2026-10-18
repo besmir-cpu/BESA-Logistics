@@ -13,14 +13,14 @@ function simulate(pathname,hash=''){
       this.tag=tag;this.children=[];this.dataset={};this.attributes={};
       this.className='';this.textContent='';this.href='';
       this.classList={
-        add:(name)=>{this.className=[...new Set([...this.className.split(/\\s+/).filter(Boolean),name])].join(' ');},
+        add:(name)=>{this.className=[...new Set([...this.className.split(' ').filter(Boolean),name])].join(' ');},
         toggle:(name,force)=>{
-          const values=this.className.split(/\\s+/).filter(Boolean);
+          const values=this.className.split(' ').filter(Boolean);
           const present=values.includes(name);
           const apply=force===undefined?!present:force;
           this.className=apply?[...new Set([...values,name])].join(' '):values.filter(v=>v!==name).join(' ');
         },
-        contains:name=>this.className.split(/\\s+/).includes(name)
+        contains:name=>this.className.split(' ').includes(name)
       };
     }
     append(...nodes){this.children.push(...nodes);}
