@@ -285,7 +285,9 @@ Deno.serve(async(req)=>{
  }catch(err){
    // No personal data, auth tokens, uploads or request bodies in logs.
    const code=Number.isInteger(err?.code)&&err.code>=400&&err.code<=599?err.code:500;
-   const message=code===500?'Unable to complete this request. Please try again.':err.message;
+   const message=code===500?'Unable to complete this request. Please try again.':
+     (typeof err?.message==='string'?err.message:
+       typeof err?.error==='string'?err.error:'Request could not be completed');
    return response({error:message},code,origin);
  }
 });
