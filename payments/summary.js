@@ -291,7 +291,42 @@ function clearFile(){
   $('payment-results').hidden=true;$('mapping-panel').hidden=true;$('payment-file-meta').hidden=true;
   message('Local file cleared.');
 }
+function draftSnapshot(){
+  if(!state.summary.length)throw new Error('Import a work-hours file and calculate its summary before saving.');
+  return {schema:1,kind:'review-only-hours',summary:state.summary.map(r=>({
+    driver:r.driver,week:r.week,hours:r.hours,shifts:r.shifts,dates:r.dates
+  })),warnings:state.warnings.slice(0,300)};
+}
+function draftRestore(data){
+  if(data?.schema!==1||data.kind!=='review-only-hours'||
+     !Array.isArray(data.summary)||data.summary.length>20000||
+     data.summary.some(r=>typeof r.driver!=='string'||r.driver.length>120||
+       typeof r.week!=='string'||!Number.isFinite(r.hours)||r.hours<0||
+       !Number.isSafeInteger(r.shifts)||r.shifts<0||
+       !Number.isSafeInteger(r.dates)||r.dates<0))
+    throw new Error('This saved work-hours summary has an unsupported format.');
+  state.summary=data.summary;
+  state.records=[];state.warnings=Array.isArray(data.warnings)?data.warnings.slice(0,300):[];
+  $('payment-results').hidden=false;
+  const weeks=[...new Set(state.summary.map(s=>s.week))].sort();
+  const select=$('payment-week-filter');select.replaceChildren();
+  option(select,'','All weeks');
+  for(const week of weeks)option(select,week,week);
+  $('payment-drivers-count').textContent=String(new Set(state.summary.map(r=>r.driver.toLowerCase())).size);
+  $('payment-hours-total').textContent=fmtHours(state.summary.reduce((sum,r)=>sum+r.hours,0));
+  $('payment-shifts-total').textContent=String(state.summary.reduce((sum,r)=>sum+r.shifts,0));
+  $('payment-errors-total').textContent=String(state.warnings.length);
+  $('payment-review-summary').textContent=state.warnings.length+' rows need review (from saved summary)';
+  $('payment-review-rows').textContent=state.warnings.length?state.warnings.join(' | '):
+    'No warning rows were stored. Original source workbook must still be reconciled.';
+  renderRows();
+  message('Loaded review-only work-hours summary. Reconcile it with your original file before using.');
+}
 function init(){
+  window.besaDraftAPI={
+    identify:()=>({workspace:'work-summary',key:'master'}),
+    snapshot:draftSnapshot,restore:draftRestore
+  };
   const drop=$('payment-drop');
   for(const e of ['dragenter','dragover']){
     drop.addEventListener(e,event=>{event.preventDefault();drop.classList.add('dragover')});
