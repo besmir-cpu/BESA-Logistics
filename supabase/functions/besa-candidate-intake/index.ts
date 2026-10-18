@@ -246,7 +246,16 @@ async function submit(data){
 }
 Deno.serve(async(req)=>{
  const origin=req.headers.get('origin')||'';
- if(req.method==='OPTIONS')return response({},204,origin);
+ if(req.method==='OPTIONS'){
+  const h=new Headers(jsonHeaders);
+  if(origin===WEB_ORIGIN||/^http:\/\/localhost(?::\d+)?$/.test(origin)){
+   h.set('Access-Control-Allow-Origin',origin);
+   h.set('Access-Control-Allow-Headers','authorization,apikey,content-type');
+   h.set('Access-Control-Allow-Methods','POST, OPTIONS');
+   h.set('Vary','Origin');
+  }
+  return new Response(null,{status:204,headers:h});
+ }
  if(origin&&origin!==WEB_ORIGIN&&!/^http:\/\/localhost(?::\d+)?$/.test(origin))
    return response({error:'Origin not permitted'},403,origin);
  if(req.method!=='POST')return response({error:'Method not allowed'},405,origin);
