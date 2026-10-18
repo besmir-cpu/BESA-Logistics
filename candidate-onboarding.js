@@ -98,6 +98,9 @@ async function submit(event){
  if(!uploaded.includes('driving-licence-front')){
    status('Please upload the front of your driving licence.',true);return;
  }
+ if(!uploaded.includes('driving-licence-back')){
+   status('Please upload the back of your driving licence.',true);return;
+ }
  if(!uploaded.includes('passport')&&!uploaded.includes('right-to-work')){
    status('Please upload your passport or other right-to-work evidence.',true);return;
  }
