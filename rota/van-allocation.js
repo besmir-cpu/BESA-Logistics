@@ -402,7 +402,7 @@ export function setupVanAllocation() {
        !Array.isArray(data.assigns)||data.assigns.length>150000||
        !Array.isArray(data.dateCols)||!Array.isArray(data.sourceHead)||
        !Array.isArray(data.generatedDates)||
-       !/^\\d{4}-\\d{2}-\\d{2}$/.test(data.start||''))
+       !/^\d{4}-\d{2}-\d{2}$/.test(data.start||''))
       throw new Error('This saved Van Allocation draft has an unsupported structure.');
     state.start=data.start;
     state.rows=data.rows.map(r=>({id:String(r.id),cells:r.cells.map(String).slice(0,6),isNote:!!r.isNote}));
