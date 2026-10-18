@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#222e60">
+<title>BESA Logistics | Driver Recruitment & Onboarding</title>
+<link rel="stylesheet" href="besa-theme.css?v=horizon-1">
+<link rel="stylesheet" href="recruitment/recruitment.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script defer src="config.js?v=freeze-page-4"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script type="module" src="recruitment/office.js"></script>
+</head><body>
+<header class="recruit-top"><a class="recruit-brand" href="index.html"><span class="recruit-logo">B</span><span><strong>BESA LOGISTICS</strong><small>RECRUITMENT OPERATIONS</small></span></a>
+<a class="recruit-back" href="index.html">← Dashboard</a></header>
+<main class="recruit-shell">
+<section id="recruit-locked" class="recruit-locked">
+<div class="recruit-lock-icon" aria-hidden="true">↗</div><h1>Recruitment & onboarding</h1>
+<p id="recruit-lock-status">Checking administrator access…</p>
+<a class="recruit-back-link" href="index.html">Return to the BESA dashboard</a>
+</section>
+<div id="recruit-workspace" hidden>
+<header class="recruit-hero"><div><p class="recruit-eyebrow">BESA OFFICE / PEOPLE</p>
+<h1>Recruitment & onboarding</h1>
+<p>One clear journey from first contact through checks, training, ridealongs and activation.</p></div>
+<div class="recruit-hero-action"><span class="recruit-mode">ADMIN VIEW · LOCAL DRAFTS</span>
+<button type="button" id="recruit-signout" class="recruit-logout">Sign out</button></div></header>
+<div class="recruit-safety"><strong>Connected to your authorised driver register for viewing.</strong>
+New recruitment details, imports and changes on this page are temporary until the secure recruitment database and invite workflow are installed.
+No invitations are sent, no source Google Sheets are changed and no real documents are published. Export a private draft before leaving.</div>
+<nav class="recruit-tabs" aria-label="Recruitment sections"><a href="index.html">Overview</a>
+<a href="index.html#drivers">Drivers</a><span aria-current="page">Recruitment & onboarding</span>
+<a href="rota.html">Rota</a></nav>
+<section class="recruit-overview" aria-label="Recruitment pipeline summary">
+<article><span>Applicants in view</span><strong id="recruit-count-all">0</strong></article>
+<article><span>Invited / onboarding</span><strong id="recruit-count-invited">0</strong></article>
+<article><span>Checks & training</span><strong id="recruit-count-checks">0</strong></article>
+<article><span>Ridealongs</span><strong id="recruit-count-ridealong">0</strong></article>
+<article><span>Active</span><strong id="recruit-count-active">0</strong></article>
+</section>
+<section class="recruit-tools" aria-label="Recruitment controls">
+<div class="recruit-search"><label for="recruit-search">Find a driver</label><input type="search" id="recruit-search" placeholder="Search name, email, phone…"></div>
+<div><label for="recruit-filter">Stage</label><select id="recruit-filter"><option value="">All stages</option><option value="Applicant">Applicant</option>
+<option value="Invited">Invited</option><option value="Screening">Checks in progress</option><option value="Training">Training</option>
+<option value="Ridealong">Ridealong</option><option value="Active">Active</option><option value="On hold">On hold</option></select></div>
+<button type="button" class="recruit-action recruit-outline" id="recruit-refresh">↻ Refresh drivers</button>
+<button type="button" class="recruit-action recruit-primary" id="recruit-add">+ Add candidate</button>
+</section>
+<div class="recruit-imports">
+<div><strong>Combine your existing Google trackers</strong><p>Download each sheet as an Excel .xlsx file, then import it here. Recruitment and onboarding information are matched carefully; ambiguous matches remain separate for review.</p></div>
+<div class="recruit-import-buttons"><label class="recruit-action recruit-outline" for="recruit-file">Import Recruitment XLSX
+<input id="recruit-file" type="file" accept=".xlsx" hidden></label>
+<label class="recruit-action recruit-outline" for="onboard-file">Import Onboarding XLSX
+<input id="onboard-file" type="file" accept=".xlsx" hidden></label>
+<button type="button" class="recruit-action recruit-outline" id="recruit-export">↓ Export local draft CSV</button></div>
+</div>
+<div class="recruit-layout">
+<section class="recruit-list-panel"><div class="recruit-list-head"><div><h2>Driver pipeline</h2><p id="recruit-summary">Sign in to see authorised driver records.</p></div></div>
+<div class="recruit-table-wrap"><table class="recruit-table">
+<thead><tr><th>Driver</th><th>Recruitment status</th><th>Checks</th><th>Training</th><th>Ridealong</th><th>Stage</th><th></th></tr></thead>
+<tbody id="recruit-rows"></tbody></table></div>
+<div id="recruit-empty" class="recruit-empty" hidden>No matching drivers.</div></section>
+<aside class="recruit-side"><h2>How it works</h2>
+<div class="recruit-step"><span>01</span><div><strong>Recruitment</strong><p>Requirements, contact, status and notes</p></div></div>
+<div class="recruit-step"><span>02</span><div><strong>Account & checks</strong><p>SAM, Amazon, DBS and DVLA/BGC</p></div></div>
+<div class="recruit-step"><span>03</span><div><strong>Classroom training</strong><p>Amiigo, CT date, vendor and completion</p></div></div>
+<div class="recruit-step"><span>04</span><div><strong>Ridealongs</strong><p>RA 1, RA 2 and RA completed</p></div></div>
+<div class="recruit-step"><span>05</span><div><strong>Activation</strong><p>Review flags, H&amp;S and active status</p></div></div>
+<p class="recruit-side-note">An existing driver marked <strong>Onboarding</strong> appears here, but this does not prove an invitation was sent. Automatic invite-to-tracker syncing is not connected yet.</p></aside>
+</div>
+<p id="recruit-status" class="recruit-message" role="status" aria-live="polite"></p>
+<footer class="recruit-footer">BESA Logistics · Administrator only · Secure invitation syncing and permanent recruitment records are pending.</footer>
+</div>
+</main>
+<dialog id="recruit-editor" aria-labelledby="recruit-editor-title">
+<form id="recruit-form"><div class="recruit-dialog-heading"><div><p class="recruit-eyebrow">CANDIDATE PROFILE</p><h2 id="recruit-editor-title">Add candidate</h2></div>
+<button id="recruit-cancel-top" type="button" class="recruit-close" aria-label="Close">×</button></div>
+<div class="recruit-editor-scroll">
+<fieldset><legend>Contact & recruitment</legend><div class="recruit-form-grid">
+<label>Driver name<input id="rec-name" required maxlength="120" autocomplete="off"></label>
+<label>Phone number<input id="rec-phone" maxlength="35" autocomplete="off"></label>
+<label>Email<input id="rec-email" type="email" maxlength="150" autocomplete="off"></label>
+<label>Stage<select id="rec-stage"><option>Applicant</option><option>Invited</option><option>Screening</option><option>Training</option>
+<option>Ridealong</option><option>Active</option><option>On hold</option></select></label>
+<label>Recruitment status<input id="rec-status" maxlength="70" placeholder="As recorded in your sheet"></label>
+<label>Requirements<select id="rec-requirements"><option value="">Not recorded</option><option>Yes</option><option>No</option><option>Pending</option></select></label>
+<label>SAM first part<select id="rec-sam1"><option value="">Not recorded</option><option>Yes</option><option>No</option><option>Pending</option></select></label>
+<label>Amazon account<select id="rec-amazon"><option value="">Not recorded</option><option>Yes</option><option>No</option><option>Pending</option></select></label>
+<label>Accurate DBS<select id="rec-dbs"><option value="">Not recorded</option><option>Yes</option><option>No</option><option>Pending</option></select></label>
+<label>Amiigo training<select id="rec-amiigo"><option value="">Not recorded</option><option>Yes</option><option>No</option><option>Pending</option></select></label>
+<label>SAM second part<select id="rec-sam2"><option value="">Not recorded</option><option>Yes</option><option>No</option><option>Pending</option></select></label>
+<label class="recruit-wide">Recruitment notes<textarea id="rec-notes" maxlength="1000" rows="2"></textarea></label>
+</div></fieldset>
+<fieldset><legend>Onboarding & activation</legend><div class="recruit-form-grid">
+<label>Classroom training date<input id="rec-ctdate" type="date"></label>
+<label>Week<input id="rec-week" maxlength="30"></label>
+<label>Day<input id="rec-day" maxlength="25"></label>
+<label>Training vendor<input id="rec-vendor" maxlength="90"></label>
+<label>CT completed<select id="rec-ctdone"><option value="">Not recorded</option><option>Yes</option><option>No</option><option>Pending</option></select></label>
+<label>SAM (onboarding)<select id="rec-sam-on"><option value="">Not recorded</option><option>Yes</option><option>No</option><option>Pending</option></select></label>
+<label>DVLA / BGC<input id="rec-dvla" maxlength="70" placeholder="Original source status"></label>
+<label>RA 1<input id="rec-ra1" type="date"></label>
+<label>RA 2<input id="rec-ra2" type="date"></label>
+<label>RA completed<select id="rec-radone"><option value="">Not recorded</option><option>Yes</option><option>No</option><option>Pending</option></select></label>
+<label>Active (onboarding sheet)<select id="rec-active"><option value="">Not recorded</option><option>Yes</option><option>No</option><option>Pending</option></select></label>
+<label>H&amp;S completed<select id="rec-hs"><option value="">Not recorded</option><option>Yes</option><option>No</option><option>Pending</option></select></label>
+<label>Review flags<input id="rec-flags" maxlength="160"></label>
+<label>Transporter ID<input id="rec-transporter" maxlength="70"></label>
+<label class="recruit-wide">Onboarding notes<textarea id="rec-onboard-notes" maxlength="1000" rows="2"></textarea></label>
+</div></fieldset>
+</div>
+<p class="recruit-dialog-note">Changes in this window are temporary. Do not enter identity, bank, NI or other sensitive document details here.</p>
+<div class="recruit-dialog-actions"><button id="recruit-delete" type="button" class="recruit-action recruit-outline">Remove local candidate</button>
+<button id="recruit-cancel" type="button" class="recruit-action recruit-outline">Cancel</button>
+<button id="recruit-save" type="submit" class="recruit-action recruit-primary">Apply draft changes</button></div></form>
+</dialog>
+</body></html>
