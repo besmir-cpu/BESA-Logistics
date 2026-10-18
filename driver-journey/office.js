@@ -1,6 +1,7 @@
 import {findMergeIndex,sourceYes,cleanText,normalizedPhone,displayCsvSafe} from '../recruitment/rules.mjs';
 import {COLUMNS,TRACKER_STATUSES,statusValue,setTaskValue,pillTone,sourceOptions} from './tracker-rules.mjs';
 import { loadExcelJS } from '../operations/lazy-excel.mjs';
+import {loadCandidatePanel,setupCandidatePanel,clearCandidatePanel} from './candidate-invitations.mjs';
 
 // BESA Drivers & Onboarding. The main dashboard remains the source of truth
 // for driver creation/editing. The optional secure checklist/evidence backend
@@ -231,10 +232,11 @@ function tabs(selected='overview'){
     button.classList.toggle('active',on);
     button.setAttribute('aria-selected',on?'true':'false');
   }
-  for(const pane of ['overview','recruitment','evidence']){
+  for(const pane of ['overview','recruitment','evidence','invitation']){
     $('journey-panel-'+pane).hidden=pane!==selected;
   }
   if(selected==='evidence')void loadEvidence();
+  if(selected==='invitation'&&state.profileId&&driver(state.profileId))void loadCandidatePanel(driver(state.profileId));
 }
 function closeProfile(){
   if($('driver-profile').open)$('driver-profile').close();
@@ -252,6 +254,7 @@ function clearSensitive(){
   $('journey-panel-overview').replaceChildren();
   $('journey-panel-recruitment').replaceChildren();
   $('journey-panel-evidence').replaceChildren();
+  clearCandidatePanel();
   $('journey-import-results').replaceChildren();
   $('journey-import-panel').hidden=true;
   for(const id of ['journey-recruit-file','journey-onboard-file'])$(id).value='';
@@ -688,6 +691,7 @@ function applyImported(id){
   checklist();renderTracker();queueWrite(id);
 }
 function setup(){
+  setupCandidatePanel(()=>driver(state.profileId));
   window.addEventListener('besa:driver-session-reset',clearSensitive);
   window.addEventListener('besa:drivers-loaded',event=>{
     state.drivers=event.detail.drivers||[];
@@ -699,7 +703,7 @@ function setup(){
     if(state.profileId&&driver(state.profileId)){overview();checklist();}
   });
   window.addEventListener('besa:driver-created',event=>{
-    if(driver(event.detail.id))void openProfile(event.detail.id);
+    if(driver(event.detail.id))void openProfile(event.detail.id).then(()=>tabs('invitation'));
   });
   document.addEventListener('click',event=>{
     const trigger=event.target.closest('[data-driver-profile]');
