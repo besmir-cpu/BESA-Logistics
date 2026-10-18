@@ -80,4 +80,5 @@ jobs:
           grep -q 'href="rota.html#vans"' index.html
           grep -q 'href="payments.html"' index.html
           grep -q 'href="payment-tracker.html"' index.html
-          grep -q 'href="recruitment.html"' index.html
+          grep -q 'href="#drivers" data-page="drivers"' index.html
+          grep -q 'id="driver-profile"' index.html
