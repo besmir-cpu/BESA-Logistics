@@ -18,6 +18,7 @@ on:
       - 'recruitment/**'
       - 'driver-journey/**'
       - 'supabase/migrations/002_driver_journey_optional.sql'
+      - 'supabase/migrations/003_secure_workspace_drafts_optional.sql'
       - 'payments/**'
   push:
     branches: [main]
@@ -38,6 +39,7 @@ on:
       - 'recruitment/**'
       - 'driver-journey/**'
       - 'supabase/migrations/002_driver_journey_optional.sql'
+      - 'supabase/migrations/003_secure_workspace_drafts_optional.sql'
       - 'payments/**'
 permissions:
   contents: read
@@ -77,6 +79,14 @@ jobs:
         run: |
           node --check operations/sidebar.js
           node --test operations/sidebar.test.mjs
+      - name: Check guarded save and performance modules
+        run: |
+          node --input-type=module --check < operations/secure-drafts.mjs
+          node --input-type=module --check < operations/lazy-excel.mjs
+          node --input-type=module --check < operations/draft-controls.mjs
+          node --check operations/diagnostics.js
+          node --check operations/quick-nav.js
+          node --test operations/reliability.test.mjs
       - name: Confirm normal website workspaces exist
         run: |
           test -f rota.html

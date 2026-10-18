@@ -1,0 +1,13 @@
+/* Small, non-intrusive secure-draft controls; intentionally separate
+   from operational Save/Export buttons. */
+.besa-draft-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:11px 14px;
+  margin:7px 0 13px;border:1px solid #dce3f5;background:#f7f8ff;border-radius:12px}
+.besa-draft-heading{font-size:11px;color:#334a95;font-weight:800;margin-right:6px}
+.besa-draft-button{font:750 11px 'DM Sans',sans-serif;color:#344dae;background:#fff;
+  padding:8px 12px;min-height:33px;border:1px solid #cbd6f4;border-radius:8px;cursor:pointer}
+.besa-draft-save{background:#e5f6f1;color:#116b56;border-color:#b9e3d7}
+.besa-draft-button:hover{background:#e7edff}
+.besa-draft-button:disabled{cursor:wait;opacity:.55}
+.besa-draft-message{flex:1 1 250px;color:#61708c;font-size:11px;line-height:1.5}
+.besa-draft-message.error{color:#b24457}
+@media(max-width:700px){.besa-draft-bar{padding:9px}.besa-draft-message{flex-basis:100%}}
