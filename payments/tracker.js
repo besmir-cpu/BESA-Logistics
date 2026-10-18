@@ -342,8 +342,26 @@ function clearWeek(){
   if(has&&!window.confirm('Clear all entered data for Week '+weekNumber(state.start)+' in this browser tab? Export first if you need a copy.'))return;
   sheet().clear();render();message('Week '+weekNumber(state.start)+' cleared in the local tracker.');
 }
+// Office secure drafts are reviewed summaries only. No SAM or bank posting.
+function draftSnapshot(){
+  return {schema:1,week:state.start,entries:[...sheet()]};
+}
+function draftRestore(data){
+  if(data?.schema!==1||data.week!==state.start||
+     !Array.isArray(data.entries)||data.entries.length>450||
+     data.entries.some(([pos,value])=>!/^(?:[3-6]|1[2-8]|2[1-9]|3[2-9]|40|4[3-5]|4[8-9]|5[0-9])\\|(?:[4-9]|10)$/.test(pos)||
+       typeof value!=='string'||value.length>350))
+    throw new Error('The saved tracker does not match this week or its expected worksheet cells.');
+  state.weeks.set(state.start,new Map(data.entries));
+  render();
+  message('A reviewed Payment Tracker draft was loaded. No payment or invoice was created.');
+}
 function init(){
   state.start=sunday(ukToday());render();
+  window.besaDraftAPI={
+    identify:()=>({workspace:'payment-tracker',key:state.start}),
+    snapshot:draftSnapshot,restore:draftRestore
+  };
   $('prev-week').addEventListener('click',()=>chooseWeek(shiftWeek(-1)));
   $('next-week').addEventListener('click',()=>chooseWeek(shiftWeek(1)));
   $('week-date').addEventListener('change',e=>{if(e.target.value)chooseWeek(e.target.value);});
