@@ -4,6 +4,23 @@
   const state = { session: null, vehicles: [], drivers: [], activity: [], ready: false, page: 'dashboard', edit: null, generation: 0, busy: false };
   const vehicleStatuses = ['Active', 'In maintenance', 'Off hire', 'SORN', 'Personal', 'Archived'];
   const driverStatuses = ['Active', 'Onboarding', 'Inactive', 'Archived'];
+  // Data is kept in memory while staff change sections. Render only the
+  // requested screen; rebuilding every table on each click was unnecessary.
+  const viewsNeedingRender = new Set(['dashboard','vehicles','drivers','compliance','activity']);
+  function invalidateViews() {
+    for (const view of ['dashboard','vehicles','drivers','compliance','activity']) viewsNeedingRender.add(view);
+  }
+  function renderActiveView(view=state.page,force=false) {
+    if (!state.ready || (!force && !viewsNeedingRender.has(view))) return;
+    switch(view) {
+      case 'dashboard': renderDashboard(); break;
+      case 'vehicles': renderVehicles(); break;
+      case 'drivers': renderDrivers(); break;
+      case 'compliance': renderCompliance(); break;
+      case 'activity': $('activity-list').innerHTML = activityMarkup(state.activity); break;
+    }
+    viewsNeedingRender.delete(view);
+  }
   const titles = {
     dashboard: ['Overview', 'YOUR DAILY PICTURE', 'Operations overview', 'A clear view of your fleet and the people behind it.'],
     vehicles: ['Vehicles', 'FLEET MANAGEMENT', 'Your fleet, organised.', 'Add vehicles, keep records current and track what is due.'],
@@ -58,7 +75,7 @@
       if (active) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
     });
     $('primary-add').textContent = state.page === 'drivers' ? '+ Add driver' : '+ Add vehicle';
-    if (state.ready) render();
+    if (state.ready) renderActiveView(state.page);
   }
   function complianceRecords() {
     const records = [];
@@ -226,8 +243,11 @@
     return rows.length ? rows.map(row => `<div class="activity-row"><span class="activity-icon" aria-hidden="true">${row.action === 'INSERT' ? '+' : '✓'}</span><div><strong>${escape(row.record_label)} ${row.action === 'INSERT' ? 'added' : 'updated'}</strong><p>${escape(row.actor_email || 'Workspace setup')} · ${row.entity === 'besa_vehicles' ? 'Vehicle' : 'Driver'}</p></div><time datetime="${escape(row.created_at)}">${escape(formatTime(row.created_at))}</time></div>`).join('') : '<p class="empty">Your saved changes will appear here.</p>';
   }
   function render() {
-    renderDashboard(); renderVehicles(); renderDrivers(); renderCompliance();
-    $('activity-list').innerHTML = activityMarkup(state.activity);
+    invalidateViews();
+    // Keep summary counts/current activity accurate. Detailed tables are
+    // rendered on demand, the first time the relevant section is opened.
+    renderActiveView('dashboard');
+    if (state.page !== 'dashboard') renderActiveView(state.page);
   }
   async function allRows(table, sort) {
     const rows = [];
@@ -245,6 +265,7 @@
     $('refresh-button').disabled = true; $('loading-state').hidden = state.ready;
     $('setup-panel').hidden = true;
     try {
+      const requestStart=performance.now();
       const email = state.session.user.email.toLowerCase();
       const { data: admins, error: adminError } = await window.besaClient.from('besa_admins').select('email').eq('email', email);
       if (adminError) throw adminError;
@@ -259,6 +280,10 @@
       setReady(true); render();
       window.dispatchEvent(new CustomEvent('besa:drivers-loaded', { detail: { drivers: state.drivers, vehicles: state.vehicles } }));
       $('last-updated').textContent = 'Last refreshed ' + formatTime(new Date().toISOString()) + ' UK';
+      window.dispatchEvent(new CustomEvent('besa:load-metric',{detail:{
+        kind:'dashboard-data',durationMs:Math.round(performance.now()-requestStart),
+        drivers:drivers.length,vehicles:vehicles.length,activity:state.activity.length
+      }}));
       return true;
     } catch (error) {
       if (generation !== state.generation) return false;
@@ -536,8 +561,20 @@
       if (error) throw error;
       if (!receivedAuth) sessionChanged(data.session);
     }).catch(error => { $('login-status').classList.add('error'); $('login-status').textContent = error.message || 'Please sign in again.'; });
-    // Recalculate date-based reminders if this tab stays open overnight.
-    setInterval(() => { if (state.ready) render(); }, 60000);
+    // Only update date-dependent sections when visible. The fleet/driver
+    // tables were previously rebuilt every minute even with no data change.
+    let reminderDay = new Date().toDateString();
+    setInterval(() => {
+      if (!state.ready || document.hidden) return;
+      const currentDay = new Date().toDateString();
+      if (reminderDay !== currentDay) {
+        reminderDay = currentDay;
+        viewsNeedingRender.add('dashboard');
+        viewsNeedingRender.add('compliance');
+        if (state.page === 'dashboard' || state.page === 'compliance')
+          renderActiveView(state.page);
+      }
+    }, 60000);
   }
   start();
 })();
