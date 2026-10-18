@@ -17,6 +17,12 @@ on:
       - 'recruitment.html'
       - 'recruitment/**'
       - 'driver-journey/**'
+      - 'candidate-onboarding.html'
+      - 'candidate-onboarding.js'
+      - 'candidate-onboarding.css'
+      - 'supabase/functions/besa-candidate-intake/**'
+      - 'supabase/migrations/005_private_candidate_onboarding.sql'
+      - 'tests/**'
       - 'supabase/migrations/002_driver_journey_optional.sql'
       - 'supabase/migrations/003_secure_workspace_drafts_optional.sql'
       - 'payments/**'
@@ -38,6 +44,12 @@ on:
       - 'recruitment.html'
       - 'recruitment/**'
       - 'driver-journey/**'
+      - 'candidate-onboarding.html'
+      - 'candidate-onboarding.js'
+      - 'candidate-onboarding.css'
+      - 'supabase/functions/besa-candidate-intake/**'
+      - 'supabase/migrations/005_private_candidate_onboarding.sql'
+      - 'tests/**'
       - 'supabase/migrations/002_driver_journey_optional.sql'
       - 'supabase/migrations/003_secure_workspace_drafts_optional.sql'
       - 'payments/**'
@@ -87,6 +99,12 @@ jobs:
           node --check operations/diagnostics.js
           node --check operations/quick-nav.js
           node --test operations/reliability.test.mjs
+      - name: Validate candidate private intake and invitation rules
+        run: |
+          node --check candidate-onboarding.js
+          node --input-type=module --check < driver-journey/candidate-invitations.mjs
+          node --input-type=module --check < supabase/functions/besa-candidate-intake/index.ts
+          node --test tests/candidate-security.test.mjs
       - name: Confirm normal website workspaces exist
         run: |
           test -f rota.html

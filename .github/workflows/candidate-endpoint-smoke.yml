@@ -1,0 +1,47 @@
+name: BESA candidate endpoint security smoke
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/besa-candidate-intake/**'
+      - '.github/workflows/candidate-endpoint-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Live candidate API denies unknown and unverified visitors
+        env:
+          API: https://xyicnwfwsmbfcputqrbn.supabase.co/functions/v1/besa-candidate-intake
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=$(curl -sS --retry 2 --max-time 20 -o /tmp/invalid.json -w '%{http_code}' \
+            -H 'Origin: https://besmir-cpu.github.io' -H 'Content-Type: application/json' \
+            --data '{"action":"status","token":"invalid"}' "$API")
+          echo "Invalid invitation: HTTP $code"
+          echo "Synthetic invalid-token response:"
+          head -c 500 /tmp/invalid.json || true
+          echo
+          test "$code" = "401"
+          grep -q '"error"' /tmp/invalid.json
+          code=$(curl -sS --retry 2 --max-time 20 -o /tmp/admin.json -w '%{http_code}' \
+            -H 'Origin: https://besmir-cpu.github.io' -H 'Content-Type: application/json' \
+            --data '{"action":"create","driverId":"00000000-0000-4000-8000-000000000001"}' "$API")
+          echo "Unauthorised admin request: HTTP $code"
+          echo "Synthetic denied-admin response:"
+          head -c 500 /tmp/admin.json || true
+          echo
+          test "$code" = "401"
+          grep -q '"error"' /tmp/admin.json
+          code=$(curl -sS --retry 2 --max-time 20 -o /tmp/get.json -w '%{http_code}' "$API")
+          echo "Unexpected GET: HTTP $code"
+          test "$code" = "405"
+          code=$(curl -sS --retry 2 --max-time 20 -o /tmp/options.json -w '%{http_code}' \
+            -X OPTIONS -H 'Origin: https://besmir-cpu.github.io' \
+            -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: content-type' "$API")
+          echo "Allowed origin preflight: HTTP $code"
+          test "$code" = "204"
+          echo "Live API unauthorised-access checks passed; no real applicant data was used."
