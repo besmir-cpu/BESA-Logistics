@@ -1,4 +1,4 @@
-import {loadDraft,saveDraft,draftHistory} from './secure-drafts.mjs';
+import {loadDraft,saveDraft,draftHistory,readDraftVersion} from './secure-drafts.mjs';
 
 // Reusable action bar for protected draft snapshots. No automatic uploading:
 // staff must choose Load and then Save. Auth + RLS are checked each time.
@@ -55,9 +55,23 @@ historyBtn.addEventListener('click',()=>run(historyBtn,async()=>{
   const versions=await draftHistory(workspace,key);
   if(!versions.length){report('No stored versions for this workspace yet.');return;}
   const newest=versions[0];
-  report(versions.length+' version(s) in history. Latest v'+newest.version+
-    ' saved '+new Date(newest.change_at).toLocaleString('en-GB')+
-    '. Older versions can be recovered by an authorised administrator; no automatic rollback was made.');
+  const overview=versions.map(v=>'v'+v.version+' ('+new Date(v.change_at).toLocaleString('en-GB')+')').join(', ');
+  const entered=window.prompt('Saved versions for '+workspace+'/'+key+':\\n'+overview+
+    '\\n\\nEnter a version number to RESTORE INTO THIS BROWSER, or Cancel to keep the current draft.');
+  if(entered===null||entered.trim()===''){
+    report(versions.length+' saved version(s); latest v'+newest.version+'. No draft was changed.');
+    return;
+  }
+  const version=Number(entered.trim());
+  if(!Number.isSafeInteger(version)||!versions.some(v=>v.version===version))
+    throw new Error('Choose a listed version number. Nothing was changed.');
+  if(!window.confirm('Load version '+version+' into this screen? Unsaved browser changes will be replaced. Export first if you need them. This does NOT overwrite the latest saved version yet.'))return;
+  const earlier=await readDraftVersion(workspace,key,version);
+  // Record the CURRENT version for conflict-safe re-saving. This does not
+  // replace the screen until the chosen historical payload is validated.
+  await loadDraft(workspace,key);
+  api().restore(earlier.payload);
+  report('Recovered historical v'+version+' into this browser. Review and choose Save securely to create a NEW current version.');
 }));
 function mount(){
   if(document.getElementById('besa-draft-bar'))return;
