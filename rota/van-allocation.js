@@ -388,7 +388,32 @@ export function setupVanAllocation() {
     });
   }
   setup();
-  return { importFromWorkbook, updateDriverSuggestions, reset:()=>{
+  function snapshot(){
+    if(!state.imported)throw new Error('Import a real Van Allocation workbook first; sample vans cannot be saved.');
+    return {schema:1,start:state.start,rows:state.rows.map(r=>({
+      id:r.id,cells:r.cells,isNote:Boolean(r.isNote)
+    })),dateCols:[...state.dateCols],sourceHead:[...state.sourceHead],
+      assigns:[...state.assigns],generatedDates:[...state.generatedDates]};
+  }
+  function restore(data){
+    if(data?.schema!==1||!Array.isArray(data.rows)||data.rows.length>350||
+       !Array.isArray(data.assigns)||data.assigns.length>150000||
+       !Array.isArray(data.dateCols)||!Array.isArray(data.sourceHead)||
+       !Array.isArray(data.generatedDates)||
+       !/^\\d{4}-\\d{2}-\\d{2}$/.test(data.start||''))
+      throw new Error('This saved Van Allocation draft has an unsupported structure.');
+    state.start=data.start;
+    state.rows=data.rows.map(r=>({id:String(r.id),cells:r.cells.map(String).slice(0,6),isNote:!!r.isNote}));
+    state.dateCols=new Map(data.dateCols);
+    state.sourceHead=new Map(data.sourceHead);
+    state.assigns=new Map(data.assigns);
+    state.generatedDates=new Set(data.generatedDates);
+    state.imported=true;
+    $('van-preview-notice').classList.add('imported');
+    $('van-preview-notice').textContent='Private Van Allocation draft loaded from secure BESA storage. Review before using.';
+    render();
+  }
+  return { importFromWorkbook, updateDriverSuggestions, snapshot, restore, reset:()=>{
     state.generatedDates.clear();
     sample();
     $('van-preview-notice').classList.remove('imported');
