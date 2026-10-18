@@ -1,11 +1,10 @@
--- BESA secure workspace drafts — OPTIONAL, NOT DEPLOYED.
--- Reviewed migration required before any real driver/rota/payment data is stored.
+-- BESA secure workspace drafts — APPROVED FOR CONTROLLED DATABASE DEPLOYMENT.
+-- Deployment is separate from live website release and financial posting.
+-- Does not alter any existing driver, vehicle, SAM or Google Sheet record.
 -- All access is denied by default. Only BESA administrators may read/write.
 -- Works with existing besa_admins email allowlist; verify its RLS separately.
 -- Snapshot audit is an application history, NOT a substitute for off-site backups.
 begin;
-create extension if not exists pgcrypto;
-
 create table if not exists public.besa_workspace_drafts (
   id uuid primary key default gen_random_uuid(),
   workspace text not null check(workspace in ('rota','van-allocation','payment-tracker','work-summary')),
@@ -40,13 +39,11 @@ grant select on public.besa_workspace_draft_history to authenticated;
 
 drop policy if exists besa_admin_drafts_read on public.besa_workspace_drafts;
 create policy besa_admin_drafts_read on public.besa_workspace_drafts for select to authenticated
-  using(exists(select 1 from public.besa_admins a
-    where lower(a.email)=lower(coalesce(auth.jwt()->>'email',''))));
+  using((select public.besa_is_admin()));
 
 drop policy if exists besa_admin_drafts_history on public.besa_workspace_draft_history;
 create policy besa_admin_drafts_history on public.besa_workspace_draft_history for select to authenticated
-  using(exists(select 1 from public.besa_admins a
-    where lower(a.email)=lower(coalesce(auth.jwt()->>'email',''))));
+  using((select public.besa_is_admin()));
 
 -- SECURITY DEFINER is only used for this vetted RPC, with fixed
 -- search_path and an explicit admin test. App accounts cannot change
@@ -61,10 +58,7 @@ declare
   v_auth uuid;
 begin
   v_auth:=auth.uid();
-  if v_auth is null or not exists(
-    select 1 from public.besa_admins a
-    where lower(a.email)=lower(coalesce(auth.jwt()->>'email',''))
-  ) then
+  if v_auth is null or not (select public.besa_is_admin()) then
     raise exception 'Administrator access required' using errcode='42501';
   end if;
   if p_workspace is null or p_workspace not in ('rota','van-allocation','payment-tracker','work-summary')
@@ -116,4 +110,5 @@ commit;
 --     off-site encrypted exports, restore exercise, and retention policies.
 -- [ ] Test two simultaneous staff edits; second writer must see a conflict.
 -- [ ] Confirm finance data stays review-only and no invoice issuance is exposed.
--- [ ] Approval to apply migration and enable staff saving on live environment.
+-- [x] Owner approved applying this additive secure-draft database migration.
+-- [ ] Separate sign-off still required for publishing frontend and enabling staff workflows.
