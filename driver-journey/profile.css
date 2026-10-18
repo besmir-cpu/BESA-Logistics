@@ -1,0 +1,73 @@
+/* BESA Drivers & Onboarding: profile, recruitment checklist, private evidence. */
+.journey-intro{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:19px 22px;background:linear-gradient(112deg,#fff,#f0f3ff 65%,#e8fafd);border:1px solid #dfe5f5;border-radius:17px;margin:0 0 15px;box-shadow:0 7px 25px #1f35780a}
+.journey-intro h2{font:800 21px/1.3 Manrope,sans-serif;color:#1d2c59;margin:2px 0 7px}
+.journey-intro p{font-size:12px;color:#677991;max-width:610px;line-height:1.7;margin:0}
+.journey-eyebrow{font-size:10px;letter-spacing:.11em;color:#505ec2;text-transform:uppercase;font-weight:800}
+.journey-head-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.journey-mode{border:1px solid #e7d7b5;color:#856124;background:#fff6e7;border-radius:99px;font-size:10px;padding:9px 11px;font-weight:800;white-space:nowrap}
+.journey-mode.ready{color:#18715b;border-color:#b7e2d4;background:#e9fbf4}
+.journey-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.journey-kpis article{display:grid;gap:5px;padding:15px 17px;background:#fff;border:1px solid #e0e7f4;border-radius:13px;box-shadow:0 5px 18px #1e35730a}
+.journey-kpis article:nth-child(2){background:linear-gradient(125deg,#fff,#f4edff)}
+.journey-kpis article:nth-child(3){background:linear-gradient(125deg,#fff,#eafff8)}
+.journey-kpis article:nth-child(4){background:linear-gradient(125deg,#fff,#fff7e9)}
+.journey-kpis article span{font-size:11px;color:#657590;font-weight:750}.journey-kpis article strong{font:800 28px Manrope,sans-serif;color:#2e3c8b}
+.journey-message{min-height:20px;font-size:12px;color:#4b5eb5;margin:10px 0;line-height:1.6}
+.journey-message.error{color:#b24558}
+.journey-import-panel{border:1px solid #d5def2;background:#f5f7ff;padding:16px 18px;margin:12px 0;border-radius:13px}
+.journey-import-panel strong{font-size:13px;color:#2c3c84}
+.journey-import-panel p{font-size:12px;color:#667895;line-height:1.7;margin:7px 0 13px}
+.journey-import-controls{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+#journey-import-results{font-size:12px;color:#5e7090;margin-top:10px;line-height:1.7}
+.journey-driver-link{text-align:left;border:0;cursor:pointer;color:#2d49a2;background:transparent;padding:2px 0;display:block}
+.journey-driver-link strong{display:block;color:#2944a7;text-decoration:underline;text-decoration-color:#a4b0ee;text-underline-offset:3px;font-size:13px}
+.journey-driver-link>span{display:inline-block;margin-top:4px;font-size:10px;color:#6a7eb7}
+.journey-driver-link:hover strong{color:#455be0}
+#driver-profile{width:min(1020px,96vw);max-height:min(94dvh,1100px);padding:0;border-radius:19px;border:1px solid #dee6f4;box-shadow:0 35px 110px #18225866;background:white;color:#27365e}
+#driver-profile::backdrop{background:#121b45a8}
+.journey-profile-heading{display:flex;justify-content:space-between;align-items:center;gap:13px;padding:19px 23px;background:linear-gradient(110deg,#fff,#f2f4ff 65%,#eafdff);border-bottom:1px solid #e4eaf5}
+.journey-profile-heading h2{font:800 24px Manrope,sans-serif;margin:6px 0;color:#1b2d5a;overflow-wrap:anywhere}
+.journey-profile-heading #driver-profile-subtitle{font-size:11px;color:#627493;overflow-wrap:anywhere}
+.journey-close{width:37px;height:37px;border-radius:10px;background:#fff;color:#4c5aac;border:1px solid #dce4f2;font-size:24px}
+.journey-profile-nav{display:flex;gap:6px;overflow:auto;flex-shrink:0;padding:9px 22px;border-bottom:1px solid #e5eaf4}
+.journey-profile-nav button{padding:11px 16px;background:transparent;border:0;color:#61708c;font-weight:800;font-size:12px;white-space:nowrap;border-radius:9px}
+.journey-profile-nav button.active{background:#e9edff;color:#384bb6}
+.journey-profile-body{overflow:auto;max-height:calc(94dvh - 244px);min-height:180px;padding:18px 23px}
+.journey-profile-footer{display:flex;justify-content:flex-end;gap:9px;border-top:1px solid #e4eaf4;padding:14px 23px;background:#fbfcff}
+.journey-pane[hidden]{display:none!important}
+.journey-overview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.journey-overview-grid article{border:1px solid #e2e8f4;background:#fafbff;border-radius:12px;padding:14px;min-width:0}
+.journey-overview-grid article span{display:block;font-size:10px;color:#677894;line-height:1.5;margin-bottom:6px}
+.journey-overview-grid article strong{font-size:12px;color:#21346f;overflow-wrap:anywhere}
+.journey-profile-note{font-size:12px;line-height:1.75;padding:12px 15px;margin:13px 0;background:#f1f5ff;border-left:4px solid #7480db;border-radius:8px;color:#4e5c80}
+.journey-profile-note.warn{background:#fff7e9;color:#825c21;border-left-color:#e8ad56}
+.journey-group{border:1px solid #e0e7f4;border-radius:13px;margin:0 0 14px;overflow:hidden}
+.journey-group h3{font:800 14px Manrope,sans-serif;background:#eef1ff;color:#3d4d9a;margin:0;padding:12px 15px}
+.journey-group .journey-item{display:flex;gap:12px;align-items:center;padding:12px 15px;border-top:1px solid #edf0f6;cursor:pointer;min-height:52px}
+.journey-group .journey-item:hover{background:#f8faff}
+.journey-item input[type=checkbox]{margin:0;width:19px;height:19px;min-width:19px;accent-color:#5269ca;cursor:pointer}
+.journey-item .journey-item-info{flex:1;min-width:0}
+.journey-item strong{display:block;font-size:12px;color:#283b78;font-weight:800}
+.journey-item small{display:block;color:#8190a3;font-size:10px;margin-top:4px;line-height:1.4}
+.journey-item .journey-done{color:#07816d;font-size:11px;font-weight:750}
+.journey-item.journey-completed{background:#f2fdf8}
+.journey-group .journey-date-row{display:grid;grid-template-columns:1fr minmax(150px,220px);align-items:center;gap:13px;padding:10px 15px;border-top:1px solid #ebf0f9;font-size:12px;color:#435583}
+.journey-date-row input,.journey-date-row select,.journey-date-row textarea{min-height:39px;border:1px solid #d8e0f2;border-radius:8px;padding:8px 11px;max-width:100%;font:inherit;color:#273d7c;background:white}
+.journey-date-row textarea{min-height:70px;resize:vertical}
+.journey-section-footer{display:flex;flex-wrap:wrap;align-items:center;gap:9px;justify-content:space-between;padding:13px 0}
+.journey-checklist-total{font-size:12px;color:#536aa2;font-weight:800}
+.journey-evidence-head{display:flex;gap:11px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.journey-evidence-head h3{margin:0;font:800 16px Manrope,sans-serif;color:#233570}
+.journey-evidence-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.journey-evidence-card{border:1px solid #e0e7f2;border-radius:13px;padding:16px;background:#fbfcff}
+.journey-evidence-card h4{font:800 13px Manrope,sans-serif;color:#293c7a;margin:0 0 6px}
+.journey-evidence-card p{font-size:11px;color:#73849b;line-height:1.7;margin:0 0 11px}
+.journey-evidence-file{display:flex;gap:9px;justify-content:space-between;align-items:center;margin:8px 0;padding:8px;background:#eff4fc;border-radius:8px;font-size:11px;overflow-wrap:anywhere}
+.journey-evidence-file button{font-size:10px;padding:6px 10px;white-space:nowrap;border:1px solid #ced8f1;border-radius:7px;color:#3951a9;background:white}
+.journey-upload-grid{display:grid;grid-template-columns:1fr 2fr auto;gap:9px;align-items:end;border:1px solid #dce5f3;border-radius:12px;padding:13px;margin-top:14px}
+.journey-upload-grid label{display:grid;gap:6px;font-size:11px;font-weight:800;color:#5a6a92}
+.journey-upload-grid :is(input,select){min-width:0;max-width:100%;height:39px;border:1px solid #d1dcf0;border-radius:7px;padding:8px;font:inherit}
+.journey-upload-grid input[type=file]{height:auto}
+.journey-evidence-warning{font-size:11px;line-height:1.7;background:#fff6e8;color:#855c1b;border-radius:9px;padding:12px;margin-top:12px}
+@media(max-width:800px){.journey-intro{align-items:start;flex-direction:column}.journey-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.journey-evidence-grid{grid-template-columns:1fr}.journey-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:550px){.journey-profile-heading{padding:14px}.journey-profile-body{padding:12px}.journey-profile-nav{padding:7px}.journey-profile-nav button{padding:8px;font-size:11px}.journey-overview-grid{grid-template-columns:1fr 1fr}.journey-upload-grid{grid-template-columns:1fr}.journey-group .journey-date-row{grid-template-columns:1fr;gap:4px}.journey-profile-footer{padding:10px}.journey-profile-heading h2{font-size:20px}}
