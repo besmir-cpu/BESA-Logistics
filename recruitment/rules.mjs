@@ -35,7 +35,7 @@ export function safeStage(value,fallback='Applicant'){
   const match=STAGES.find(x=>x.toLowerCase()===cleanText(value,50).toLowerCase());
   return match||fallback;
 }
-export function sourceYes(value){return ['yes','y','complete','completed'].includes(cleanText(value,30).toLowerCase())}
+export function sourceYes(value){return ['yes','y','done','complete','completed'].includes(cleanText(value,30).toLowerCase())}
 export function stageFromSource(row){
   if(sourceYes(row.active)||cleanText(row.status).toLowerCase()==='active')return 'Active';
   if(sourceYes(row.radone)||row.ra1||row.ra2)return 'Ridealong';
