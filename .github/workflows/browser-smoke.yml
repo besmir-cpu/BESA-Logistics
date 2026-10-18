@@ -1,0 +1,39 @@
+name: BESA browser smoke tests (staging)
+on:
+  pull_request:
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - 'rota.html'
+      - 'rota/**'
+      - 'payments.html'
+      - 'payments/**'
+      - 'payment-tracker.html'
+      - 'operations/**'
+      - 'tests/**'
+      - '.github/workflows/browser-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium smoke test tools
+        run: |
+          npm install --no-save --no-package-lock @playwright/test@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Start local website
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/besa-http.log 2>&1 &
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            if curl --fail --silent http://127.0.0.1:4173/rota.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - name: Run smoke navigation and safe draft checks
+        run: npx playwright test tests/browser-smoke.spec.cjs --workers=1 --reporter=line
