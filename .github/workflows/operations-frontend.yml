@@ -15,6 +15,8 @@ on:
       - 'payment-tracker.html'
       - 'recruitment.html'
       - 'recruitment/**'
+      - 'driver-journey/**'
+      - 'supabase/migrations/002_driver_journey_optional.sql'
       - 'payments/**'
   push:
     branches: [main]
@@ -32,6 +34,8 @@ on:
       - 'payment-tracker.html'
       - 'recruitment.html'
       - 'recruitment/**'
+      - 'driver-journey/**'
+      - 'supabase/migrations/002_driver_journey_optional.sql'
       - 'payments/**'
 permissions:
   contents: read
@@ -62,6 +66,10 @@ jobs:
         run: |
           node --input-type=module --check < recruitment/office.js
           node --test recruitment/rules.test.mjs
+      - name: Check unified Drivers profile and privacy
+        run: |
+          node --input-type=module --check < driver-journey/office.js
+          node --test driver-journey/profile.test.mjs
       - name: Confirm normal website workspaces exist
         run: |
           test -f rota.html
