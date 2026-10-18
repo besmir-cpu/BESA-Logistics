@@ -1,4 +1,4 @@
-import {findMergeIndex,sourceYes,cleanText,normalizedPhone} from '../recruitment/rules.mjs';
+import {findMergeIndex,sourceYes,cleanText,normalizedPhone,displayCsvSafe} from '../recruitment/rules.mjs';
 
 // BESA Drivers & Onboarding. The main dashboard remains the source of truth
 // for driver creation/editing. The optional secure checklist/evidence backend
@@ -380,6 +380,9 @@ function importValue(cell){
   return cleanText(cell,250);
 }
 function importDate(cell){
+  if(typeof cell==='number'&&cell>25000&&cell<90000){
+    return new Date(Date.UTC(1899,11,30)+Math.round(cell)*86400000).toISOString().slice(0,10);
+  }
   const val=importValue(cell);
   const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(val);
   if(m){
@@ -449,6 +452,28 @@ async function importTracker(file,kind){
   if(state.profileId)checklist();
   msg('Imported tracker locally. Open a matched driver’s profile and choose Review/apply imported tracker results.');
 }
+function exportChecklist(){
+  const id=state.profileId,d=driver(id);
+  if(!id||!d)return;
+  const record=stored(id);
+  const rows=[
+    ['Driver',labelName(d)],
+    ['Email',d.email||''],
+    ['Driver ID',id],
+    ['Storage mode',state.checklistReady?'secure database (may contain unsaved latest changes)':'local draft only'],
+    ['Section','Task','Completed'],
+    ...GROUPS.flatMap(([section,tasks])=>tasks.map(([key,label])=>
+      [section,label,record.checklist[key]===true?'Yes':'No'])),
+    ['', 'Details', ''],
+    ...DETAIL_FIELDS.map(([key,title])=>['Details',title,record.details[key]||''])
+  ];
+  const csv='\uFEFF'+rows.map(row=>row.map(displayCsvSafe).join(',')).join('\r\n');
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;
+  a.download='BESA-DRIVER-CHECKLIST-DRAFT.csv';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1200);
+  profileMessage('Checklist CSV downloaded. It contains personal information: keep it private.');
+}
 function applyImported(id){
   const pending=state.pending.get(id);
   if(!pending||state.profileId!==id)return;
@@ -483,9 +508,9 @@ function setup(){
   $('driver-profile-edit').addEventListener('click',()=>{
     const id=state.profileId;if(!id)return;
     closeProfile();
-    const btn=$('driver-rows').querySelector('[data-edit="driver"][data-id="'+CSS.escape(id)+'"]');
-    if(btn)btn.click();else msg('Find the driver in the table and use its Edit control.');
+    window.dispatchEvent(new CustomEvent('besa:edit-driver',{detail:{id}}));
   });
+  $('driver-profile-export').addEventListener('click',exportChecklist);
   for(const tab of document.querySelectorAll('[data-journey-tab]')){
     tab.addEventListener('click',()=>tabs(tab.dataset.journeyTab));
   }
