@@ -13,6 +13,8 @@ on:
       - 'rota/**'
       - 'payments.html'
       - 'payment-tracker.html'
+      - 'recruitment.html'
+      - 'recruitment/**'
       - 'payments/**'
   push:
     branches: [main]
@@ -28,6 +30,8 @@ on:
       - 'rota/**'
       - 'payments.html'
       - 'payment-tracker.html'
+      - 'recruitment.html'
+      - 'recruitment/**'
       - 'payments/**'
 permissions:
   contents: read
@@ -54,12 +58,18 @@ jobs:
         run: node --test payments/tracker.test.mjs
       - name: Test Horizon design consistency and accessibility
         run: node --test design/theme.test.mjs
+      - name: Check recruitment administration module
+        run: |
+          node --input-type=module --check < recruitment/office.js
+          node --test recruitment/rules.test.mjs
       - name: Confirm normal website workspaces exist
         run: |
           test -f rota.html
           test -f payments.html
           test -f payment-tracker.html
+          test -f recruitment.html
           grep -q 'href="rota.html"' index.html
           grep -q 'href="rota.html#vans"' index.html
           grep -q 'href="payments.html"' index.html
           grep -q 'href="payment-tracker.html"' index.html
+          grep -q 'href="recruitment.html"' index.html
