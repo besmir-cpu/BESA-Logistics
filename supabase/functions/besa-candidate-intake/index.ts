@@ -235,6 +235,8 @@ async function submit(data){
  const types=new Set((docs||[]).map(d=>d.doc_type));
  if(!types.has('driving-licence-front'))
   throw error('Upload a photo of the front of your driving licence');
+ if(!types.has('driving-licence-back'))
+  throw error('Upload a photo of the back of your driving licence');
  if(!types.has('passport')&&!types.has('right-to-work'))
   throw error('Upload a passport or other right-to-work evidence');
  const {data:changed,error:saveErr}=await adminDb.from('besa_candidate_invites')
