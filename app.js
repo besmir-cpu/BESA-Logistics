@@ -508,6 +508,9 @@
     $('refresh-button').addEventListener('click', () => { showMessage(''); refresh(); });
     $('setup-retry').addEventListener('click', refresh);
     $('primary-add').addEventListener('click', () => openForm(state.page === 'drivers' ? 'driver' : 'vehicle'));
+    window.addEventListener('besa:edit-driver',event=>{
+      if(event.detail?.id&&state.ready&&state.page==='drivers')openForm('driver',event.detail.id);
+    });
     document.addEventListener('click', event => { const button = event.target.closest('[data-edit]'); if (button) openForm(button.dataset.edit, button.dataset.id); });
     for (const id of vehicleFilterIds) $(id).addEventListener('input', renderVehicles);
     $('reset-vehicle-filters').addEventListener('click', () => {
