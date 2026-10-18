@@ -1,5 +1,6 @@
 import { WORK_CODES, CYCLE_1_CODES, CYCLE_2_CODES, weekDates, sundayOfWeek, offsetWeeks, summarizeDay } from './rules.mjs';
 import { setupVanAllocation } from './van-allocation.js';
+import { loadExcelJS } from '../operations/lazy-excel.mjs';
 const vans = setupVanAllocation();
 
 const $ = id => document.getElementById(id);
@@ -332,7 +333,7 @@ function valueGetterFromCsv(rows){
   return (r,c)=>rows[r-1]?.[c-1]??'';
 }
 async function valueGetterFromXlsx(file){
-  if(!window.ExcelJS)throw new Error('Excel import library did not load. Refresh or export your ROTA sheet as CSV.');
+  await loadExcelJS();
   const workbook=new window.ExcelJS.Workbook();
   await workbook.xlsx.load(await file.arrayBuffer());
   const sheet=workbook.getWorksheet('ROTA')||workbook.worksheets.find(s=>s.name.toUpperCase().trim()==='ROTA');
