@@ -25,6 +25,7 @@ const ONBOARD=[
 const GROUPS=[['Recruitment tracker',RECRUIT],['Onboarding tracker',ONBOARD]];
 const TASKS=[...RECRUIT,...ONBOARD];
 const DETAIL_FIELDS=[
+ ['licenceType','Driving licence type','select'],
  ['ctDate','Classroom training date','date'],
  ['vendor','Training vendor','text'],
  ['week','Training week','text'],
@@ -42,6 +43,7 @@ const DOCS=[
  ['driving-licence-back','Driving Licence — Back','Private image of licence back'],
  ['dvla-check','DVLA Check','Licence check evidence'],
  ['proof-of-address','Proof of Address','Address verification evidence'],
+ ['kyc-selfie','KYC Selfie','Private identity verification photograph'],
  ['other','Other Document','Other recruitment evidence']
 ];
 const BUCKET='besa-driver-private-evidence';
@@ -178,7 +180,8 @@ function overview(){
     ['Full name',labelName(d)],['Email',d.email||'Not recorded'],['Phone',d.phone||'Not recorded'],
     ['Driver status',d.status||'Onboarding'],['Delivery partner',d.contract||'Not recorded'],
     ['Assigned vehicle',state.vehicles.find(v=>String(v.id)===String(d.vehicle_id))?.registration||'Unassigned'],
-    ['Driving licence number',mask(d.licence_number)],['Licence expiry',d.licence_expiry||'Not recorded'],
+    ['Driving licence number',mask(d.licence_number)],['Licence type',stored(state.profileId).details.licenceType||'Not recorded'],
+    ['Licence expiry',d.licence_expiry||'Not recorded'],
     ['Right to work expiry',d.right_to_work_expiry||'Not recorded'],['Start date',d.start_date||'Not recorded'],
     ['Recruitment checklist',state.checklistReady?'Securely saved':'Draft mode'],
     ['Evidence access',state.evidenceReady?'Private document library ready':'Private document setup pending']
@@ -196,10 +199,15 @@ function dateRow(parent,key,label,inputType='text'){
   const row=textEl('label',null,'journey-date-row');
   const title=textEl('span',label);
   const value=stored(state.profileId).details[key]||'';
-  const input=document.createElement(inputType==='textarea'?'textarea':'input');
-  if(inputType!=='textarea')input.type=inputType;
+  const input=document.createElement(inputType==='textarea'?'textarea':inputType==='select'?'select':'input');
+  if(inputType!=='textarea'&&inputType!=='select')input.type=inputType;
+  if(inputType==='select'){
+    for(const [val,title] of [['','Not recorded'],['Auto','Automatic'],['Manual','Manual']]){
+      const option=document.createElement('option');option.value=val;option.textContent=title;input.append(option);
+    }
+  }
   input.value=inputType==='date'?safeDate(value):String(value).slice(0,500);
-  input.maxLength=inputType==='textarea'?500:120;
+  if(inputType!=='select')input.maxLength=inputType==='textarea'?500:120;
   input.dataset.detail=key;
   row.append(title,input);parent.append(row);
 }
