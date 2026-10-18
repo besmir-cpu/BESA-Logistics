@@ -62,10 +62,13 @@ function display(){
   $('recruit-count-checks').textContent=String(state.records.filter(r=>r.stage==='Training'||r.stage==='Screening').length);
   $('recruit-count-ridealong').textContent=String(state.records.filter(r=>r.stage==='Ridealong').length);
   $('recruit-count-active').textContent=String(state.records.filter(r=>r.stage==='Active').length);
-  $('recruit-summary').textContent=visible.length+' of '+state.records.length+' applicants · '+(state.importedRecruitment?'Recruitment imported':'Recruitment not imported')+
-    ' · '+(state.importedOnboarding?'Onboarding imported':'Onboarding not imported');
+  const shown=visible.slice(0,250);
+  $('recruit-summary').textContent=(visible.length>250?'Showing first 250 of '+visible.length+' matching':'Showing '+visible.length+' matching')+
+    ' of '+state.records.length+' applicants · '+(state.importedRecruitment?'Recruitment imported':'Recruitment not imported')+
+    ' · '+(state.importedOnboarding?'Onboarding imported':'Onboarding not imported')+
+    (visible.length>250?' · Use search to narrow results':'');
   const body=$('recruit-rows');body.replaceChildren();
-  for(const r of visible){
+  for(const r of shown){
     const tr=node('tr');
     const name=node('td');name.append(node('strong',displayName(r)));
     const provenance=(r.source||[]).join(', ')||'Local draft';
@@ -358,5 +361,10 @@ function setup(){
     if(error)throw error;
     return authorize(data.session);
   }).catch(()=>locked('Could not check your login. Return to the dashboard.'));
+  // When staff keep this tab open, newly created driver records with
+  // status 'Onboarding' should appear without asking them to reload.
+  setInterval(()=>{
+    if(state.verified&&!document.hidden)refreshExisting();
+  },120000);
 }
 setup();
