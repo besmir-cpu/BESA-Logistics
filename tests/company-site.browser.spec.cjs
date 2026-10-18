@@ -1,0 +1,41 @@
+const {test,expect}=require('@playwright/test');
+const home='http://127.0.0.1:4173/company-site/';
+test('desktop homepage is original, stable and navigable',async({page})=>{
+ const errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(home,{waitUntil:'domcontentloaded'});
+ await expect(page.getByRole('heading',{name:/People\.\s*Precision\.\s*Delivery\./})).toBeVisible();
+ await expect(page.locator('.service-card')).toHaveCount(3);
+ await page.locator('.nav a[href="#services"]').click();
+ await expect(page).toHaveURL(/#services$/);
+ await expect(page.locator('#services')).toBeVisible();
+ await expect(page.locator('#contact-placeholder')).toBeVisible();
+ await expect(page.locator('#contact-email-row')).toBeHidden();
+ expect(errors).toEqual([]);
+});
+test('mobile menu opens, navigates and closes on Escape',async({page})=>{
+ const errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.setViewportSize({width:390,height:844});
+ await page.goto(home,{waitUntil:'domcontentloaded'});
+ const toggle=page.locator('.menu-toggle');
+ await expect(toggle).toBeVisible();
+ await toggle.click();
+ await expect(toggle).toHaveAttribute('aria-expanded','true');
+ await page.locator('.nav a[href="#careers"]').click();
+ await expect(page).toHaveURL(/#careers$/);
+ await expect(toggle).toHaveAttribute('aria-expanded','false');
+ await toggle.click();
+ await page.keyboard.press('Escape');
+ await expect(toggle).toHaveAttribute('aria-expanded','false');
+ const scrollwidth=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+ expect(scrollwidth).toBeLessThanOrEqual(1);
+ expect(errors).toEqual([]);
+});
+test('contact details are configured, not hardcoded or silently submitted',async({page})=>{
+ await page.goto(home,{waitUntil:'domcontentloaded'});
+ await expect(page.locator('#contact-placeholder')).toBeVisible();
+ await expect(page.locator('#contact-email-row')).toBeHidden();
+ await expect(page.locator('#contact-phone-row')).toBeHidden();
+ expect(await page.locator('form').count()).toBe(0);
+});
