@@ -468,10 +468,52 @@ function exportCsv(){
   a.click();setTimeout(()=>URL.revokeObjectURL(url),1200);
   message('Draft CSV downloaded. Keep this file secure: it contains driver names.');
 }
+// Secure draft bridge uses explicit Load/Save only. No automatic import or
+// overwrite; staff must approve replacing browser work with saved content.
+function rotaSnapshot(){
+  if(!state.imported)throw new Error('Import the real ROTA workbook first; sample drivers must not be saved.');
+  return {schema:1,start:state.start,drivers:state.drivers.map(d=>({
+    id:d.id,name:d.name,licence:d.licence
+  })),shifts:[...state.shifts],daily:[...state.daily],
+    calendar:[...state.calendar],nextId:state.nextId};
+}
+function rotaRestore(data){
+  if(data?.schema!==1||!Array.isArray(data.drivers)||data.drivers.length>400||
+     !Array.isArray(data.shifts)||data.shifts.length>250000||
+     !Array.isArray(data.daily)||data.daily.length>1500||
+     !Array.isArray(data.calendar)||data.calendar.length>1500||
+     !/^\\d{4}-\\d{2}-\\d{2}$/.test(data.start||''))
+    throw new Error('This saved rota has an unsupported structure.');
+  state.start=data.start;
+  state.drivers=data.drivers.map(d=>({
+    id:String(d.id),name:String(d.name).slice(0,90),licence:licenceType(d.licence)
+  }));
+  state.shifts=new Map(data.shifts);
+  state.daily=new Map(data.daily);
+  state.calendar=new Set(data.calendar);
+  state.nextId=Number.isSafeInteger(data.nextId)?data.nextId:state.drivers.length;
+  state.imported=true;
+  alphabetiseDrivers();
+  vans.updateDriverSuggestions(state.drivers);
+  $('preview-notice').classList.add('imported');
+  $('preview-notice').textContent='Private ROTA draft loaded from BESA secure storage. Review shifts and targets before using.';
+  render();
+}
+function activeDraftBridge(){
+  return {
+    identify:()=>{
+      const vanTab=!$('vans-tab-panel').hidden;
+      return {workspace:vanTab?'van-allocation':'rota',key:'master'};
+    },
+    snapshot:()=>!$('vans-tab-panel').hidden?vans.snapshot():rotaSnapshot(),
+    restore:data=>!$('vans-tab-panel').hidden?vans.restore(data):rotaRestore(data)
+  };
+}
 function start(){
   state.start=sundayOfWeek(todayUK());
   initSample();render();
   vans.updateDriverSuggestions(state.drivers);
+  window.besaDraftAPI=activeDraftBridge();
   $('next-4').addEventListener('click',()=>setWeek(offsetWeeks(state.start,4)));
   $('prev-4').addEventListener('click',()=>setWeek(offsetWeeks(state.start,-4)));
   $('add-4').addEventListener('click',()=>{
