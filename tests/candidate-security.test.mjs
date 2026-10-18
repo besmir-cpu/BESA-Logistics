@@ -35,6 +35,9 @@ test('Edge function gates admin and applicant capabilities independently',()=>{
  assert.ok(edge.includes('await digest(token)'));
  assert.ok(edge.includes("['application/pdf','pdf']"));
  assert.ok(edge.includes('fileMagic(head,file.type)'));
+ assert.ok(edge.includes("!types.has('driving-licence-front')"));
+ assert.ok(edge.includes("!types.has('driving-licence-back')"));
+ assert.ok(edge.includes("!types.has('passport')&&!types.has('right-to-work')"));
  assert.ok(edge.includes("const BUCKET='besa-candidate-private'"));
  assert.ok(edge.includes("if(invite.submitted_at&&!allowSubmitted)"));
  assert.ok(edge.includes('Date.parse(invite.expires_at)<=Date.now()'));
