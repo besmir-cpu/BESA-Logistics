@@ -76,3 +76,14 @@ For ongoing production monitoring, select a privacy-reviewed error/performance m
 
 ## Hosting upgrade
 **Defer any paid hosting migration** until functionality is complete and benchmark evidence supports it. This development plan avoids committing BESA to unnecessary increased capacity. When ready for production, assess a host suited to authenticated business workflows, private evidence and monitoring, then migrate in a separately approved release.
+
+## Read-only production Supabase audit (2026-10-18)
+- Healthy BESA LOGISTICS project on Free organisation plan; no development branches or recorded migration history reported.
+- 57 vehicle records and just 1 driver record in the current BESA database. Reconcile where the full driver list is stored before activating permanent saving.
+- Optional secure workspace draft schema and saving RPC have NOT been installed. No GitHub proposal migrations were executed.
+- Security Advisor flags public.rls_auto_enable() as an anon-executable SECURITY DEFINER function. Read-only catalog check confirmed anon and authenticated execution permission. Review use and privileges carefully before modifying grants; do not invoke this function casually.
+- besa_is_admin() is SECURITY DEFINER and executable for authenticated (not anon); validate the intended privilege boundary.
+- Legacy documents and signatures tables have RLS enabled but no policies and currently zero rows. Keep them closed until workflows are reviewed.
+- Leaked-password protection disabled; review authentication mode and settings before changing anything.
+- Performance Advisor flags legacy drivers policies, two foreign-key indexes missing on empty legacy tables, one unused driver index. These are not evidence of current 3-second page navigation latency with such a small database.
+- The read-only audit changed NO live data, policies, permissions or backup settings.
