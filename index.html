@@ -1,205 +1,95 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#222e60">
-  <title>Besa Logistics · Operations</title>
-  <link rel="stylesheet" href="styles.css?v=operations-20261017">
-  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-  <script defer src="config.js?v=freeze-page-4"></script>
-  <script defer src="app.js?v=operations-20261017"></script>
-  <!-- Excel importer is now loaded on demand, reducing initial page weight. -->
-  <script type="module" src="driver-journey/office.js?v=1"></script>
-  <link rel="stylesheet" href="driver-journey/profile.css?v=1">
-  <link rel="stylesheet" href="driver-journey/candidate-invitations.css?v=1">
-<link rel="stylesheet" href="besa-theme.css?v=horizon-1">
-<link rel="stylesheet" href="operations/diagnostics.css?v=1">
-<script defer src="operations/diagnostics.js?v=1"></script>
-<script defer src="operations/quick-nav.js?v=1"></script>
-</head>
-<body>
-  <section id="login-screen" class="login-screen">
-    <div class="login-card">
-      <div class="brand-mark">B</div><p class="eyebrow">BESA LOGISTICS</p>
-      <h1>Your operation,<br>in one place.</h1><p class="muted">Fleet, drivers and the dates that keep you moving.</p>
-      <form id="login-form">
-        <label for="login-email">Work email</label><input id="login-email" type="email" autocomplete="email" placeholder="you@besalogistics.org" required>
-        <button class="button primary full" id="login-submit">Send sign-in link <span aria-hidden="true">↗</span></button>
-      </form>
-      <p id="login-status" role="status" aria-live="polite" class="feedback"></p>
-      <p class="small muted">Use your administrator email. Your sign-in link will arrive by email.</p>
-    </div>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#202f65">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://xyicnwfwsmbfcputqrbn.supabase.co; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<title>BESA Logistics | Private Candidate Onboarding</title>
+<link rel="stylesheet" href="candidate-onboarding.css?v=1">
+<script defer type="module" src="candidate-onboarding.js?v=1"></script>
+</head><body>
+<header class="candidate-header"><div class="candidate-brand"><span class="logo">B</span><span><strong>BESA LOGISTICS</strong><small>SECURE DRIVER ONBOARDING</small></span></div><span class="secure-label">Private invitation</span></header>
+<main class="candidate-container">
+  <section class="candidate-hero">
+    <p class="eyebrow">WELCOME TO BESA</p><h1>Let's get you ready for the road.</h1>
+    <p>Complete your personal information and upload the evidence BESA needs to review your driver application. You can use your mobile phone to take document photos.</p>
   </section>
-
-  <div id="app-shell" hidden>
-    <aside class="sidebar">
-      <a class="brand" href="#dashboard"><span class="brand-mark">B</span><span>Besa Logistics<small>OPERATIONS</small></span></a>
-      <p class="nav-label">WORKSPACE</p>
-      <nav aria-label="Main navigation">
-        <a href="#dashboard" data-page="dashboard"><span aria-hidden="true">◫</span>Overview</a>
-        <a href="#vehicles" data-page="vehicles"><span aria-hidden="true">▱</span>Vehicles<span id="nav-vehicle-count" class="nav-count">0</span></a>
-        <a href="#drivers" data-page="drivers"><span aria-hidden="true">♙</span>Drivers & Onboarding<span id="nav-driver-count" class="nav-count">0</span></a>
-        <a href="rota.html"><span aria-hidden="true">▦</span>Rota / Scheduling</a>
-        <a href="rota.html#vans"><span aria-hidden="true">▤</span>Van Allocation</a>
-        <a href="payments.html"><span aria-hidden="true">£</span>Payments</a>
-        <a href="payment-tracker.html"><span aria-hidden="true">▥</span>Payment Tracker</a>
-        <a href="#compliance" data-page="compliance"><span aria-hidden="true">◷</span>Compliance</a>
-        <a href="#activity" data-page="activity"><span aria-hidden="true">≡</span>Activity</a>
-      </nav>
-      <div class="sidebar-bottom"><span class="connection-dot"></span><span id="connection-label">Connecting…</span><p>Built for the road ahead.</p></div>
-    </aside>
-    <div class="workspace">
-      <header class="topbar"><span class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb-page">Overview</strong></span><div class="account"><span id="account-email"></span><button class="button quiet" id="signout-button">Sign out</button></div></header>
-      <main id="main">
-        <div class="page-heading"><div><p class="eyebrow" id="page-eyebrow">YOUR DAILY PICTURE</p><h1 id="page-title">Operations overview</h1><p id="page-description" class="muted">A clear view of your fleet and the people behind it.</p></div><div class="heading-actions"><button class="button quiet" id="refresh-button">↻ Refresh</button><button class="button primary" id="primary-add">+ Add vehicle</button></div></div>
-        <p id="global-status" role="status" aria-live="polite" class="feedback" hidden></p>
-        <section id="setup-panel" class="setup-panel" hidden><h2>Your workspace needs its database setup</h2><p id="setup-description">The database connection is not ready yet. No records have been changed.</p><button id="setup-retry" class="button primary">Check again</button></section>
-        <div id="loading-state" class="empty" hidden>Loading your workspace…</div>
-        <div id="data-content" hidden>
-          <section id="dashboard" class="page-section">
-            <div class="stats-grid">
-              <article class="stat"><div class="stat-label">Vehicles <span aria-hidden="true">▱</span></div><strong id="kpi-vehicles">0</strong><p id="kpi-vehicle-note">Across your fleet</p></article>
-              <article class="stat"><div class="stat-label">Active drivers <span aria-hidden="true">♙</span></div><strong id="kpi-drivers">0</strong><p id="kpi-driver-note">Ready to get moving</p></article>
-              <article class="stat"><div class="stat-label">MOT attention <span aria-hidden="true">◷</span></div><strong id="kpi-mot" class="amber-text">0</strong><p>Overdue or due within 30 days</p></article>
-              <article class="stat"><div class="stat-label">Service attention <span aria-hidden="true">⚒</span></div><strong id="kpi-service">0</strong><p>Dates, mileage or missing schedule</p></article>
-            </div>
-            <section class="operations-shortcuts" aria-label="Operations workspaces">
-              <a class="operations-shortcut" href="rota.html"><span class="shortcut-symbol" aria-hidden="true">▦</span><span><strong>Rota & Scheduling</strong><small>4-week planner · weekly targets</small></span><span class="shortcut-arrow" aria-hidden="true">↗</span></a>
-              <a class="operations-shortcut" href="rota.html#vans"><span class="shortcut-symbol" aria-hidden="true">▤</span><span><strong>Van Allocation</strong><small>Vehicle status · driver allocation</small></span><span class="shortcut-arrow" aria-hidden="true">↗</span></a>
-              <a class="operations-shortcut" href="payments.html"><span class="shortcut-symbol" aria-hidden="true">£</span><span><strong>Payments</strong><small>Working-hours import · review only</small></span><span class="shortcut-arrow" aria-hidden="true">↗</span></a>
-              <a class="operations-shortcut" href="payment-tracker.html"><span class="shortcut-symbol" aria-hidden="true">▥</span><span><strong>Payment Tracker</strong><small>Weekly Google Sheet copy & paste</small></span><span class="shortcut-arrow" aria-hidden="true">↗</span></a>
-              <a class="operations-shortcut" href="#drivers"><span class="shortcut-symbol" aria-hidden="true">♧</span><span><strong>Drivers & onboarding</strong><small>One driver profile · recruitment tasks · evidence</small></span><span class="shortcut-arrow" aria-hidden="true">↗</span></a>
-            </section>
-            <div class="overview-grid">
-              <article class="panel"><div class="panel-heading"><div><h2>Coming up next</h2><p class="muted small">MOT and service dates for your operational fleet</p></div><a href="#compliance" class="text-link">View all ↗</a></div><div id="upcoming-list"></div></article>
-              <article class="panel"><div class="panel-heading"><h2>Fleet at a glance</h2><span class="pill neutral">LIVE RECORDS</span></div><div id="fleet-breakdown"></div><div class="panel-foot"><span id="missing-mot-note"></span><a href="#vehicles" class="text-link">Manage fleet ↗</a></div></article>
-            </div>
-            <article class="panel"><div class="panel-heading"><div><h2>Recent changes</h2><p class="muted small">Saved updates across your workspace</p></div><a href="#activity" class="text-link">View activity ↗</a></div><div id="recent-activity"></div></article>
-          </section>
-
-          <section id="vehicles" class="page-section" hidden>
-            <div class="vehicle-controls">
-              <div class="vehicle-search-row"><label class="search"><span class="sr-only">Search vehicles</span><input id="vehicle-search" type="search" placeholder="Search Van Reg, VIN, ownership or notes…"></label><button class="button" id="export-vehicles">Export CSV</button></div>
-              <div class="vehicle-filters" aria-label="Vehicle filters">
-                <label>Fleet status<select id="vehicle-filter"><option value="">All current statuses</option><option>Active</option><option>Needs review</option><option>In maintenance</option><option>Off hire</option><option>SORN</option><option>Personal</option><option>Archived</option></select></label>
-                <label>Ownership<select id="vehicle-ownership-filter"><option value="">All owners</option></select></label>
-                <label>MOT<select id="vehicle-mot-filter"><option value="">All MOT dates</option><option value="overdue">Overdue</option><option value="soon">Due within 30 days</option><option value="current">More than 30 days</option><option value="missing">Missing MOT date</option></select></label>
-                <label>Service status<select id="vehicle-service-filter"><option value="">All service statuses</option><option>Overdue</option><option>Due soon</option><option>OK</option><option>Missing service data</option><option>Missing service intervals</option><option>Check data</option><option>Not in service</option></select></label>
-                <button type="button" class="button quiet" id="reset-vehicle-filters">Clear filters</button>
-              </div>
-              <p class="small muted vehicle-help">Choose Edit vehicle beside a registration to update its details. Headings stay visible as you scroll through the table.</p>
-            </div>
-            <article class="panel table-panel"><div class="table-wrap vehicle-scroll" id="vehicle-scroll" role="region" tabindex="0" aria-label="Vehicle records, scroll to view more rows and columns"><table><caption class="sr-only">Vehicle records</caption><thead><tr id="vehicle-headings"></tr></thead><tbody id="vehicle-rows"></tbody></table></div><div id="vehicle-empty" class="empty" hidden>No vehicles match. Try another search or add a vehicle.</div><div class="table-footer" id="vehicle-count"></div></article>
-          </section>
-
-          <section id="drivers" class="page-section" hidden>
-            <section class="journey-intro">
-              <div><span class="journey-eyebrow">YOUR TEAM, ONE PLACE</span><h2>Drivers & recruitment</h2>
-              <p>Add a driver once, then follow recruitment checks, training, ridealongs and evidence from their profile.</p></div>
-              <div class="journey-head-actions">
-                <button id="journey-import-open" type="button" class="button">Import tracker spreadsheets</button>
-                <span id="journey-storage-mode" class="journey-mode">Checklist setup required</span>
-              </div>
-            </section>
-            <div class="journey-kpis" aria-label="Driver onboarding overview">
-              <article><span>Total drivers</span><strong id="journey-all-count">0</strong></article>
-              <article><span>Onboarding</span><strong id="journey-open-count">0</strong></article>
-              <article><span>Active</span><strong id="journey-active-count">0</strong></article>
-              <article><span>Missing checklist items</span><strong id="journey-todo-count">—</strong></article>
-            </div>
-            <p id="journey-status" class="journey-message" role="status" aria-live="polite"></p>
-            <div id="journey-import-panel" class="journey-import-panel" hidden>
-              <strong>Import your existing Google trackers (local review)</strong>
-              <p>Download each sheet as Microsoft Excel (.xlsx), then import here. Matching uses unique contact details where available. No bulk driver records are created or overwritten automatically.</p>
-              <div class="journey-import-controls"><label class="button" for="journey-recruit-file">Recruitment tracker XLSX<input id="journey-recruit-file" type="file" accept=".xlsx" hidden></label>
-                <label class="button" for="journey-onboard-file">Onboarding tracker XLSX<input id="journey-onboard-file" type="file" accept=".xlsx" hidden></label>
-                <button type="button" class="button" id="journey-import-close">Close</button></div>
-              <div id="journey-import-results"></div>
-            </div>
-            <div class="journey-view-controls" role="group" aria-label="Driver view">
-              <div class="journey-view-tabs">
-                <button type="button" id="journey-show-tracker" class="active" aria-pressed="true">▦ Recruitment tracker</button>
-                <button type="button" id="journey-show-drivers" aria-pressed="false">♙ Driver list</button>
-              </div>
-              <div class="journey-tracker-actions">
-                <span>Click a coloured cell to update a recruitment task · click a name for the driver profile</span>
-                <button type="button" class="button" id="journey-export-tracker">↓ Export tracker CSV</button>
-              </div>
-            </div>
-            <div class="toolbar"><label class="search"><span class="sr-only">Search drivers</span><input id="driver-search" type="search" placeholder="Search name, email or phone…"></label><label><span class="sr-only">Driver status</span><select id="driver-filter"><option value="">All statuses</option><option>Active</option><option>Onboarding</option><option>Inactive</option><option>Archived</option></select></label><button class="button" id="export-drivers">Export CSV</button></div>
-            <section id="journey-tracker-section" class="journey-tracker-section">
-              <div class="journey-tracker-caption"><span class="journey-tracker-dot" aria-hidden="true"></span><strong>Driver Recruitment Tracker</strong>
-                <span id="journey-tracker-count">0 drivers</span><small>Tasks follow your Google Sheet headings</small></div>
-              <div class="journey-tracker-scroll" tabindex="0" role="region" aria-label="Scrollable driver recruitment tracker spreadsheet">
-                <table class="journey-tracker-sheet" aria-label="Driver recruitment tracker">
-                  <thead><tr>
-                    <th class="journey-col-driver" scope="col">Driver</th><th class="journey-col-phone" scope="col">Phone Number</th>
-                    <th scope="col">Requirements</th><th scope="col">SAM First Part</th>
-                    <th scope="col">Amazon Account</th><th scope="col">Accurate DBS</th>
-                    <th scope="col">Amiigo Training</th><th scope="col">Sam 2nd Part</th>
-                    <th class="journey-col-notes" scope="col">Notes</th><th class="journey-col-status" scope="col">Status</th>
-                  </tr></thead>
-                  <tbody id="journey-tracker-body"></tbody>
-                </table>
-              </div>
-              <div id="journey-tracker-empty" class="journey-tracker-empty" hidden>No drivers match this search.</div>
-              <p class="journey-tracker-footnote">Updates to the task cells are only permanent when secure checklist storage is enabled. Recruitment Status is separate from the official BESA driver account status.</p>
-            </section>
-            <article id="journey-driver-list" class="panel table-panel" hidden><div class="table-wrap"><table><caption class="sr-only">Driver records</caption><thead><tr><th>Driver</th><th>Contact</th><th>Assigned vehicle</th><th>Licence expiry</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="driver-rows"></tbody></table></div><div id="driver-empty" class="empty" hidden>No drivers match. Add your first driver to get started.</div><div class="table-footer" id="driver-count"></div></article>
-          </section>
-
-          <section id="compliance" class="page-section" hidden>
-            <div class="toolbar"><label class="search"><span class="sr-only">Search compliance</span><input id="compliance-search" type="search" placeholder="Search registration or driver…"></label><label><span class="sr-only">Compliance status</span><select id="compliance-filter"><option value="attention">Needs attention</option><option value="all">All recorded dates</option><option value="overdue">Overdue</option><option value="soon">Due within 30 days</option><option value="missing">Missing dates</option></select></label></div>
-            <article class="panel table-panel"><div class="table-wrap"><table><caption class="sr-only">Compliance deadlines</caption><thead><tr><th>Record</th><th>Requirement</th><th>Due date</th><th>Timing</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="compliance-rows"></tbody></table></div><div class="empty" id="compliance-empty" hidden>No deadlines match this view.</div><div class="panel-foot muted small">Off-hire, SORN, personal and archived vehicles are excluded from reminders. Dates are compared with today's date in the UK.</div></article>
-          </section>
-
-          <section id="activity" class="page-section" hidden><article class="panel"><div class="panel-heading"><h2>Activity log</h2><span class="muted small">Latest 100 changes</span></div><div id="activity-list"></div></article></section>
+  <div id="candidate-loading" class="candidate-notice">Checking your private invitation…</div>
+  <div id="candidate-invalid" class="candidate-notice error" hidden>We couldn't verify your invitation. Please ask your BESA contact for a fresh link.</div>
+  <section id="candidate-finished" hidden class="candidate-finished">
+    <div class="success-mark" aria-hidden="true">✓</div><h2>Information sent to BESA</h2>
+    <p>Thank you. Your information and documents have been submitted securely for the office team to review.</p>
+    <p><strong>Important:</strong> Submission is not confirmation of employment or proof that your right-to-work checks have been approved. BESA will contact you if anything else is needed.</p>
+  </section>
+  <div id="candidate-workspace" hidden>
+    <div class="candidate-intro"><span class="avatar">↗</span><span id="candidate-welcome">Complete your onboarding</span>
+      <span id="candidate-expiry" class="expiry"></span></div>
+    <div class="steps" aria-label="Application sections">
+      <button type="button" class="step active" data-step="1" aria-current="step"><span>1</span> Personal information</button>
+      <button type="button" class="step" data-step="2"><span>2</span> Licence & eligibility</button>
+      <button type="button" class="step" data-step="3"><span>3</span> Documents & submit</button>
+    </div>
+    <form id="candidate-form" novalidate>
+      <section class="candidate-card" data-panel="1">
+        <div class="card-title"><span class="symbol">01</span><div><h2>Personal details</h2><p>Details that help our recruitment team identify and contact you.</p></div></div>
+        <div class="fields">
+          <label>First name <span class="required">*</span><input name="first_name" required autocomplete="given-name" maxlength="60"></label>
+          <label>Last name <span class="required">*</span><input name="last_name" required autocomplete="family-name" maxlength="60"></label>
+          <label>Date of birth <span class="required">*</span><input name="date_of_birth" type="date" required></label>
+          <label>Email address <span class="required">*</span><input name="email" type="email" required autocomplete="email" maxlength="150"></label>
+          <label>Mobile number <span class="required">*</span><input name="phone" type="tel" required autocomplete="tel" maxlength="40"></label>
+          <label>Address line 1 <span class="required">*</span><input name="address_1" required autocomplete="address-line1" maxlength="160"></label>
+          <label>Address line 2 <input name="address_2" autocomplete="address-line2" maxlength="160"></label>
+          <label>Town / city <span class="required">*</span><input name="city" required autocomplete="address-level2" maxlength="100"></label>
+          <label>Postcode <span class="required">*</span><input name="postcode" required autocomplete="postal-code" maxlength="20"></label>
+          <label>Emergency contact name <input name="emergency_contact_name" autocomplete="off" maxlength="120"></label>
+          <label>Emergency contact phone <input name="emergency_contact_phone" type="tel" autocomplete="off" maxlength="40"></label>
         </div>
-        <footer class="main-footer"><span>Besa Logistics · Operations</span><span id="last-updated">Your changes save to your workspace</span></footer>
-      </main>
-    </div>
-  </div>
-
-  <dialog id="driver-profile" aria-labelledby="driver-profile-title">
-    <header class="journey-profile-heading">
-      <div><p class="journey-eyebrow">BESA DRIVER PROFILE</p><h2 id="driver-profile-title">Driver</h2>
-        <span id="driver-profile-subtitle"></span></div>
-      <button type="button" id="driver-profile-close" class="journey-close" aria-label="Close driver profile">×</button>
-    </header>
-    <div class="journey-profile-nav" role="tablist" aria-label="Profile sections">
-      <button type="button" class="active" role="tab" aria-selected="true" data-journey-tab="overview">Overview</button>
-      <button type="button" role="tab" aria-selected="false" data-journey-tab="recruitment">Recruitment checklist</button>
-      <button type="button" role="tab" aria-selected="false" data-journey-tab="evidence">Documents & evidence</button>
-      <button type="button" role="tab" aria-selected="false" data-journey-tab="invitation">Candidate invitation</button>
-    </div>
-    <div class="journey-profile-body">
-      <section id="journey-panel-overview" class="journey-pane"></section>
-      <section id="journey-panel-recruitment" class="journey-pane" hidden></section>
-      <section id="journey-panel-evidence" class="journey-pane" hidden></section>
-      <section id="journey-panel-invitation" class="journey-pane" hidden>
-        <h3>Invite a candidate to upload their details</h3>
-        <p class="journey-profile-note">Generate a private, seven-day link for this driver. They can fill in their contact details, licence information and upload passport/right-to-work evidence from their phone. No email is sent automatically.</p>
-        <div class="journey-invite-action"><button type="button" class="button primary" id="journey-create-invite">+ Generate private invitation link</button>
-          <span>Send the link directly to the candidate. Anyone with the link can submit information until it expires, so do not share it publicly.</span></div>
-        <p class="journey-message" id="journey-invite-message" role="status" aria-live="polite"></p>
-        <div id="journey-invite-link" class="journey-invite-link" hidden></div>
-        <h3>Invitation status</h3><div id="journey-invite-list"></div>
-        <h3>Candidate submitted information</h3><div id="journey-invite-details"></div>
-        <h3>Private candidate documents</h3><div id="journey-invite-files"></div>
-        <p class="journey-profile-note warn">These are unverified candidate-submitted records. Review original evidence and complete statutory right-to-work checks before confirming eligibility or making a driver Active. They are not automatically copied to SAM.</p>
+        <div class="form-actions"><span class="hint">* Required fields</span><button type="button" class="primary" id="next-1">Next: Licence details <span aria-hidden="true">→</span></button></div>
       </section>
-      <p id="driver-profile-feedback" class="journey-message" role="status" aria-live="polite"></p>
-    </div>
-    <footer class="journey-profile-footer">
-      <button id="driver-profile-export" type="button" class="button">↓ Export checklist draft</button>
-      <button id="driver-profile-edit" type="button" class="button">Edit driver details</button>
-      <button id="driver-profile-done" type="button" class="button primary">Done</button>
-    </footer>
-  </dialog>
-  <dialog id="record-dialog" aria-labelledby="dialog-title">
-    <form id="record-form"><div class="dialog-heading"><div><p class="eyebrow" id="dialog-eyebrow">FLEET RECORD</p><h2 id="dialog-title">Add vehicle</h2></div><button type="button" class="icon-button" id="close-dialog" aria-label="Close">×</button></div><div id="form-fields" class="form-grid"></div><p id="form-status" class="feedback" role="status" aria-live="polite"></p><div class="dialog-footer"><button type="button" class="button" id="cancel-dialog">Cancel</button><button class="button primary" id="save-record">Save vehicle</button></div></form>
-  </dialog>
-  <noscript>This website needs JavaScript enabled to sign in and manage records.</noscript>
-</body>
-</html>
+      <section class="candidate-card" data-panel="2" hidden>
+        <div class="card-title"><span class="symbol">02</span><div><h2>Driving licence & right to work</h2><p>These details help BESA arrange the necessary checks. Your documents are reviewed separately.</p></div></div>
+        <div class="fields">
+          <label>Driving licence type <span class="required">*</span><select name="licence_type" required>
+            <option value="">Select licence type</option><option>Manual</option><option>Automatic</option>
+          </select></label>
+          <label>Licence issuing country <input name="licence_issuing_country" maxlength="80" placeholder="e.g. United Kingdom"></label>
+          <label>Licence issue date <input name="licence_issue_date" type="date"></label>
+          <label>Licence expiry date <span class="required">*</span><input name="licence_expiry" type="date" required></label>
+          <label>Right-to-work evidence type <span class="required">*</span><select name="right_to_work_type" required>
+            <option value="">Select an option</option>
+            <option>UK or Irish passport</option><option>Share code / immigration status</option><option>Other evidence</option>
+          </select></label>
+          <label>Right-to-work expiry (if applicable)<input name="right_to_work_expiry" type="date"></label>
+          <label>Right-to-work share code (if applicable)<input name="right_to_work_share_code" autocomplete="off" maxlength="40"></label>
+          <label>Passport expiry (if applicable)<input name="passport_expiry" type="date"></label>
+        </div>
+        <div class="candidate-advice"><strong>Right-to-work checks:</strong> Uploading a passport or share code does not automatically complete a statutory right-to-work check. BESA must verify your eligibility using the correct process.</div>
+        <div class="form-actions"><button type="button" class="secondary" id="back-2">← Back</button><button type="button" class="primary" id="next-2">Next: Upload documents <span aria-hidden="true">→</span></button></div>
+      </section>
+      <section class="candidate-card" data-panel="3" hidden>
+        <div class="card-title"><span class="symbol">03</span><div><h2>Upload your documents</h2><p>Use a clear photograph or a PDF. Files are stored privately. We accept JPG, PNG, WEBP and PDF, up to 8 MB per file.</p></div></div>
+        <p class="documents-required">Required before submission: <strong>front and back of your driving licence</strong> and <strong>either passport or other right-to-work evidence</strong>.</p>
+        <div class="document-list" id="candidate-documents">
+          <div class="document-card" data-doc="driving-licence-front"><span class="doc-symbol">▣</span><div class="doc-desc"><strong>Driving licence — front <span class="required">*</span></strong><small>Clear photo of the front of your driving licence</small><span class="upload-state">Not uploaded</span></div><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-label="Driving licence front file"><button type="button" class="upload-button">Upload</button></div>
+          <div class="document-card" data-doc="driving-licence-back"><span class="doc-symbol">▣</span><div class="doc-desc"><strong>Driving licence — back</strong><small>Photo of the back of your driving licence</small><span class="upload-state">Not uploaded</span></div><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-label="Driving licence back file"><button type="button" class="upload-button">Upload</button></div>
+          <div class="document-card" data-doc="passport"><span class="doc-symbol">▤</span><div class="doc-desc"><strong>Passport / identity page</strong><small>Photo of the details page showing your photo and dates</small><span class="upload-state">Not uploaded</span></div><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-label="Passport photo file"><button type="button" class="upload-button">Upload</button></div>
+          <div class="document-card" data-doc="right-to-work"><span class="doc-symbol">▤</span><div class="doc-desc"><strong>Other right-to-work evidence</strong><small>Relevant immigration or eligibility documents, if applicable</small><span class="upload-state">Not uploaded</span></div><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-label="Right to work evidence file"><button type="button" class="upload-button">Upload</button></div>
+          <div class="document-card" data-doc="dvla-evidence"><span class="doc-symbol">▥</span><div class="doc-desc"><strong>DVLA check evidence</strong><small>Licence check evidence, if requested</small><span class="upload-state">Not uploaded</span></div><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-label="DVLA document file"><button type="button" class="upload-button">Upload</button></div>
+          <div class="document-card" data-doc="proof-of-address"><span class="doc-symbol">⌂</span><div class="doc-desc"><strong>Proof of address</strong><small>Document showing your address, if requested</small><span class="upload-state">Not uploaded</span></div><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-label="Proof of address file"><button type="button" class="upload-button">Upload</button></div>
+        </div>
+        <div class="candidate-privacy">
+          <h3>How BESA will use your information</h3>
+          <p>BESA Logistics uses the details and documents you provide to assess your driver application and carry out onboarding and eligibility checks. They will be available to authorised BESA office staff, not other candidates. Do not upload bank statements, National Insurance documents or unrelated personal information unless BESA specifically requests them.</p>
+          <p>Your link is private but works for anyone who has it. Only open it yourself, don't forward it, and close this page on a shared device. Contact BESA to ask how long your information will be kept or to request a correction.</p>
+        </div>
+        <label class="consent"><input id="privacy_acknowledged" type="checkbox" required><span>I have read the information about how my details and documents will be used. <span class="required">*</span></span></label>
+        <label class="consent"><input id="declaration" type="checkbox" required><span>I confirm the information is accurate and the uploaded documents belong to me. <span class="required">*</span></span></label>
+        <p class="candidate-status" id="candidate-status" role="status" aria-live="polite"></p>
+        <div class="form-actions"><button type="button" class="secondary" id="back-3">← Back</button><button type="submit" class="primary" id="candidate-submit">Submit securely to BESA <span aria-hidden="true">✓</span></button></div>
+      </section>
+    </form>
+  </div>
+  <footer class="candidate-footer">BESA Logistics · Confidential recruitment application · Document approval is completed by BESA office staff.</footer>
+</main>
+</body></html>
