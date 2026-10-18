@@ -91,4 +91,17 @@ export async function draftHistory(workspace,key){
   if(error)throw new Error('Could not read version history: '+error.message);
   return data||[];
 }
+export async function readDraftVersion(workspace,key,version){
+  keyFor(workspace,key);
+  if(!Number.isSafeInteger(version)||version<1)
+    throw new Error('Choose a valid positive version number.');
+  const client=await authenticated();
+  const {data,error}=await client.from('besa_workspace_draft_history')
+    .select('payload,version,change_at')
+    .eq('workspace',workspace).eq('workspace_key',key)
+    .eq('version',version).maybeSingle();
+  if(error)throw new Error('Could not read the saved version: '+error.message);
+  if(!data)throw new Error('That version was not found. Your current draft remains unchanged.');
+  return data;
+}
 export function clearDraftSession(){knownVersions.clear();}
