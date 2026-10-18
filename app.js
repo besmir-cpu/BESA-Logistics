@@ -7,7 +7,7 @@
   const titles = {
     dashboard: ['Overview', 'YOUR DAILY PICTURE', 'Operations overview', 'A clear view of your fleet and the people behind it.'],
     vehicles: ['Vehicles', 'FLEET MANAGEMENT', 'Your fleet, organised.', 'Add vehicles, keep records current and track what is due.'],
-    drivers: ['Drivers', 'YOUR PEOPLE', 'The team behind the miles.', 'Manage driver details, licence dates and vehicle assignments.'],
+    drivers: ['Drivers & onboarding', 'YOUR PEOPLE', 'Every driver, one clear journey.', 'Manage drivers, recruitment checks, training and their documents from one place.'],
     compliance: ['Compliance', 'STAY A STEP AHEAD', 'Keep the fleet road ready.', 'MOT, servicing, tax, insurance and driver licence reminders.'],
     activity: ['Activity', 'WORKSPACE HISTORY', 'Every update, accounted for.', 'See who changed a record and when it was saved.']
   };
@@ -205,7 +205,7 @@
     const rows = filteredDrivers();
     $('driver-rows').innerHTML = rows.map(d => {
       const vehicle = state.vehicles.find(v => v.id === d.vehicle_id);
-      return `<tr><td><strong>${escape(nameOf(d))}</strong><span class="secondary">${escape(d.contract || 'No contract recorded')}</span></td><td>${escape(d.email || '—')}<span class="secondary">${escape(d.phone || 'No phone recorded')}</span></td><td>${escape(vehicle?.registration || 'Unassigned')}</td><td>${dateCell(d.licence_expiry)}</td><td>${statusPill(d.status)}</td><td>${editButton('driver', d.id)}</td></tr>`;
+      return `<tr><td><button type="button" class="journey-driver-link" data-driver-profile="${escape(d.id)}" aria-label="Open profile for ${escape(nameOf(d))}"><strong>${escape(nameOf(d))}</strong><span>View profile →</span></button><span class="secondary">${escape(d.contract || 'No contract recorded')}</span></td><td>${escape(d.email || '—')}<span class="secondary">${escape(d.phone || 'No phone recorded')}</span></td><td>${escape(vehicle?.registration || 'Unassigned')}</td><td>${dateCell(d.licence_expiry)}</td><td>${statusPill(d.status)}</td><td>${editButton('driver', d.id)}</td></tr>`;
     }).join('');
     $('driver-empty').hidden = rows.length > 0; $('driver-count').textContent = `${rows.length} ${rows.length === 1 ? 'driver' : 'drivers'} shown`;
   }
@@ -257,6 +257,7 @@
       if (generation !== state.generation) return false;
       state.vehicles = vehicles; state.drivers = drivers; state.activity = activityResult.data;
       setReady(true); render();
+      window.dispatchEvent(new CustomEvent('besa:drivers-loaded', { detail: { drivers: state.drivers, vehicles: state.vehicles } }));
       $('last-updated').textContent = 'Last refreshed ' + formatTime(new Date().toISOString()) + ' UK';
       return true;
     } catch (error) {
@@ -451,6 +452,9 @@
       if (state.session?.user.id !== sessionId) return;
       $('record-dialog').close(); state.edit = null;
       const loaded = await refresh();
+      if(loaded && edit.type === 'driver' && !edit.record) {
+        window.dispatchEvent(new CustomEvent('besa:driver-created',{detail:{id:data.id}}));
+      }
       showMessage(loaded ? `${edit.type === 'vehicle' ? 'Vehicle' : 'Driver'} ${edit.record ? 'updated' : 'added'} and saved.` : 'Your record was saved, but the workspace could not refresh. Choose Refresh to load the latest records.', !loaded);
     } catch (error) {
       if (state.session?.user.id !== sessionId) return;
@@ -486,6 +490,7 @@
     $('login-screen').hidden = Boolean(session); $('app-shell').hidden = !session;
     $('account-email').textContent = session?.user?.email || '';
     if (!session || oldId !== session.user.id) {
+      window.dispatchEvent(new Event('besa:driver-session-reset'));
       ++state.generation; state.vehicles = []; state.drivers = []; state.activity = []; setReady(false); showMessage('');
       if ($('record-dialog').open) $('record-dialog').close(); state.edit = null;
     }
