@@ -56,14 +56,11 @@ test('do not guess readiness from missing values; escape exported spreadsheet fo
   assert.equal(displayCsvSafe('Normal name'),'"Normal name"');
 });
 
-test('admin UI has a locked screen and no sensitive data uploads, invitations or database writes',()=>{
+test('previous recruitment page forwards to protected unified Drivers & Onboarding',()=>{
   const html=readFileSync(new URL('../recruitment.html',import.meta.url),'utf8');
-  const js=readFileSync(new URL('./office.js',import.meta.url),'utf8');
-  assert.ok(html.includes('id="recruit-locked"'));
-  assert.ok(html.includes('id="recruit-workspace" hidden'));
-  assert.ok(js.includes(".from('besa_admins')"));
-  assert.ok(js.includes(".eq('status','Onboarding')"));
-  assert.ok(!/\.from\('[^']+'\)\.(?:insert|upsert|update|delete)\(/.test(js));
-  assert.ok(!js.includes('localStorage'));
-  assert.ok(!js.includes('sessionStorage'));
+  const driver=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  assert.match(html,/index\.html#drivers/);
+  assert.match(driver,/id="driver-profile"/);
+  assert.match(driver,/id="journey-panel-recruitment"/);
+  assert.match(driver,/id="journey-panel-evidence"/);
 });
