@@ -91,7 +91,7 @@ test('All office trackers provide protected saving and local diagnostics',()=>{
   assert.ok(read('index.html').includes('operations/diagnostics.js'));
   const sql=read('supabase/migrations/003_secure_workspace_drafts_optional.sql');
   for(const phrase of ['enable row level security','besa_admins','p_expected_version',
-    'pg_advisory_xact_lock','besa_workspace_draft_history','NOT DEPLOYED']){
+    'pg_advisory_xact_lock','besa_workspace_draft_history','besa_is_admin']){
     assert.ok(sql.includes(phrase),phrase);
   }
   const frontend=read('operations/secure-drafts.mjs');
