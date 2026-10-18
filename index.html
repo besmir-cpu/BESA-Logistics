@@ -9,6 +9,9 @@
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
   <script defer src="config.js?v=freeze-page-4"></script>
   <script defer src="app.js?v=operations-20261017"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script type="module" src="driver-journey/office.js?v=1"></script>
+  <link rel="stylesheet" href="driver-journey/profile.css?v=1">
 <link rel="stylesheet" href="besa-theme.css?v=horizon-1">
 </head>
 <body>
@@ -32,8 +35,7 @@
       <nav aria-label="Main navigation">
         <a href="#dashboard" data-page="dashboard"><span aria-hidden="true">◫</span>Overview</a>
         <a href="#vehicles" data-page="vehicles"><span aria-hidden="true">▱</span>Vehicles<span id="nav-vehicle-count" class="nav-count">0</span></a>
-        <a href="#drivers" data-page="drivers"><span aria-hidden="true">♙</span>Drivers<span id="nav-driver-count" class="nav-count">0</span></a>
-        <a href="recruitment.html"><span aria-hidden="true">♧</span>Recruitment / Onboarding</a>
+        <a href="#drivers" data-page="drivers"><span aria-hidden="true">♙</span>Drivers & Onboarding<span id="nav-driver-count" class="nav-count">0</span></a>
         <a href="rota.html"><span aria-hidden="true">▦</span>Rota / Scheduling</a>
         <a href="rota.html#vans"><span aria-hidden="true">▤</span>Van Allocation</a>
         <a href="payments.html"><span aria-hidden="true">£</span>Payments</a>
@@ -63,7 +65,7 @@
               <a class="operations-shortcut" href="rota.html#vans"><span class="shortcut-symbol" aria-hidden="true">▤</span><span><strong>Van Allocation</strong><small>Vehicle status · driver allocation</small></span><span class="shortcut-arrow" aria-hidden="true">↗</span></a>
               <a class="operations-shortcut" href="payments.html"><span class="shortcut-symbol" aria-hidden="true">£</span><span><strong>Payments</strong><small>Working-hours import · review only</small></span><span class="shortcut-arrow" aria-hidden="true">↗</span></a>
               <a class="operations-shortcut" href="payment-tracker.html"><span class="shortcut-symbol" aria-hidden="true">▥</span><span><strong>Payment Tracker</strong><small>Weekly Google Sheet copy & paste</small></span><span class="shortcut-arrow" aria-hidden="true">↗</span></a>
-              <a class="operations-shortcut" href="recruitment.html"><span class="shortcut-symbol" aria-hidden="true">♧</span><span><strong>Driver recruitment</strong><small>Recruitment · training · onboarding</small></span><span class="shortcut-arrow" aria-hidden="true">↗</span></a>
+              <a class="operations-shortcut" href="#drivers"><span class="shortcut-symbol" aria-hidden="true">♧</span><span><strong>Drivers & onboarding</strong><small>One driver profile · recruitment tasks · evidence</small></span><span class="shortcut-arrow" aria-hidden="true">↗</span></a>
             </section>
             <div class="overview-grid">
               <article class="panel"><div class="panel-heading"><div><h2>Coming up next</h2><p class="muted small">MOT and service dates for your operational fleet</p></div><a href="#compliance" class="text-link">View all ↗</a></div><div id="upcoming-list"></div></article>
@@ -88,6 +90,29 @@
           </section>
 
           <section id="drivers" class="page-section" hidden>
+            <section class="journey-intro">
+              <div><span class="journey-eyebrow">YOUR TEAM, ONE PLACE</span><h2>Drivers & recruitment</h2>
+              <p>Add a driver once, then follow recruitment checks, training, ridealongs and evidence from their profile.</p></div>
+              <div class="journey-head-actions">
+                <button id="journey-import-open" type="button" class="button">Import tracker spreadsheets</button>
+                <span id="journey-storage-mode" class="journey-mode">Checklist setup required</span>
+              </div>
+            </section>
+            <div class="journey-kpis" aria-label="Driver onboarding overview">
+              <article><span>Total drivers</span><strong id="journey-all-count">0</strong></article>
+              <article><span>Onboarding</span><strong id="journey-open-count">0</strong></article>
+              <article><span>Active</span><strong id="journey-active-count">0</strong></article>
+              <article><span>Missing checklist items</span><strong id="journey-todo-count">—</strong></article>
+            </div>
+            <p id="journey-status" class="journey-message" role="status" aria-live="polite"></p>
+            <div id="journey-import-panel" class="journey-import-panel" hidden>
+              <strong>Import your existing Google trackers (local review)</strong>
+              <p>Download each sheet as Microsoft Excel (.xlsx), then import here. Matching uses unique contact details where available. No bulk driver records are created or overwritten automatically.</p>
+              <div class="journey-import-controls"><label class="button" for="journey-recruit-file">Recruitment tracker XLSX<input id="journey-recruit-file" type="file" accept=".xlsx" hidden></label>
+                <label class="button" for="journey-onboard-file">Onboarding tracker XLSX<input id="journey-onboard-file" type="file" accept=".xlsx" hidden></label>
+                <button type="button" class="button" id="journey-import-close">Close</button></div>
+              <div id="journey-import-results"></div>
+            </div>
             <div class="toolbar"><label class="search"><span class="sr-only">Search drivers</span><input id="driver-search" type="search" placeholder="Search name, email or phone…"></label><label><span class="sr-only">Driver status</span><select id="driver-filter"><option value="">All statuses</option><option>Active</option><option>Onboarding</option><option>Inactive</option><option>Archived</option></select></label><button class="button" id="export-drivers">Export CSV</button></div>
             <article class="panel table-panel"><div class="table-wrap"><table><caption class="sr-only">Driver records</caption><thead><tr><th>Driver</th><th>Contact</th><th>Assigned vehicle</th><th>Licence expiry</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="driver-rows"></tbody></table></div><div id="driver-empty" class="empty" hidden>No drivers match. Add your first driver to get started.</div><div class="table-footer" id="driver-count"></div></article>
           </section>
@@ -104,6 +129,28 @@
     </div>
   </div>
 
+  <dialog id="driver-profile" aria-labelledby="driver-profile-title">
+    <header class="journey-profile-heading">
+      <div><p class="journey-eyebrow">BESA DRIVER PROFILE</p><h2 id="driver-profile-title">Driver</h2>
+        <span id="driver-profile-subtitle"></span></div>
+      <button type="button" id="driver-profile-close" class="journey-close" aria-label="Close driver profile">×</button>
+    </header>
+    <div class="journey-profile-nav" role="tablist" aria-label="Profile sections">
+      <button type="button" class="active" role="tab" aria-selected="true" data-journey-tab="overview">Overview</button>
+      <button type="button" role="tab" aria-selected="false" data-journey-tab="recruitment">Recruitment checklist</button>
+      <button type="button" role="tab" aria-selected="false" data-journey-tab="evidence">Documents & evidence</button>
+    </div>
+    <div class="journey-profile-body">
+      <section id="journey-panel-overview" class="journey-pane"></section>
+      <section id="journey-panel-recruitment" class="journey-pane" hidden></section>
+      <section id="journey-panel-evidence" class="journey-pane" hidden></section>
+      <p id="driver-profile-feedback" class="journey-message" role="status" aria-live="polite"></p>
+    </div>
+    <footer class="journey-profile-footer">
+      <button id="driver-profile-edit" type="button" class="button">Edit driver details</button>
+      <button id="driver-profile-done" type="button" class="button primary">Done</button>
+    </footer>
+  </dialog>
   <dialog id="record-dialog" aria-labelledby="dialog-title">
     <form id="record-form"><div class="dialog-heading"><div><p class="eyebrow" id="dialog-eyebrow">FLEET RECORD</p><h2 id="dialog-title">Add vehicle</h2></div><button type="button" class="icon-button" id="close-dialog" aria-label="Close">×</button></div><div id="form-fields" class="form-grid"></div><p id="form-status" class="feedback" role="status" aria-live="polite"></p><div class="dialog-footer"><button type="button" class="button" id="cancel-dialog">Cancel</button><button class="button primary" id="save-record">Save vehicle</button></div></form>
   </dialog>
