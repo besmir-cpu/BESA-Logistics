@@ -113,8 +113,36 @@
                 <button type="button" class="button" id="journey-import-close">Close</button></div>
               <div id="journey-import-results"></div>
             </div>
+            <div class="journey-view-controls" role="group" aria-label="Driver view">
+              <div class="journey-view-tabs">
+                <button type="button" id="journey-show-tracker" class="active" aria-pressed="true">▦ Recruitment tracker</button>
+                <button type="button" id="journey-show-drivers" aria-pressed="false">♙ Driver list</button>
+              </div>
+              <div class="journey-tracker-actions">
+                <span>Click a coloured cell to update a recruitment task · click a name for the driver profile</span>
+                <button type="button" class="button" id="journey-export-tracker">↓ Export tracker CSV</button>
+              </div>
+            </div>
             <div class="toolbar"><label class="search"><span class="sr-only">Search drivers</span><input id="driver-search" type="search" placeholder="Search name, email or phone…"></label><label><span class="sr-only">Driver status</span><select id="driver-filter"><option value="">All statuses</option><option>Active</option><option>Onboarding</option><option>Inactive</option><option>Archived</option></select></label><button class="button" id="export-drivers">Export CSV</button></div>
-            <article class="panel table-panel"><div class="table-wrap"><table><caption class="sr-only">Driver records</caption><thead><tr><th>Driver</th><th>Contact</th><th>Assigned vehicle</th><th>Licence expiry</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="driver-rows"></tbody></table></div><div id="driver-empty" class="empty" hidden>No drivers match. Add your first driver to get started.</div><div class="table-footer" id="driver-count"></div></article>
+            <section id="journey-tracker-section" class="journey-tracker-section">
+              <div class="journey-tracker-caption"><span class="journey-tracker-dot" aria-hidden="true"></span><strong>Driver Recruitment Tracker</strong>
+                <span id="journey-tracker-count">0 drivers</span><small>Tasks follow your Google Sheet headings</small></div>
+              <div class="journey-tracker-scroll" tabindex="0" role="region" aria-label="Scrollable driver recruitment tracker spreadsheet">
+                <table class="journey-tracker-sheet" aria-label="Driver recruitment tracker">
+                  <thead><tr>
+                    <th class="journey-col-driver" scope="col">Driver</th><th class="journey-col-phone" scope="col">Phone Number</th>
+                    <th scope="col">Requirements</th><th scope="col">SAM First Part</th>
+                    <th scope="col">Amazon Account</th><th scope="col">Accurate DBS</th>
+                    <th scope="col">Amiigo Training</th><th scope="col">Sam 2nd Part</th>
+                    <th class="journey-col-notes" scope="col">Notes</th><th class="journey-col-status" scope="col">Status</th>
+                  </tr></thead>
+                  <tbody id="journey-tracker-body"></tbody>
+                </table>
+              </div>
+              <div id="journey-tracker-empty" class="journey-tracker-empty" hidden>No drivers match this search.</div>
+              <p class="journey-tracker-footnote">Updates to the task cells are only permanent when secure checklist storage is enabled. Recruitment Status is separate from the official BESA driver account status.</p>
+            </section>
+            <article id="journey-driver-list" class="panel table-panel" hidden><div class="table-wrap"><table><caption class="sr-only">Driver records</caption><thead><tr><th>Driver</th><th>Contact</th><th>Assigned vehicle</th><th>Licence expiry</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="driver-rows"></tbody></table></div><div id="driver-empty" class="empty" hidden>No drivers match. Add your first driver to get started.</div><div class="table-footer" id="driver-count"></div></article>
           </section>
 
           <section id="compliance" class="page-section" hidden>
