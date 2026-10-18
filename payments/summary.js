@@ -1,4 +1,5 @@
 // Local, review-only working-hours summary. No calls to BESA data services.
+import { loadExcelJS } from '../operations/lazy-excel.mjs';
 const $=id=>document.getElementById(id);
 const state={file:null,sheets:[],sheet:null,headers:[],summary:[],warnings:[],records:[]};
 const MAX_FILE_SIZE=15*1024*1024,MAX_ROWS=20000,MAX_COLUMNS=70;
@@ -271,7 +272,7 @@ async function loadFile(file){
     if(rows.length>MAX_ROWS+50)throw new Error('CSV is too large for this review.');
     sheets=[{name:'CSV data',rows:rows.map(r=>r.slice(0,MAX_COLUMNS))}];
   }else if(file.name.toLowerCase().endsWith('.xlsx')){
-    if(!window.ExcelJS)throw new Error('Excel importer is unavailable. Try refreshing or exporting CSV.');
+    await loadExcelJS();
     const book=new window.ExcelJS.Workbook();
     await book.xlsx.load(await file.arrayBuffer());
     sheets=readXlsx(book);
