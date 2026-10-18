@@ -12,6 +12,7 @@
   <!-- Excel importer is now loaded on demand, reducing initial page weight. -->
   <script type="module" src="driver-journey/office.js?v=1"></script>
   <link rel="stylesheet" href="driver-journey/profile.css?v=1">
+  <link rel="stylesheet" href="driver-journey/candidate-invitations.css?v=1">
 <link rel="stylesheet" href="besa-theme.css?v=horizon-1">
 <link rel="stylesheet" href="operations/diagnostics.css?v=1">
 <script defer src="operations/diagnostics.js?v=1"></script>
@@ -170,11 +171,24 @@
       <button type="button" class="active" role="tab" aria-selected="true" data-journey-tab="overview">Overview</button>
       <button type="button" role="tab" aria-selected="false" data-journey-tab="recruitment">Recruitment checklist</button>
       <button type="button" role="tab" aria-selected="false" data-journey-tab="evidence">Documents & evidence</button>
+      <button type="button" role="tab" aria-selected="false" data-journey-tab="invitation">Candidate invitation</button>
     </div>
     <div class="journey-profile-body">
       <section id="journey-panel-overview" class="journey-pane"></section>
       <section id="journey-panel-recruitment" class="journey-pane" hidden></section>
       <section id="journey-panel-evidence" class="journey-pane" hidden></section>
+      <section id="journey-panel-invitation" class="journey-pane" hidden>
+        <h3>Invite a candidate to upload their details</h3>
+        <p class="journey-profile-note">Generate a private, seven-day link for this driver. They can fill in their contact details, licence information and upload passport/right-to-work evidence from their phone. No email is sent automatically.</p>
+        <div class="journey-invite-action"><button type="button" class="button primary" id="journey-create-invite">+ Generate private invitation link</button>
+          <span>Send the link directly to the candidate. Anyone with the link can submit information until it expires, so do not share it publicly.</span></div>
+        <p class="journey-message" id="journey-invite-message" role="status" aria-live="polite"></p>
+        <div id="journey-invite-link" class="journey-invite-link" hidden></div>
+        <h3>Invitation status</h3><div id="journey-invite-list"></div>
+        <h3>Candidate submitted information</h3><div id="journey-invite-details"></div>
+        <h3>Private candidate documents</h3><div id="journey-invite-files"></div>
+        <p class="journey-profile-note warn">These are unverified candidate-submitted records. Review original evidence and complete statutory right-to-work checks before confirming eligibility or making a driver Active. They are not automatically copied to SAM.</p>
+      </section>
       <p id="driver-profile-feedback" class="journey-message" role="status" aria-live="polite"></p>
     </div>
     <footer class="journey-profile-footer">
