@@ -23,7 +23,7 @@ create table if not exists public.besa_driver_evidence (
   driver_id text not null,
   doc_type text not null check(doc_type in (
     'right-to-work','driving-licence-front','driving-licence-back',
-    'dvla-check','proof-of-address','other'
+    'dvla-check','proof-of-address','kyc-selfie','other'
   )),
   file_name text not null check(length(file_name) between 1 and 160),
   storage_path text not null unique,
