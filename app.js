@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const $ = id => document.getElementById(id);
-  const state = { session: null, vehicles: [], drivers: [], activity: [], ready: false, page: 'dashboard', edit: null, generation: 0, busy: false };
+  const state = { session: null, vehicles: [], drivers: [], activity: [], ready: false, page: 'dashboard', edit: null, generation: 0, busy: false, trial: false };
   const vehicleStatuses = ['Active', 'In maintenance', 'Off hire', 'SORN', 'Personal', 'Archived'];
   const driverStatuses = ['Active', 'Onboarding', 'Inactive', 'Archived'];
   // Data is kept in memory while staff change sections. Render only the
@@ -60,7 +60,7 @@
     scheduleVehicleHeader();
     $('data-content').hidden = !ready;
     ['primary-add', 'export-vehicles', 'export-drivers'].forEach(id => { $(id).disabled = !ready; });
-    $('connection-label').textContent = ready ? 'Workspace connected' : 'Workspace unavailable';
+    $('connection-label').textContent = state.trial ? 'Trial preview · sample data' : ready ? 'Workspace connected' : 'Workspace unavailable';
   }
   function route() {
     const requested = location.hash.slice(1);
@@ -260,6 +260,10 @@
     return rows;
   }
   async function refresh() {
+    if (state.trial) {
+      // Trial refresh only reloads fictional browser-memory data.
+      loadTrialData(); setReady(true); render(); return true;
+    }
     if (!state.session) return false;
     const generation = ++state.generation;
     $('refresh-button').disabled = true; $('loading-state').hidden = state.ready;
@@ -441,7 +445,7 @@
   function closeForm() { if (!state.busy) { $('record-dialog').close(); state.edit = null; } }
   async function saveRecord(event) {
     event.preventDefault();
-    if (state.busy || !state.edit || !state.session) return;
+    if (state.busy || !state.edit || (!state.session && !state.trial)) return;
     const edit = state.edit; const fields = edit.type === 'vehicle' ? vehicleFields : driverFields();
     const values = new FormData($('record-form')); const payload = {};
     for (const [field, , inputType, , opts = {}] of fields) {
@@ -466,6 +470,23 @@
     if (edit.type === 'vehicle' && !/^[A-Z0-9-]{2,16}$/.test(payload.registration)) { $('form-status').textContent = 'Enter a valid registration using letters and numbers.'; return; }
     if (edit.type === 'driver' && !payload.first_name) { $('form-status').textContent = 'Enter the driver’s first name.'; return; }
     if (payload.last_service_date && payload.service_due && payload.service_due < payload.last_service_date) { $('form-status').textContent = 'Next service date cannot be before the last service date.'; return; }
+    if (state.trial) {
+      // Pure in-memory updates; never access the Supabase client or write a
+      // candidate record in unauthenticated trial mode.
+      const list = edit.type === 'vehicle' ? state.vehicles : state.drivers;
+      const record = { ...(edit.record || {}), ...payload,
+        id: edit.record?.id || 'trial-' + (state.trialNextId++),
+        updated_at: new Date().toISOString()
+      };
+      const index = list.findIndex(item => item.id === record.id);
+      if (index >= 0) list[index] = record; else list.push(record);
+      $('record-dialog').close(); state.edit = null;
+      render(); route();
+      showMessage('TRIAL ONLY: Example ' + edit.type + ' ' +
+        (index >= 0 ? 'updated' : 'added') +
+        ' in this browser. It will reset when you refresh; no live data was saved.');
+      return;
+    }
     state.busy = true; $('save-record').disabled = true; $('save-record').textContent = 'Saving…';
     const sessionId = state.session.user.id;
     try {
@@ -499,6 +520,69 @@
     const anchor = document.createElement('a'); anchor.href = url; anchor.download = `besa-${type === 'vehicle' ? 'vehicles' : 'drivers'}-${today()}.csv`; anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
+
+  function loadTrialData() {
+    const stamp = new Date().toISOString();
+    const inDays = days => {
+      const d = new Date();
+      d.setUTCDate(d.getUTCDate() + days);
+      return d.toISOString().slice(0,10);
+    };
+    state.trialNextId = 100;
+    state.vehicles = [
+      {id:'trial-vehicle-1',registration:'DEMO01',status:'Active',current_mileage:37000,
+        mot_due:inDays(24),service_due:inDays(46),tax_due:inDays(110),tracker_snapshot:{}},
+      {id:'trial-vehicle-2',registration:'DEMO02',status:'In maintenance',current_mileage:62400,
+        mot_due:inDays(7),service_due:inDays(4),tax_due:inDays(128),tracker_snapshot:{}},
+      {id:'trial-vehicle-3',registration:'DEMO03',status:'Active',current_mileage:15300,
+        mot_due:inDays(75),service_due:inDays(16),tracker_snapshot:{}},
+      {id:'trial-vehicle-4',registration:'DEMO04',status:'Active',current_mileage:88700,
+        mot_due:inDays(13),service_due:inDays(35),tracker_snapshot:{}}
+    ];
+    state.drivers = [
+      {id:'trial-driver-1',first_name:'Sample',last_name:'Driver One',status:'Active',
+        email:'driver-one@example.test',phone:'',vehicle_id:'trial-vehicle-1',
+        licence_expiry:inDays(105),contract:'Demo contract'},
+      {id:'trial-driver-2',first_name:'Sample',last_name:'Driver Two',status:'Onboarding',
+        email:'driver-two@example.test',phone:'',vehicle_id:null,
+        licence_expiry:inDays(200),contract:'Demo contract'},
+      {id:'trial-driver-3',first_name:'Sample',last_name:'Driver Three',status:'Active',
+        email:'driver-three@example.test',phone:'',vehicle_id:'trial-vehicle-3',
+        right_to_work_expiry:inDays(60),licence_expiry:inDays(125),contract:'Demo contract'}
+    ];
+    state.activity = [
+      {id:'trial-activity-1',entity:'besa_vehicles',record_label:'DEMO01',
+        action:'INSERT',actor_email:'Fictional demo',created_at:stamp},
+      {id:'trial-activity-2',entity:'besa_drivers',record_label:'Sample Driver Two',
+        action:'INSERT',actor_email:'Fictional demo',created_at:stamp}
+    ];
+  }
+  function enterTrial() {
+    if (state.session) return; // Live authenticated sessions stay authenticated.
+    state.trial = true;
+    loadTrialData();
+    $('login-screen').hidden = true;
+    $('app-shell').hidden = false;
+    $('besa-trial-banner').hidden = false;
+    $('account-email').textContent = 'Demo account · fictional records';
+    $('signout-button').textContent = 'Exit trial';
+    $('login-status').textContent = '';
+    setReady(true); render(); route();
+    showMessage('TRIAL MODE: Explore freely. No database access, real documents, emails or payments.');
+  }
+  function exitTrial() {
+    state.trial = false;
+    state.vehicles = []; state.drivers = []; state.activity = [];
+    ++state.generation;
+    setReady(false); invalidateViews();
+    $('app-shell').hidden = true;
+    $('login-screen').hidden = false;
+    $('besa-trial-banner').hidden = true;
+    $('signout-button').textContent = 'Sign out';
+    if ($('record-dialog').open) $('record-dialog').close();
+    state.edit = null;
+  }
+
   async function login(event) {
     event.preventDefault(); $('login-submit').disabled = true; $('login-status').classList.remove('error');
     $('login-status').textContent = 'Sending your sign-in link…';
@@ -511,6 +595,8 @@
     finally { $('login-submit').disabled = false; }
   }
   function sessionChanged(session) {
+    if (state.trial && !session) return; // Initial anonymous auth event does not close the demo.
+    if (state.trial && session) exitTrial();
     const oldId = state.session?.user?.id; state.session = session;
     $('login-screen').hidden = Boolean(session); $('app-shell').hidden = !session;
     $('account-email').textContent = session?.user?.email || '';
@@ -522,9 +608,21 @@
     if (session && (oldId !== session.user.id || !state.ready)) setTimeout(refresh, 0);
   }
   function start() {
-    if (!window.besaClient) { $('login-status').classList.add('error'); $('login-status').textContent = 'The sign-in service could not load. Check your connection and refresh this page.'; $('login-submit').disabled = true; return; }
+    if (!window.besaClient) {
+      $('login-status').classList.add('error');
+      $('login-status').textContent = 'Live sign-in is temporarily unavailable. Trial mode still works.';
+      $('login-submit').disabled = true;
+    }
+    $('trial-enter').addEventListener('click',enterTrial);
+    $('live-login-toggle').addEventListener('click',()=>{
+      const panel=$('live-login-panel');
+      panel.hidden=!panel.hidden;
+      $('live-login-toggle').setAttribute('aria-expanded',String(!panel.hidden));
+      if (!panel.hidden) $('login-email').focus();
+    });
     $('login-form').addEventListener('submit', login);
     $('signout-button').addEventListener('click', async () => {
+      if (state.trial) { exitTrial(); return; }
       $('signout-button').disabled = true;
       try { const { error } = await window.besaClient.auth.signOut(); if (error) throw error; sessionChanged(null); }
       catch (error) { showMessage(error.message || 'Unable to sign out. Please try again.', true); }
@@ -536,6 +634,13 @@
     window.addEventListener('besa:edit-driver',event=>{
       if(event.detail?.id&&state.ready&&state.page==='drivers')openForm('driver',event.detail.id);
     });
+    document.addEventListener('click', event => {
+      if (state.trial && event.target.closest('[data-driver-profile]')) {
+        event.preventDefault(); event.stopImmediatePropagation();
+        showMessage('Driver documents and recruitment profiles require secure sign-in. This is an example driver.');
+        return;
+      }
+    },true);
     document.addEventListener('click', event => { const button = event.target.closest('[data-edit]'); if (button) openForm(button.dataset.edit, button.dataset.id); });
     for (const id of vehicleFilterIds) $(id).addEventListener('input', renderVehicles);
     $('reset-vehicle-filters').addEventListener('click', () => {
@@ -555,12 +660,20 @@
     window.addEventListener('hashchange', route); route(); setReady(false);
     const params = new URLSearchParams(location.hash.slice(1));
     if (params.has('error_description')) { $('login-status').classList.add('error'); $('login-status').textContent = params.get('error_description'); history.replaceState(null, '', location.pathname); }
-    let receivedAuth = false;
-    window.besaClient.auth.onAuthStateChange((_event, session) => { receivedAuth = true; sessionChanged(session); });
-    window.besaClient.auth.getSession().then(({ data, error }) => {
-      if (error) throw error;
-      if (!receivedAuth) sessionChanged(data.session);
-    }).catch(error => { $('login-status').classList.add('error'); $('login-status').textContent = error.message || 'Please sign in again.'; });
+    if (window.besaClient) {
+      let receivedAuth = false;
+      window.besaClient.auth.onAuthStateChange((_event, session) => {
+        receivedAuth = true; sessionChanged(session);
+      });
+      window.besaClient.auth.getSession().then(({ data, error }) => {
+        if (error) throw error;
+        if (!receivedAuth) sessionChanged(data.session);
+      }).catch(error => {
+        if (state.trial) return;
+        $('login-status').classList.add('error');
+        $('login-status').textContent = error.message || 'Please sign in again.';
+      });
+    }
     // Only update date-dependent sections when visible. The fleet/driver
     // tables were previously rebuilt every minute even with no data change.
     let reminderDay = new Date().toDateString();
