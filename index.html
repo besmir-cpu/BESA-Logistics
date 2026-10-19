@@ -7,9 +7,10 @@
   <title>Besa Logistics · Operations</title>
   <link rel="stylesheet" href="styles.css?v=operations-20261017">
   <link rel="stylesheet" href="operations/trial-preview.css?v=1">
+<link rel="stylesheet" href="operations/auth-reliability.css?v=1">
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
   <script defer src="config.js?v=freeze-page-4"></script>
-  <script defer src="app.js?v=trial-preview-20261019"></script>
+  <script defer src="app.js?v=auth-reliability-20261019"></script>
   <!-- Excel importer is now loaded on demand, reducing initial page weight. -->
   <script type="module" src="driver-journey/office.js?v=1"></script>
   <link rel="stylesheet" href="driver-journey/profile.css?v=1">
@@ -31,11 +32,23 @@
       </div>
       <button type="button" class="besa-live-toggle" id="live-login-toggle" aria-expanded="false" aria-controls="live-login-panel">Need access to live business records? ▾</button>
       <div id="live-login-panel" hidden>
-        <form id="login-form">
-          <label for="login-email">Administrator email</label><input id="login-email" type="email" autocomplete="email" placeholder="you@besalogistics.org" required>
-          <button class="button primary full" id="login-submit">Send secure sign-in email <span aria-hidden="true">↗</span></button>
+        <p class="small muted">Real business records require a verified BESA administrator account. A password is quicker once you've set one.</p>
+        <form id="password-login-form">
+          <label for="password-login-email">Administrator email</label>
+          <input id="password-login-email" type="email" autocomplete="username" placeholder="you@besalogistics.org" required maxlength="254">
+          <label for="password-login-password">Password</label>
+          <input id="password-login-password" type="password" autocomplete="current-password" required minlength="8" maxlength="128">
+          <button class="button primary full" id="password-login-submit" type="submit">Sign in with password <span aria-hidden="true">→</span></button>
         </form>
-        <p class="small muted">Live records, payment drafts and identity documents still require secure sign-in.</p>
+        <details id="email-link-login">
+          <summary>Don't have a password yet? Use a one-time email link</summary>
+          <form id="login-form">
+            <label for="login-email">Administrator email</label><input id="login-email" type="email" autocomplete="email" placeholder="you@besalogistics.org" required maxlength="254">
+            <button type="submit" class="button full" id="login-submit">Send secure sign-in email <span aria-hidden="true">↗</span></button>
+          </form>
+          <p class="small muted">Use the most recent email only. Sending several links can make an earlier one invalid. Once logged in, choose <strong>Set login password</strong> for faster access next time.</p>
+        </details>
+        <p class="small muted">If your account doesn't have a password, use the email link once to set it. No public sign-up is available.</p>
       </div>
       <p id="login-status" role="status" aria-live="polite" class="feedback"></p>
     </div>
@@ -60,7 +73,7 @@
     </aside>
     <div class="workspace">
       <div id="besa-trial-banner" class="besa-trial-banner" hidden role="status"><strong>TRIAL MODE</strong> · Example data only. Nothing is connected to the live database. Changes disappear when you leave or refresh.</div>
-      <header class="topbar"><span class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb-page">Overview</strong></span><div class="account"><span id="account-email"></span><button class="button quiet" id="signout-button">Sign out</button></div></header>
+      <header class="topbar"><span class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb-page">Overview</strong></span><div class="account"><span id="account-email"></span><button type="button" class="button quiet" id="set-password-open" hidden>Set login password</button><button class="button quiet" id="signout-button">Sign out</button></div></header>
       <main id="main">
         <div class="page-heading"><div><p class="eyebrow" id="page-eyebrow">YOUR DAILY PICTURE</p><h1 id="page-title">Operations overview</h1><p id="page-description" class="muted">A clear view of your fleet and the people behind it.</p></div><div class="heading-actions"><button class="button quiet" id="refresh-button">↻ Refresh</button><button class="button primary" id="primary-add">+ Add vehicle</button></div></div>
         <p id="global-status" role="status" aria-live="polite" class="feedback" hidden></p>
@@ -206,6 +219,26 @@
       <button id="driver-profile-edit" type="button" class="button">Edit driver details</button>
       <button id="driver-profile-done" type="button" class="button primary">Done</button>
     </footer>
+  </dialog>
+  <dialog id="set-password-dialog" aria-labelledby="set-password-heading">
+    <form id="set-password-form">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">YOUR ADMINISTRATOR ACCOUNT</p><h2 id="set-password-heading">Set your sign-in password</h2></div>
+        <button type="button" class="icon-button" id="set-password-close" aria-label="Close password form">×</button>
+      </div>
+      <div class="besa-password-content">
+        <p>Your existing verified BESA account can use a password instead of waiting for an email link next time. Use a unique password, at least 12 characters long. Your password is sent only to Supabase Auth, not saved in BESA's database or GitHub.</p>
+        <label for="set-password-value">New password</label>
+        <input id="set-password-value" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+        <label for="set-password-confirm">Confirm new password</label>
+        <input id="set-password-confirm" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+        <p class="feedback" id="set-password-status" role="status" aria-live="polite"></p>
+      </div>
+      <div class="dialog-footer">
+        <button class="button" type="button" id="set-password-cancel">Cancel</button>
+        <button class="button primary" type="submit" id="set-password-save">Save login password</button>
+      </div>
+    </form>
   </dialog>
   <dialog id="record-dialog" aria-labelledby="dialog-title">
     <form id="record-form"><div class="dialog-heading"><div><p class="eyebrow" id="dialog-eyebrow">FLEET RECORD</p><h2 id="dialog-title">Add vehicle</h2></div><button type="button" class="icon-button" id="close-dialog" aria-label="Close">×</button></div><div id="form-fields" class="form-grid"></div><p id="form-status" class="feedback" role="status" aria-live="polite"></p><div class="dialog-footer"><button type="button" class="button" id="cancel-dialog">Cancel</button><button class="button primary" id="save-record">Save vehicle</button></div></form>
