@@ -61,6 +61,7 @@
     $('data-content').hidden = !ready;
     ['primary-add', 'export-vehicles', 'export-drivers'].forEach(id => { $(id).disabled = !ready; });
     $('connection-label').textContent = state.trial ? 'Trial preview · sample data' : ready ? 'Workspace connected' : 'Workspace unavailable';
+    $('set-password-open').hidden = !ready || !state.session || state.trial;
   }
   function route() {
     const requested = location.hash.slice(1);
@@ -583,16 +584,105 @@
     state.edit = null;
   }
 
+  // Reuse this browser's current office host for passwordless callbacks.
+  // Netlify and GitHub Pages intentionally maintain separate local sessions.
+  // An administrator must allowlist the address in Supabase Auth settings.
+  function signInReturnURL() {
+    const target = new URL(location.pathname,location.origin);
+    if(target.pathname.endsWith('/office/index.html'))
+      target.pathname = target.pathname.slice(0,-'index.html'.length);
+    return target.href;
+  }
   async function login(event) {
-    event.preventDefault(); $('login-submit').disabled = true; $('login-status').classList.remove('error');
-    $('login-status').textContent = 'Sending your sign-in link…';
+    event.preventDefault();
+    if(!window.besaClient)return;
+    const button=$('login-submit');
+    button.disabled=true;
+    $('login-status').classList.remove('error');
+    $('login-status').textContent='Requesting your secure sign-in email…';
+    const requestedAt=performance.now();
     try {
-      const redirect = new URL('index.html', location.href); redirect.hash = ''; redirect.search = '';
-      const { error } = await window.besaClient.auth.signInWithOtp({ email: $('login-email').value.trim(), options: { emailRedirectTo: redirect.href, shouldCreateUser: false } });
-      if (error) throw error;
-      $('login-status').textContent = 'Check your inbox for the sign-in link, including your spam folder.';
-    } catch (error) { $('login-status').classList.add('error'); $('login-status').textContent = error.message || 'Unable to send a sign-in link. Please try again.'; }
-    finally { $('login-submit').disabled = false; }
+      const {error}=await window.besaClient.auth.signInWithOtp({
+        email:$('login-email').value.trim().toLowerCase(),
+        options:{emailRedirectTo:signInReturnURL(),shouldCreateUser:false}
+      });
+      if(error)throw error;
+      const requestSeconds=((performance.now()-requestedAt)/1000).toFixed(1);
+      $('login-status').textContent =
+        'Supabase accepted your sign-in request in '+requestSeconds+' seconds. '+
+        'Email delivery may take longer. Check Inbox and Junk, '+
+        'and use only the newest email link. Sending several links can invalidate earlier ones.';
+      // Prevent accidental double-requests and unnecessary rate limits.
+      setTimeout(()=>{if(button.isConnected)button.disabled=false;},60000);
+      return;
+    }catch(error){
+      $('login-status').classList.add('error');
+      $('login-status').textContent=
+        error?.status===429 ? 'Too many requests. Wait a few minutes before trying again.' :
+        error?.message||'The sign-in email could not be requested. Please try again.';
+    }
+    button.disabled=false;
+  }
+  async function passwordLogin(event) {
+    event.preventDefault();
+    if(!window.besaClient)return;
+    const button=$('password-login-submit');
+    button.disabled=true;
+    $('login-status').classList.remove('error');
+    $('login-status').textContent='Signing in securely…';
+    try {
+      const {data,error}=await window.besaClient.auth.signInWithPassword({
+        email:$('password-login-email').value.trim().toLowerCase(),
+        password:$('password-login-password').value
+      });
+      if(error)throw error;
+      if(!data?.session?.user)throw new Error('Sign-in was not confirmed.');
+      $('login-status').textContent='';
+      // Live records remain subject to existing admin membership and RLS checks.
+      sessionChanged(data.session);
+    }catch(error){
+      $('login-status').classList.add('error');
+      $('login-status').textContent=error?.status===429
+        ? 'Too many attempts. Wait a few minutes before trying again.'
+        : 'Unable to sign in. Check your details, or use the email-link option if no password is set.';
+    }finally{
+      $('password-login-password').value='';
+      button.disabled=false;
+    }
+  }
+  function closePasswordDialog(){
+    $('set-password-form').reset();
+    if($('set-password-dialog').open)$('set-password-dialog').close();
+    $('set-password-status').textContent='';
+  }
+  async function setLoginPassword(event){
+    event.preventDefault();
+    if(!state.session || state.trial || !state.ready)return;
+    const input=$('set-password-value'),confirmation=$('set-password-confirm');
+    const status=$('set-password-status'),button=$('set-password-save');
+    status.classList.remove('error');
+    if(input.value.length<12 || input.value!==confirmation.value){
+      status.classList.add('error');
+      status.textContent='Enter at least 12 characters and ensure both passwords match.';
+      return;
+    }
+    button.disabled=true;
+    status.textContent='Updating your BESA administrator login…';
+    try {
+      // GoTrue handles verification, hashing and password storage. This never
+      // writes to public GitHub or the BESA operational tables.
+      const {error}=await window.besaClient.auth.updateUser({password:input.value});
+      if(error)throw error;
+      closePasswordDialog();
+      showMessage('Password set successfully. Next time, sign in with email and password instead of waiting for a link.');
+    }catch(error){
+      status.classList.add('error');
+      status.textContent=error?.message||
+        'Unable to set password. Your session may need additional verification.';
+    }finally{
+      input.value='';confirmation.value='';
+      button.disabled=false;
+    }
   }
   function sessionChanged(session) {
     if (state.trial && !session) return; // Initial anonymous auth event does not close the demo.
@@ -601,6 +691,7 @@
     $('login-screen').hidden = Boolean(session); $('app-shell').hidden = !session;
     $('account-email').textContent = session?.user?.email || '';
     if (!session || oldId !== session.user.id) {
+      if ($('set-password-dialog').open) closePasswordDialog();
       window.dispatchEvent(new Event('besa:driver-session-reset'));
       ++state.generation; state.vehicles = []; state.drivers = []; state.activity = []; setReady(false); showMessage('');
       if ($('record-dialog').open) $('record-dialog').close(); state.edit = null;
@@ -612,15 +703,29 @@
       $('login-status').classList.add('error');
       $('login-status').textContent = 'Live sign-in is temporarily unavailable. Trial mode still works.';
       $('login-submit').disabled = true;
+      $('password-login-submit').disabled = true;
     }
     $('trial-enter').addEventListener('click',enterTrial);
     $('live-login-toggle').addEventListener('click',()=>{
       const panel=$('live-login-panel');
       panel.hidden=!panel.hidden;
       $('live-login-toggle').setAttribute('aria-expanded',String(!panel.hidden));
-      if (!panel.hidden) $('login-email').focus();
+      if (!panel.hidden) $('password-login-email').focus();
     });
     $('login-form').addEventListener('submit', login);
+    $('password-login-form').addEventListener('submit', passwordLogin);
+    $('set-password-open').addEventListener('click',()=>{
+      if(!state.session || !state.ready || state.trial)return;
+      $('set-password-form').reset();
+      $('set-password-status').textContent='';
+      $('set-password-dialog').showModal();
+    });
+    $('set-password-form').addEventListener('submit',setLoginPassword);
+    $('set-password-close').addEventListener('click',closePasswordDialog);
+    $('set-password-cancel').addEventListener('click',closePasswordDialog);
+    $('set-password-dialog').addEventListener('cancel',event=>{
+      if($('set-password-save').disabled)event.preventDefault();
+    });
     $('signout-button').addEventListener('click', async () => {
       if (state.trial) { exitTrial(); return; }
       $('signout-button').disabled = true;

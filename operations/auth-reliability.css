@@ -1,0 +1,20 @@
+/* BESA administrator sign-in, while the no-email trial stays separate. */
+#live-login-panel #password-login-form{display:grid;gap:9px;margin:10px 0}
+#live-login-panel #password-login-form label{font-size:12px;font-weight:750;color:#40527a}
+#live-login-panel input{width:100%;padding:11px 13px;min-height:45px;border:1px solid #cad6ec;border-radius:9px;font-size:14px;background:#fff;color:#253c66}
+#live-login-panel #password-login-form button{margin-top:8px;min-height:46px}
+#email-link-login{border-top:1px solid #e3e8f5;margin-top:15px;padding-top:15px}
+#email-link-login summary{font-size:12px;cursor:pointer;font-weight:700;color:#3b539d;line-height:1.6}
+#email-link-login[open] #login-form{display:grid;gap:9px;margin:14px 0}
+#email-link-login[open] #login-form label{font-size:12px;font-weight:750}
+#email-link-login[open] #login-form button{margin-top:6px;background:#eff3ff;color:#3b5095;border-color:#d0daef}
+#set-password-dialog{max-width:min(520px,calc(100% - 32px));border-radius:16px;border:1px solid #dae3f5;color:#243b66;padding:0}
+#set-password-dialog::backdrop{background:#1e2a467d}
+.besa-password-content{display:grid;gap:9px;padding:19px 23px}
+.besa-password-content p{margin:0 0 11px;color:#556a8f;font-size:13px;line-height:1.6}
+.besa-password-content label{font-weight:750;font-size:12px}
+.besa-password-content input{padding:12px;border-radius:9px;border:1px solid #cdd8ec;min-height:44px;font-size:14px}
+#set-password-status.error{color:#b43b55}
+#login-status{line-height:1.65}
+@media(max-width:650px){#set-password-open{font-size:11px;min-height:34px}
+.besa-password-content{padding:14px}}
