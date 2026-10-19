@@ -610,7 +610,7 @@
       const requestSeconds=((performance.now()-requestedAt)/1000).toFixed(1);
       $('login-status').textContent =
         'Supabase accepted your sign-in request in '+requestSeconds+' seconds. '+
-        'Delivery to your inbox can take longer. Check Inbox and Junk, '+
+        'Email delivery may take longer. Check Inbox and Junk, '+
         'and use only the newest email link. Sending several links can invalidate earlier ones.';
       // Prevent accidental double-requests and unnecessary rate limits.
       setTimeout(()=>{if(button.isConnected)button.disabled=false;},60000);
