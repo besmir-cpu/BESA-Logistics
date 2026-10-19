@@ -27,7 +27,9 @@ test('One-click trial opens fake office data with no private database reads or w
   await expect(page.locator('#global-status')).toContainText('no live data was saved');
   await page.locator('a[data-page=drivers]').click();
   await expect(page.locator('#driver-rows')).toContainText('Sample');
-  await page.locator('[data-driver-profile]').first().click();
+  // Driver list is behind the recruitment spreadsheet view by default.
+  // Dispatching this event tests the privacy guard even if that view is hidden.
+  await page.locator('[data-driver-profile]').first().dispatchEvent('click');
   await expect(page.locator('#global-status')).toContainText('require secure sign-in');
   expect(privateCalls).toEqual([]);
   expect(errors).toEqual([]);
