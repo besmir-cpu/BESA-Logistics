@@ -31,6 +31,22 @@ jobs:
           check https://besalogistics.co.uk/office/rota.html 'Rota' || rc=1
           echo "Final website verification status: $rc"
           exit "$rc"
+      - name: Diagnose published homepage and Netlify response
+        if: always()
+        shell: bash
+        run: |
+          set -u
+          curl --fail --silent --show-error --location --max-time 20 https://besalogistics.co.uk/ -o /tmp/current-besa-home
+          echo "Live homepage bytes: $(wc -c </tmp/current-besa-home)"
+          echo 'Published site version markers:'
+          grep -Eo 'Team portal|Staff team portal|Office login|Staff login|onboarding/|netlify' /tmp/current-besa-home | sort | uniq -c | head -20 || true
+          echo 'Current onboarding response headers:'
+          curl --silent --show-error --max-time 20 -D /tmp/onboard-header -o /tmp/onboard-body https://besalogistics.co.uk/onboarding/
+          grep -Ei '^HTTP/|^server:|^x-nf-request-id:|^location:|^content-type:' /tmp/onboard-header || true
+          echo 'Current office response headers:'
+          curl --silent --show-error --max-time 20 -D /tmp/office-header -o /tmp/office-body https://besalogistics.co.uk/office/
+          grep -Ei '^HTTP/|^server:|^x-nf-request-id:|^location:|^content-type:' /tmp/office-header || true
+          echo 'Main domain current version check complete.'
       - name: Check current onboarding server CORS
         if: always()
         shell: bash
