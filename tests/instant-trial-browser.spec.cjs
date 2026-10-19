@@ -42,6 +42,9 @@ test('Trial exit and browser reload reset demo data; protected live access is st
   await expect(page.locator('#app-shell')).toBeHidden();
   await expect(page.locator('#login-screen')).toBeVisible();
   await page.locator('#live-login-toggle').click();
+  await expect(page.locator('#password-login-form')).toBeVisible();
+  await expect(page.locator('#login-form')).toBeHidden();
+  await page.locator('#email-link-login summary').click();
   await expect(page.locator('#login-form')).toBeVisible();
   await page.reload({waitUntil:'domcontentloaded'});
   await expect(page.locator('#app-shell')).toBeHidden();
