@@ -18,10 +18,11 @@ test('One-click trial opens fake office data with no private database reads or w
   await expect(page.locator('#kpi-drivers')).toHaveText('2');
   await page.locator('a[data-page=vehicles]').click();
   await expect(page.locator('#vehicle-rows')).toContainText('DEMO01');
-  await page.locator('[data-edit="vehicle"][data-id="trial-vehicle-1"]').first().click();
+  await page.locator('#primary-add').click();
   await expect(page.locator('#record-dialog')).toBeVisible();
   await page.locator('#field-registration').fill('DEMO99');
   await page.locator('#save-record').click();
+  await expect(page.locator('#kpi-vehicles')).toHaveText('5');
   await expect(page.locator('#vehicle-rows')).toContainText('DEMO99');
   await expect(page.locator('#global-status')).toContainText('no live data was saved');
   await page.locator('a[data-page=drivers]').click();
