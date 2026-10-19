@@ -6,7 +6,7 @@ import {createClient} from 'npm:@supabase/supabase-js@2.57.2';
 const BUCKET='besa-candidate-private';
 const WEB_ORIGIN='https://besmir-cpu.github.io';
 const ALLOWED_ORIGINS=new Set([WEB_ORIGIN,'https://besalogistics.co.uk','https://www.besalogistics.co.uk','https://besalogistics.netlify.app']);
-const LINK_BASE=WEB_ORIGIN+'/BESA-Logistics/candidate-onboarding.html#invite=';
+const LINK_BASE='https://besalogistics.co.uk/onboarding/#invite=';
 const MAX_FILE=8*1024*1024;
 const DOC_TYPES=new Set(['passport','right-to-work','driving-licence-front',
  'driving-licence-back','dvla-evidence','proof-of-address','other']);
