@@ -40,6 +40,11 @@ jobs:
           echo "Live homepage bytes: $(wc -c </tmp/current-besa-home)"
           echo 'Published site version markers:'
           grep -Eo 'Team portal|Staff team portal|Office login|Staff login|onboarding/|netlify' /tmp/current-besa-home | sort | uniq -c | head -20 || true
+          echo 'Compare Netlify project alias version:'
+          alias_status=$(curl -sSL --max-time 20 -o /tmp/besa-alias-home -w '%{http_code}' https://besalogistics.netlify.app/)
+          echo "netlify.app alias status: $alias_status"
+          echo "netlify.app alias bytes: $(wc -c </tmp/besa-alias-home)"
+          grep -Eo 'Team portal|Staff team portal|Office login|Staff login|onboarding/' /tmp/besa-alias-home | sort | uniq -c | head -20 || true
           echo 'Current onboarding response headers:'
           curl --silent --show-error --max-time 20 -D /tmp/onboard-header -o /tmp/onboard-body https://besalogistics.co.uk/onboarding/
           grep -Ei '^HTTP/|^server:|^x-nf-request-id:|^location:|^content-type:' /tmp/onboard-header || true
