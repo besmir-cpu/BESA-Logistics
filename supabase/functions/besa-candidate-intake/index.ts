@@ -5,7 +5,8 @@ import {createClient} from 'npm:@supabase/supabase-js@2.57.2';
 
 const BUCKET='besa-candidate-private';
 const WEB_ORIGIN='https://besmir-cpu.github.io';
-const LINK_BASE=WEB_ORIGIN+'/BESA-Logistics/candidate-onboarding.html#invite=';
+const ALLOWED_ORIGINS=new Set([WEB_ORIGIN,'https://besalogistics.co.uk','https://www.besalogistics.co.uk','https://besalogistics.netlify.app']);
+const LINK_BASE='https://besalogistics.co.uk/onboarding/#invite=';
 const MAX_FILE=8*1024*1024;
 const DOC_TYPES=new Set(['passport','right-to-work','driving-licence-front',
  'driving-licence-back','dvla-evidence','proof-of-address','other']);
@@ -27,7 +28,7 @@ const text=(v,max=120)=>typeof v==='string'?v.trim().slice(0,max):'';
 function error(message,code=400){return {error:message,code};}
 function response(data,code=200,origin=''){
  const headers=new Headers(jsonHeaders);
- if(origin===WEB_ORIGIN||/^http:\/\/localhost(?::\d+)?$/.test(origin)){
+ if(ALLOWED_ORIGINS.has(origin)||/^http:\/\/localhost(?::\d+)?$/.test(origin)){
    headers.set('Access-Control-Allow-Origin',origin);
    headers.set('Access-Control-Allow-Headers','authorization,apikey,content-type');
    headers.set('Access-Control-Allow-Methods','POST, OPTIONS');
@@ -250,7 +251,7 @@ Deno.serve(async(req)=>{
  const origin=req.headers.get('origin')||'';
  if(req.method==='OPTIONS'){
   const h=new Headers(jsonHeaders);
-  if(origin===WEB_ORIGIN||/^http:\/\/localhost(?::\d+)?$/.test(origin)){
+  if(ALLOWED_ORIGINS.has(origin)||/^http:\/\/localhost(?::\d+)?$/.test(origin)){
    h.set('Access-Control-Allow-Origin',origin);
    h.set('Access-Control-Allow-Headers','authorization,apikey,content-type');
    h.set('Access-Control-Allow-Methods','POST, OPTIONS');
@@ -258,7 +259,7 @@ Deno.serve(async(req)=>{
   }
   return new Response(null,{status:204,headers:h});
  }
- if(origin&&origin!==WEB_ORIGIN&&!/^http:\/\/localhost(?::\d+)?$/.test(origin))
+ if(origin&&!ALLOWED_ORIGINS.has(origin)&&!/^http:\/\/localhost(?::\d+)?$/.test(origin))
    return response({error:'Origin not permitted'},403,origin);
  if(req.method!=='POST')return response({error:'Method not allowed'},405,origin);
  try{
