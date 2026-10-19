@@ -1,0 +1,35 @@
+name: Verify BESA password login publication
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-auth-publish.yml'
+      - 'app.js'
+      - 'index.html'
+      - 'operations/auth-reliability.css'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify public Netlify office shell and JS/CSS
+        shell: bash
+        run: |
+          set -euo pipefail
+          check() {
+            local path="$1" marker="$2" output="$3"
+            local url="https://besalogistics.co.uk/office/$path"
+            local status
+            status=$(curl -sSL --retry 1 --max-time 25 -o "$output" -w '%{http_code}' "$url")
+            echo "Office path: $path; HTTP $status; bytes $(wc -c < "$output")"
+            test "$status" = 200
+            grep -qF "$marker" "$output"
+          }
+          check '' 'password-login-form' /tmp/besa-office.html
+          check 'app.js?v=auth-reliability-20261019' 'async function passwordLogin(event)' /tmp/besa-app.js
+          check 'operations/auth-reliability.css?v=1' '#password-login-form' /tmp/besa-auth.css
+          check '../onboarding/' 'candidate-form' /tmp/besa-onboarding.html
+          echo 'Website assets are reachable; this does not authenticate a real user.'
