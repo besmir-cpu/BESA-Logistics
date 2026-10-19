@@ -40,4 +40,4 @@ jobs:
           done
           exit 1
       - name: Run smoke navigation and safe draft checks
-        run: npx playwright test tests/browser-smoke.spec.cjs tests/candidate-browser.spec.cjs tests/instant-trial-browser.spec.cjs --workers=1 --reporter=line
+        run: npx playwright test tests/browser-smoke.spec.cjs tests/candidate-browser.spec.cjs tests/instant-trial-browser.spec.cjs tests/auth-reliability-browser.spec.cjs --workers=1 --reporter=line
