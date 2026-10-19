@@ -6,9 +6,10 @@
   <meta name="theme-color" content="#222e60">
   <title>Besa Logistics · Operations</title>
   <link rel="stylesheet" href="styles.css?v=operations-20261017">
+  <link rel="stylesheet" href="operations/trial-preview.css?v=1">
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
   <script defer src="config.js?v=freeze-page-4"></script>
-  <script defer src="app.js?v=operations-20261017"></script>
+  <script defer src="app.js?v=trial-preview-20261019"></script>
   <!-- Excel importer is now loaded on demand, reducing initial page weight. -->
   <script type="module" src="driver-journey/office.js?v=1"></script>
   <link rel="stylesheet" href="driver-journey/profile.css?v=1">
@@ -23,12 +24,20 @@
     <div class="login-card">
       <div class="brand-mark">B</div><p class="eyebrow">BESA LOGISTICS</p>
       <h1>Your operation,<br>in one place.</h1><p class="muted">Fleet, drivers and the dates that keep you moving.</p>
-      <form id="login-form">
-        <label for="login-email">Work email</label><input id="login-email" type="email" autocomplete="email" placeholder="you@besalogistics.org" required>
-        <button class="button primary full" id="login-submit">Send sign-in link <span aria-hidden="true">↗</span></button>
-      </form>
+      <div class="besa-trial-entry">
+        <span class="besa-trial-tag">PRODUCT TRIAL · NO EMAIL NEEDED</span>
+        <button type="button" class="button primary full" id="trial-enter">Open trial workspace <span aria-hidden="true">→</span></button>
+        <p class="small muted">Explore and edit example vans and drivers instantly. All trial data is fictional and resets on refresh. No real information is visible or saved.</p>
+      </div>
+      <button type="button" class="besa-live-toggle" id="live-login-toggle" aria-expanded="false" aria-controls="live-login-panel">Need access to live business records? ▾</button>
+      <div id="live-login-panel" hidden>
+        <form id="login-form">
+          <label for="login-email">Administrator email</label><input id="login-email" type="email" autocomplete="email" placeholder="you@besalogistics.org" required>
+          <button class="button primary full" id="login-submit">Send secure sign-in email <span aria-hidden="true">↗</span></button>
+        </form>
+        <p class="small muted">Live records, payment drafts and identity documents still require secure sign-in.</p>
+      </div>
       <p id="login-status" role="status" aria-live="polite" class="feedback"></p>
-      <p class="small muted">Use your administrator email. Your sign-in link will arrive by email.</p>
     </div>
   </section>
 
@@ -50,6 +59,7 @@
       <div class="sidebar-bottom"><span class="connection-dot"></span><span id="connection-label">Connecting…</span><p>Built for the road ahead.</p></div>
     </aside>
     <div class="workspace">
+      <div id="besa-trial-banner" class="besa-trial-banner" hidden role="status"><strong>TRIAL MODE</strong> · Example data only. Nothing is connected to the live database. Changes disappear when you leave or refresh.</div>
       <header class="topbar"><span class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb-page">Overview</strong></span><div class="account"><span id="account-email"></span><button class="button quiet" id="signout-button">Sign out</button></div></header>
       <main id="main">
         <div class="page-heading"><div><p class="eyebrow" id="page-eyebrow">YOUR DAILY PICTURE</p><h1 id="page-title">Operations overview</h1><p id="page-description" class="muted">A clear view of your fleet and the people behind it.</p></div><div class="heading-actions"><button class="button quiet" id="refresh-button">↻ Refresh</button><button class="button primary" id="primary-add">+ Add vehicle</button></div></div>
