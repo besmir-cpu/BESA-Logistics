@@ -1,0 +1,17 @@
+/* Temporary, no-email trial entry. Real business data remains behind Supabase Auth. */
+.besa-trial-entry{display:grid;gap:11px;margin:21px 0 18px;padding:18px;border:1px solid #b7c7f6;
+  background:linear-gradient(145deg,#eff3ff,#f6faff);border-radius:15px}
+.besa-trial-tag{display:inline-flex;align-items:center;justify-self:start;letter-spacing:.08em;
+  font-size:10px;font-weight:850;color:#354ca7;background:#dee7ff;border-radius:20px;padding:6px 10px}
+.besa-trial-entry button{font-size:14px;min-height:47px}
+.besa-trial-entry p{margin:0;font-size:12px;line-height:1.65;color:#465d8a}
+.besa-live-toggle{appearance:none;border:0;background:none;text-decoration:underline;cursor:pointer;
+  padding:10px 2px;text-align:left;font:700 12px system-ui,sans-serif;color:#4a5ba3}
+.besa-live-toggle:focus-visible{outline:2px solid #5062c8;outline-offset:3px}
+#live-login-panel{background:#fff;padding:15px;margin:8px 0 0;border-radius:10px;border:1px solid #dfe5f5}
+#live-login-panel[hidden]{display:none}
+.besa-trial-banner{color:#263b6b;font-size:12px;line-height:1.6;padding:11px 19px;
+  background:#fff4d8;border-bottom:1px solid #e9ce8c}
+.besa-trial-banner strong{background:#f3d78c;border-radius:5px;padding:2px 6px;color:#674914}
+@media(max-width:650px){.besa-trial-banner{padding:9px 12px;font-size:11px}
+  .besa-trial-entry{padding:14px;margin:14px 0}}
