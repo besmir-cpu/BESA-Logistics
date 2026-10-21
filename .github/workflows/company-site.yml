@@ -51,7 +51,7 @@ jobs:
           done
           exit 1
       - name: Check desktop and mobile navigation
-        run: npx playwright test tests/company-site.browser.spec.cjs tests/company-site-production.browser.spec.cjs --workers=1 --reporter=line
+        run: npx playwright test tests/company-site.browser.spec.cjs tests/company-site-production.browser.spec.cjs tests/company-site-drivers.browser.spec.cjs --workers=1 --reporter=line
       - name: Upload tested Netlify deployment package
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

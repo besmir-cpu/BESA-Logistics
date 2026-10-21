@@ -1,5 +1,5 @@
 /* BESA public-company website: first-party functionality.
- * No analytics, tracking, form storage, candidate data or external scripts.
+ * No analytics, tracking, browser form storage or external scripts.
  */
 (() => {
   'use strict';
@@ -77,6 +77,14 @@
     }
   }
 
+  if (typeof settings.contactWhatsapp === 'string') {
+    const number = settings.contactWhatsapp.trim();
+    const digits = number.replace(/[\s()+.-]/g, '');
+    if (/^[1-9]\d{7,14}$/.test(digits)) {
+      const row = byId('contact-whatsapp-row'), link = byId('contact-whatsapp');
+      if (row && link) { link.textContent = number; link.href = 'https://wa.me/' + digits; row.hidden = false; contacts++; }
+    }
+  }
   if (contacts > 0 && byId('contact-placeholder')) byId('contact-placeholder').hidden = true;
   const year = byId('copyright-year');
   if (year) year.textContent = String(new Date().getFullYear());
