@@ -20,7 +20,7 @@ function buildPublicPage(path,route){
 for(const [path,route] of [['index.html','/'],['drivers/index.html','/drivers/'],['privacy/index.html','/privacy/']])buildPublicPage(path,route);
 mkdirSync(`${output}/drivers/thanks`,{recursive:true});writeFileSync(`${output}/drivers/thanks/index.html`,readFileSync(`${source}/drivers/thanks/index.html`,'utf8').replace('Independent company website preview','UK final-mile delivery'));
 for(const [name,title,message] of [['thanks','Thank you','Your enquiry has been received.'],['404','Page not found','The page you requested could not be found.']]){
- writeFileSync(`${output}/${name}.html`,`<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${title} | BESA Logistics</title><link rel="stylesheet" href="/styles.css?v=4"></head><body><main class="container section"><h1>${title}</h1><p>${message}</p><a href="/">Return to BESA Logistics</a></main></body></html>`);
+ writeFileSync(`${output}/${name}.html`,`<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${title} | BESA Logistics</title><link rel="stylesheet" href="/styles.css?v=5"></head><body><main class="container section"><h1>${title}</h1><p>${message}</p><a href="/">Return to BESA Logistics</a></main></body></html>`);
 }
 const office=resolve(output,'office'),onboarding=resolve(output,'onboarding');
 mkdirSync(office,{recursive:true});mkdirSync(onboarding,{recursive:true});

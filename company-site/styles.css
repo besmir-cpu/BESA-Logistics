@@ -334,6 +334,17 @@ form{padding:25px}form label{display:block;font-size:13px;font-weight:650}form i
 @media(max-width:800px){.hero-inner{grid-template-columns:1fr}.hero-photo img{height:380px;min-height:0}.hero-photo{max-width:620px}.hero h1{font-size:clamp(56px,9vw,80px)}}
 @media(max-width:560px){.hero-inner{gap:32px;padding-block:48px}.hero h1{font-size:clamp(46px,12vw,65px)}.hero-photo img{height:285px}.about-photo img{height:400px}.hero-actions .button{flex-basis:100%}.brand-notice{padding-bottom:18px}}
 
+/* Owner-confirmed hiring summary, visible in the opening section of both pages. */
+.hiring-summary{max-width:540px;background:#163b4a;border:1px solid #3d777b;border-left:3px solid #37d4c0;border-radius:6px;padding:20px 22px;margin:0 0 25px}
+.hiring-summary h2{font-size:20px;line-height:1.35;letter-spacing:-.025em;margin:0 0 14px;color:#fff}
+.hiring-summary ul{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.hiring-summary li{position:relative;padding-left:20px;font-size:13px;line-height:1.6;color:#e6f6f5}
+.hiring-summary li:before{content:"✓";position:absolute;left:0;color:#57e4cb;font-weight:800}
+.hiring-summary p{font-size:12px;line-height:1.75;color:#c5deda;margin:16px 0 0;padding-top:14px;border-top:1px solid #3d626d}
+.hero .hero-description{margin-bottom:24px}
+.hero .hero-bottom{margin-top:30px}
+@media(max-width:560px){.hiring-summary{padding:18px}.hiring-summary h2{font-size:19px}}
+
 /* Aylesford location and the dedicated driver-interest journey. */
 .location-section{background:#fff;border-top:1px solid var(--line)}
 .location-grid{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:clamp(30px,6vw,80px)}
