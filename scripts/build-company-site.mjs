@@ -8,15 +8,19 @@ rmSync(output,{recursive:true,force:true});
 mkdirSync(output,{recursive:true});
 for(const name of ['styles.css','site.js','site-config.js','favicon.svg','images'])cpSync(`${source}/${name}`,`${output}/${name}`,{recursive:true});
 for(const name of ['_headers','_redirects','robots.txt','sitemap.xml'])cpSync(`${source}/hosting/${name}`,`${output}/${name}`);
-let html=readFileSync(`${source}/index.html`,'utf8')
+function buildPublicPage(path,route){
+ const html=readFileSync(`${source}/${path}`,'utf8')
  .replace(/\s*<meta name="robots" content="noindex,nofollow">/,'')
  .replace(/\s*<div class="preview-banner"[\s\S]*?<\/div>/,'')
  .replace('Independent company website preview','UK final-mile delivery')
- .replace(/<div class="contact-placeholder" id="contact-placeholder">[\s\S]*?<\/div>/,readFileSync(`${source}/hosting/contact-form.html`,'utf8'))
- .replace('</head>','  <link rel="canonical" href="https://besalogistics.co.uk/">\n  <meta property="og:url" content="https://besalogistics.co.uk/">\n</head>');
-writeFileSync(`${output}/index.html`,html);
+ .replace(/<div class="contact-placeholder" id="contact-placeholder"(?: hidden)?>[\s\S]*?<\/div>/,readFileSync(`${source}/hosting/contact-form.html`,'utf8'))
+ .replace('</head>','  <link rel="canonical" href="https://besalogistics.co.uk'+route+'">\n  <meta property="og:url" content="https://besalogistics.co.uk'+route+'">\n</head>');
+ const destination=resolve(output,path);mkdirSync(resolve(destination,'..'),{recursive:true});writeFileSync(destination,html);
+}
+for(const [path,route] of [['index.html','/'],['drivers/index.html','/drivers/'],['privacy/index.html','/privacy/']])buildPublicPage(path,route);
+mkdirSync(`${output}/drivers/thanks`,{recursive:true});writeFileSync(`${output}/drivers/thanks/index.html`,readFileSync(`${source}/drivers/thanks/index.html`,'utf8').replace('Independent company website preview','UK final-mile delivery'));
 for(const [name,title,message] of [['thanks','Thank you','Your enquiry has been received.'],['404','Page not found','The page you requested could not be found.']]){
- writeFileSync(`${output}/${name}.html`,`<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${title} | BESA Logistics</title><link rel="stylesheet" href="/styles.css?v=2"></head><body><main class="container section"><h1>${title}</h1><p>${message}</p><a href="/">Return to BESA Logistics</a></main></body></html>`);
+ writeFileSync(`${output}/${name}.html`,`<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${title} | BESA Logistics</title><link rel="stylesheet" href="/styles.css?v=4"></head><body><main class="container section"><h1>${title}</h1><p>${message}</p><a href="/">Return to BESA Logistics</a></main></body></html>`);
 }
 const office=resolve(output,'office'),onboarding=resolve(output,'onboarding');
 mkdirSync(office,{recursive:true});mkdirSync(onboarding,{recursive:true});

@@ -44,3 +44,4 @@ jobs:
         run: |
           npm run test:browser
           npx playwright test tests/company-site-production.browser.spec.cjs --workers=1 --reporter=line
+          npx playwright test tests/company-site-drivers.browser.spec.cjs --workers=1 --reporter=line

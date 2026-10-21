@@ -9,8 +9,8 @@ test('desktop homepage is original, stable and navigable',async({page})=>{
  await page.locator('.nav a[href="#services"]').click();
  await expect(page).toHaveURL(/#services$/);
  await expect(page.locator('#services')).toBeVisible();
- await expect(page.locator('#contact-placeholder')).toBeVisible();
- await expect(page.locator('#contact-email-row')).toBeHidden();
+ await expect(page.locator('#contact-placeholder')).toBeHidden();
+ await expect(page.locator('#contact-email-row')).toBeVisible();
  expect(errors).toEqual([]);
 });
 test('mobile menu opens, navigates and closes on Escape',async({page})=>{
@@ -32,10 +32,12 @@ test('mobile menu opens, navigates and closes on Escape',async({page})=>{
  expect(scrollwidth).toBeLessThanOrEqual(1);
  expect(errors).toEqual([]);
 });
-test('contact details are configured, not hardcoded or silently submitted',async({page})=>{
+test('owner-confirmed contact details work without an automatic enquiry submission',async({page})=>{
  await page.goto(home,{waitUntil:'domcontentloaded'});
- await expect(page.locator('#contact-placeholder')).toBeVisible();
- await expect(page.locator('#contact-email-row')).toBeHidden();
+ await expect(page.locator('#contact-placeholder')).toBeHidden();
+ await expect(page.locator('#contact-email')).toHaveText('info@besalogistics.org');
+ await expect(page.locator('#contact-email')).toHaveAttribute('href',/^mailto:info@besalogistics\.org/);
+ await expect(page.locator('#contact-whatsapp')).toHaveAttribute('href','https://wa.me/447477177362');
  await expect(page.locator('#contact-phone-row')).toBeHidden();
  expect(await page.locator('form').count()).toBe(0);
 });

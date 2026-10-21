@@ -34,9 +34,10 @@ test('mobile navigation, accessible focus and reduced motion support exist',()=>
  assert.ok(js.includes("key === 'Escape'"));
  assert.ok(js.includes('menu.setAttribute(\'aria-expanded\''));
 });
-test('no invented contact details, public file submissions, or third-party tracking',()=>{
- assert.ok(config.includes("contactEmail: ''"));
+test('owner-confirmed contacts have no public document uploads or third-party tracking',()=>{
+ assert.ok(config.includes("contactEmail: 'info@besalogistics.org'"));
  assert.ok(config.includes("contactPhone: ''"));
+ assert.ok(config.includes("contactWhatsapp: '+44 7477 177362'"));
  assert.ok(!html.includes('<form'));
  assert.ok(!html.includes('getPublicUrl'));
  assert.ok(!html.includes('google-analytics'));
