@@ -7,11 +7,13 @@
   <title>Besa Logistics · Operations</title>
   <link rel="stylesheet" href="styles.css?v=operations-20261017">
 <link rel="stylesheet" href="operations/auth-reliability.css?v=2">
-  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+  <script defer src="vendor/supabase.js"></script>
   <script defer src="config.js?v=freeze-page-4"></script>
-  <script defer src="app.js?v=platform-20261021"></script>
+  <link rel="stylesheet" href="operations/mfa.css?v=1">
+  <script defer src="operations/mfa.js?v=1"></script>
+  <script defer src="app.js?v=foundations-20261021"></script>
   <!-- Excel importer is now loaded on demand, reducing initial page weight. -->
-  <script type="module" src="driver-journey/office.js?v=2"></script>
+  <script type="module" src="driver-journey/office.js?v=3"></script>
   <link rel="stylesheet" href="driver-journey/profile.css?v=2">
   <link rel="stylesheet" href="driver-journey/candidate-invitations.css?v=1">
 <link rel="stylesheet" href="besa-theme.css?v=horizon-1">
@@ -44,6 +46,16 @@
         </details>
         <p class="small muted">If your account doesn't have a password, use the email link once to set it. No public sign-up is available.</p>
       </div>
+      <section id="mfa-panel" hidden aria-labelledby="mfa-title">
+        <h2 id="mfa-title">Two-step verification</h2>
+        <p id="mfa-description" class="muted"></p>
+        <button id="mfa-start" type="button" class="button primary full">Set up authenticator</button>
+        <div id="mfa-setup" hidden><img id="mfa-qr" alt="Scan this private QR code with your authenticator app"><details><summary>Enter the setup key manually</summary><code id="mfa-secret"></code></details></div>
+        <form id="mfa-form" hidden><label for="mfa-code">Authenticator code</label><input id="mfa-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required><button id="mfa-verify" type="submit" class="button primary full">Verify and open operations</button></form>
+        <p id="mfa-status" class="feedback" role="status" aria-live="polite"></p>
+        <p class="small muted">Keep your authenticator recovery backup safe. If you lose access, the BESA account owner must verify your identity and recover access through Supabase.</p>
+        <button id="mfa-signout" type="button" class="button quiet full">Sign out</button>
+      </section>
       <p id="login-status" role="status" aria-live="polite" class="feedback"></p>
     </div>
   </section>
@@ -140,7 +152,7 @@
               </div>
               <div class="journey-tracker-actions">
                 <span>Click a coloured cell to update a recruitment task · click a name for the driver profile</span>
-                <button type="button" class="button" id="journey-export-tracker">↓ Export tracker CSV</button>
+                <button type="button" class="button quiet" id="journey-reload-progress">Reload saved progress</button><button type="button" class="button" id="journey-export-tracker">↓ Export tracker CSV</button>
               </div>
             </div>
             <div class="toolbar"><label class="search"><span class="sr-only">Search drivers</span><input id="driver-search" type="search" placeholder="Search name, email or phone…"></label><label><span class="sr-only">Driver status</span><select id="driver-filter"><option value="">All statuses</option><option>Active</option><option>Onboarding</option><option>Inactive</option><option>Archived</option></select></label><button class="button" id="export-drivers">Export CSV</button></div>

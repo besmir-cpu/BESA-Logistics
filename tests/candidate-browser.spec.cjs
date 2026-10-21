@@ -1,5 +1,5 @@
 const {test,expect}=require('@playwright/test');
-const base='http://127.0.0.1:4173';
+const base=(process.env.BESA_CANDIDATE_URL||'http://127.0.0.1:4173').replace(/\/$/,'');
 const token='A'.repeat(43);
 test('invitation without a valid private token cannot open onboarding',async({page})=>{
  let privateCalls=0;

@@ -1,7 +1,7 @@
 // BESA secure candidate intake. Public transport, private bearer capability.
 // Every call authenticates either a 256-bit expiring invitation token or a
 // Supabase-verified administrator JWT. NEVER expose service credentials.
-import {createClient} from 'npm:@supabase/supabase-js@2.57.2';
+import {createClient} from 'npm:@supabase/supabase-js@2.117.3';
 
 const BUCKET='besa-candidate-private';
 const WEB_ORIGIN='https://besmir-cpu.github.io';
@@ -41,13 +41,13 @@ async function adminAuth(req){
  const jwt=auth.replace(/^Bearer\s+/i,'');
  if(!jwt||jwt===publicKey)throw error('Administrator sign-in required',401);
  const userDb=createClient(url,publicKey,{
+  global:{headers:{Authorization:auth}},
   auth:{persistSession:false,autoRefreshToken:false}
  });
  const {data,error:jwtError}=await userDb.auth.getUser(jwt);
  if(jwtError||!data.user?.id||!data.user?.email)throw error('Administrator session expired',401);
- const {data:rows,error:roleError}=await adminDb.from('besa_admins')
-   .select('email').eq('email',data.user.email.toLowerCase()).limit(1);
- if(roleError||!rows?.length)throw error('Only BESA administrators can access candidate records',403);
+ const {data:allowed,error:roleError}=await userDb.rpc('besa_is_admin');
+ if(roleError||allowed!==true)throw error('Verified BESA administrator access required. Complete authenticator verification in the office.',403);
  return data.user;
 }
 const b64url=bytes=>btoa(String.fromCharCode(...bytes))

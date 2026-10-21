@@ -609,6 +609,7 @@
       button.disabled=false;
     }
   }
+  let verificationGeneration=0;
   function sessionChanged(session) {
     const oldId = state.session?.user?.id; state.session = session;
     $('login-screen').hidden = Boolean(session); $('app-shell').hidden = !session;
@@ -619,7 +620,20 @@
       ++state.generation; state.vehicles = []; state.drivers = []; state.activity = []; setReady(false); showMessage('');
       if ($('record-dialog').open) $('record-dialog').close(); state.edit = null;
     }
-    if (session && (oldId !== session.user.id || !state.ready)) setTimeout(refresh, 0);
+    const verification=++verificationGeneration;
+    if(!session){window.besaMFA?.clear();return;}
+    $('app-shell').hidden=true;
+    window.besaMFA.check(session).then(verified=>{
+      if(verification!==verificationGeneration)return;
+      if(!verified){setReady(false);return;}
+      $('login-screen').hidden=true;$('app-shell').hidden=false;
+      if(oldId!==session.user.id||!state.ready)setTimeout(refresh,0);
+    }).catch(error=>{
+      if(verification!==verificationGeneration)return;
+      setReady(false);$('login-screen').hidden=false;$('app-shell').hidden=true;
+      $('login-status').textContent=error.message||'Could not verify secure access. Please sign in again.';
+      $('login-status').classList.add('error');
+    });
   }
   function start() {
     if (!window.besaClient) {
@@ -628,6 +642,7 @@
       $('login-submit').disabled = true;
       $('password-login-submit').disabled = true;
     }
+    window.addEventListener('besa:mfa-verified',()=>window.besaClient.auth.getSession().then(({data})=>sessionChanged(data.session)));
     $('login-form').addEventListener('submit', login);
     $('password-login-form').addEventListener('submit', passwordLogin);
     $('set-password-open').addEventListener('click',()=>{

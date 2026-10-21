@@ -4,7 +4,7 @@ async function setup(page){
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{
     window.__saved=[];window.__draft=null;window.__defer=false;window.__deferSave=false;window.__conflict=false;
-    window.besaClient={auth:{getSession:async()=>({data:{session:{user:{id:'synthetic-admin',email:'admin@example.test'}}}})},
+    window.besaClient={auth:{mfa:{getAuthenticatorAssuranceLevel:async()=>({data:{currentLevel:'aal2'},error:null})},getSession:async()=>({data:{session:{user:{id:'synthetic-admin',email:'admin@example.test'}}}})},
       from(table){
         const q={select(){return q},eq(){return q},order(){return q},limit(){return q},range(){return q},
           async maybeSingle(){if(window.__defer)await new Promise(resolve=>window.__release=resolve);return {data:window.__draft,error:null}},

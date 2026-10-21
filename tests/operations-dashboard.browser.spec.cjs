@@ -22,6 +22,7 @@ async function openWorkspace(page,{rows=vehicles,admin=true,checklists=true,acti
  await page.goto(site);
  await page.waitForFunction(()=>Boolean(window.besaClient));
  await page.evaluate(()=>{
+  window.besaClient.auth.mfa.getAuthenticatorAssuranceLevel=async()=>({data:{currentLevel:'aal2',nextLevel:'aal2'},error:null});
   window.besaClient.auth.signInWithPassword=async()=>({data:{session:{user:{id:'test-only-admin',email:'admin@example.test'},access_token:'test-only'}},error:null});
   window.besaClient.auth.signOut=async()=>({error:null});
  });
