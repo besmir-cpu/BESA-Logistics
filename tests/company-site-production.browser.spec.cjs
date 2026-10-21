@@ -9,7 +9,7 @@ for(const width of [360,768,1440])test(`production layout, photos and enquiry fo
  for(const img of await page.locator('.delivery-photo img').all()){
   await img.scrollIntoViewIfNeeded();
   await expect(img).toBeVisible();
-  expect(await img.evaluate(e=>e.complete&&e.naturalWidth>0)).toBe(true);
+  await expect.poll(()=>img.evaluate(e=>e.complete&&e.naturalWidth>0)).toBe(true);
  }
  await expect(page.locator('form[name="besa-contact"]')).toBeVisible();
  expect(await page.locator('input[type=file]').count()).toBe(0);
