@@ -34,5 +34,11 @@ do $$ begin
  if has_table_privilege(current_user,'public.besa_vehicles','SELECT') or has_table_privilege(current_user,'public.besa_driver_evidence','INSERT') or has_function_privilege(current_user,'public.besa_export_backup()','EXECUTE') then raise exception 'Anonymous private access permitted';end if;
 end $$;
 reset role;
+do $$ declare fn record;begin
+ for fn in select p.oid from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in ('public','private') and p.proname in ('besa_export_backup_v2','besa_backup_object') loop
+  if has_function_privilege('anon',fn.oid,'EXECUTE') or has_function_privilege('authenticated',fn.oid,'EXECUTE') or not has_function_privilege('service_role',fn.oid,'EXECUTE') then raise exception 'Streaming backup permissions are incorrect';end if;
+ end loop;
+ if (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in ('public','private') and p.proname in ('besa_export_backup_v2','besa_backup_object'))<>4 then raise exception 'Streaming backup functions are incomplete';end if;
+end $$;
 rollback;
 select 'Verified administrator, unverified administrator, non-administrator and anonymous permissions passed; test changes rolled back.' as result;
