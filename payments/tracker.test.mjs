@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 
-const source=readFileSync(new URL('./tracker.js',import.meta.url),'utf8').replace(/\ninit\(\);\s*$/,'');
+// Unit harness exercises the worksheet parser without mounting browser UI.
+// The browser suite covers the imported draft lifecycle and navigation guard.
+const source=readFileSync(new URL('./tracker.js',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'').replace(/\ninit\(\);\s*$/,'');
 function editor(){
-  const context=vm.createContext({Intl,Date,Map,Set,Array,Number,String,JSON,RegExp,Error,window:{confirm:()=>true}});
+  const context=vm.createContext({Intl,Date,Map,Set,Array,Number,String,JSON,RegExp,Error,changed(){},contextChanged(){},window:{confirm:()=>true}});
   vm.runInContext(source+`
     render=function(){};
     message=function(){};

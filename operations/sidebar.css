@@ -77,6 +77,9 @@ body.besa-standalone-nav .besa-rota,
 body.besa-standalone-nav .payment-shell,
 body.besa-standalone-nav .tracker-shell{width:100%;max-width:none;min-width:0}
 @media(max-width:750px){
+  body.besa-standalone-nav .operation-tabs,
+  body.besa-standalone-nav .tracker-nav{flex-wrap:wrap;max-width:100%}
+  body.besa-standalone-nav>header.top{flex-wrap:wrap}
   body.besa-standalone-nav{padding-left:0}
   .besa-standalone-sidebar{
     position:relative!important;inset:auto!important;
@@ -85,6 +88,7 @@ body.besa-standalone-nav .tracker-shell{width:100%;max-width:none;min-width:0}
     padding:14px 15px 0!important;
     box-shadow:none!important;
   }
+  .besa-standalone-sidebar::before{display:none}
   .besa-standalone-sidebar .besa-standalone-brand{
     margin:0 0 13px;font-size:14px;
   }

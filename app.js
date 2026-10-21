@@ -17,7 +17,7 @@
       case 'vehicles': renderVehicles(); break;
       case 'drivers': renderDrivers(); break;
       case 'compliance': renderCompliance(); break;
-      case 'activity': $('activity-list').innerHTML = activityMarkup(state.activity); break;
+      case 'activity': renderActivity(); break;
     }
     viewsNeedingRender.delete(view);
   }
@@ -38,7 +38,8 @@
   const days = date => date ? Math.round((Date.parse(date + 'T00:00:00Z') - Date.parse(today() + 'T00:00:00Z')) / 86400000) : null;
   const formatDate = date => date ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(date + 'T00:00:00Z')) : 'Not recorded';
   const formatTime = date => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' }).format(new Date(date));
-  const operational = vehicle => ['Active', 'In maintenance'].includes(vehicle.status);
+  const fleetStatus = vehicle => vehicle.status === 'Active' && vehicle.tracker_snapshot?.['Fleet status'] === 'Needs review' ? 'Needs review' : vehicle.status;
+  const operational = vehicle => ['Active', 'Needs review', 'In maintenance'].includes(fleetStatus(vehicle));
   const timing = date => {
     const d = days(date);
     if (d === null) return ['Missing date', 'neutral'];
@@ -82,11 +83,9 @@
     const records = [];
     for (const vehicle of state.vehicles.filter(operational)) {
       for (const [field, label] of [['mot_due', 'MOT'], ['service_due', 'Service'], ['tax_due', 'Road tax'], ['insurance_due', 'Insurance']]) {
-        if (!vehicle[field] && field !== 'mot_due' && !(field === 'service_due' && vehicle.service_due_mileage == null)) continue;
-        records.push({ type: 'vehicle', id: vehicle.id, label: vehicle.registration, requirement: label, date: vehicle[field], mileage: field === 'service_due' && vehicle.service_due_mileage != null && vehicle.current_mileage != null && vehicle.current_mileage >= vehicle.service_due_mileage });
-      }
-      if (!vehicle.service_due && vehicle.service_due_mileage != null && vehicle.current_mileage != null && vehicle.current_mileage >= vehicle.service_due_mileage) {
-        records.push({ type: 'vehicle', id: vehicle.id, label: vehicle.registration, requirement: 'Service', date: null, mileage: true });
+        const mileage = field === 'service_due' && vehicle.service_due_mileage != null && vehicle.current_mileage != null && vehicle.current_mileage >= vehicle.service_due_mileage;
+        if (!vehicle[field] && field !== 'mot_due' && !(field === 'service_due' && (vehicle.service_due_mileage == null || mileage))) continue;
+        records.push({ type: 'vehicle', id: vehicle.id, label: vehicle.registration, requirement: label, date: vehicle[field], mileage });
       }
     }
     for (const driver of state.drivers.filter(d => d.status === 'Active' || d.status === 'Onboarding')) {
@@ -103,7 +102,7 @@
     const drivers = state.drivers.filter(d => d.status !== 'Archived');
     const records = complianceRecords();
     $('kpi-vehicles').textContent = fleet.length;
-    $('kpi-vehicle-note').textContent = `${fleet.filter(v => v.status === 'Active').length} active · ${fleet.filter(v => v.status === 'In maintenance').length} in maintenance`;
+    $('kpi-vehicle-note').textContent = `${fleet.filter(v => fleetStatus(v) === 'Active').length} active · ${fleet.filter(v => fleetStatus(v) === 'In maintenance').length} in maintenance`;
     $('kpi-drivers').textContent = drivers.filter(d => d.status === 'Active').length;
     $('kpi-driver-note').textContent = `${drivers.filter(d => d.status === 'Onboarding').length} onboarding · ${drivers.length} total drivers`;
     $('kpi-mot').textContent = records.filter(r => r.requirement === 'MOT' && needsAttention(r)).length;
@@ -111,7 +110,7 @@
     const upcoming = records.filter(r => r.requirement === 'MOT' || r.requirement === 'Service').filter(needsAttention).slice(0, 5);
     $('upcoming-list').innerHTML = upcoming.length ? upcoming.map(r => `<div class="deadline-row"><div><strong>${escape(r.label)}</strong><p>${escape(r.requirement)} · ${formatDate(r.date)}</p></div><div>${timingPill(r)} ${editButton(r.type, r.id, 'Update')}</div></div>`).join('') : `<p class="empty">${fleet.length ? 'No MOT or service tasks need attention for your operational vehicles.' : 'No vehicles recorded yet. Add your first vehicle to start tracking MOT and servicing.'}</p>`;
     $('fleet-breakdown').innerHTML = vehicleStatuses.filter(s => s !== 'Archived').map(status => {
-      const count = fleet.filter(v => v.status === status).length;
+      const count = fleet.filter(v => fleetStatus(v) === status).length;
       return `<a class="breakdown-row fleet-status-link" href="#vehicles" data-dashboard-view="vehicles" data-vehicle-status="${escape(status)}"><span>${escape(status)}</span><strong>${count}</strong><div class="breakdown-bar"><span style="width:${fleet.length ? count / fleet.length * 100 : 0}%"></span></div></a>`;
     }).join('');
     const missingMot = fleet.filter(v => operational(v) && !v.mot_due).length;
@@ -243,6 +242,12 @@
     $('compliance-rows').innerHTML = records.map(r => `<tr><td><strong>${escape(r.label)}</strong><span class="secondary">${r.type === 'vehicle' ? 'Vehicle' : 'Driver'}</span></td><td>${escape(r.requirement)}</td><td>${formatDate(r.date)}</td><td>${timingPill(r)}</td><td>${editButton(r.type, r.id, 'Update')}</td></tr>`).join('');
     $('compliance-empty').hidden = records.length > 0;
   }
+  function renderActivity() {
+    const query = $('activity-search').value.trim().toLowerCase(), entity = $('activity-entity').value;
+    const rows = state.activity.filter(r => (!entity || r.entity === entity) && (!query || [r.record_label,r.actor_email,r.action].join(' ').toLowerCase().includes(query)));
+    $('activity-list').innerHTML = rows.length ? activityMarkup(rows) : '<p class="empty">No matching saved changes.</p>';
+    $('activity-count').textContent = rows.length + ' of ' + state.activity.length + ' loaded changes';
+  }
   function activityMarkup(rows) {
     return rows.length ? rows.map(row => `<div class="activity-row"><span class="activity-icon" aria-hidden="true">${row.action === 'INSERT' ? '+' : '✓'}</span><div><strong>${escape(row.record_label)} ${row.action === 'INSERT' ? 'added' : 'updated'}</strong><p>${escape(row.actor_email || 'Workspace setup')} · ${row.entity === 'besa_vehicles' ? 'Vehicle' : 'Driver'}</p></div><time datetime="${escape(row.created_at)}">${escape(formatTime(row.created_at))}</time></div>`).join('') : '<p class="empty">Your saved changes will appear here.</p>';
   }
@@ -352,7 +357,7 @@
     for (const [field, heading, type, , opts = {}] of sheetColumns) {
       if (opts.calculated) continue;
       let value = storedVehicleFields.has(field) ? vehicle?.[field] : source[heading];
-      if (field === 'status') value = vehicle?.status === 'Active' && source['Fleet status'] === 'Needs review' ? 'Needs review' : vehicle?.status || 'Active';
+      if (field === 'status') value = vehicle ? fleetStatus(vehicle) : 'Active';
       if (field === 'tax_due') value = vehicle?.tax_due ? sheetDateText(vehicle.tax_due) : String(source['Road Tax'] || '').trim().toUpperCase() === 'SORN' ? 'SORN' : '';
       v[field] = type === 'number' ? sheetNumber(value) : type === 'date' ? sheetDate(value) : value || '';
     }
@@ -688,6 +693,7 @@
     });
     for (const id of ['driver-search', 'driver-filter']) $(id).addEventListener('input', renderDrivers);
     for (const id of ['compliance-search', 'compliance-filter', 'compliance-requirement']) $(id).addEventListener('input', renderCompliance);
+    for (const id of ['activity-search','activity-entity']) $(id).addEventListener('input',renderActivity);
     $('record-form').addEventListener('input', updateVehicleCalculations);
     $('record-form').addEventListener('submit', saveRecord); $('cancel-dialog').addEventListener('click', closeForm); $('close-dialog').addEventListener('click', closeForm);
     $('record-dialog').addEventListener('cancel', event => { if (state.busy) event.preventDefault(); else state.edit = null; });

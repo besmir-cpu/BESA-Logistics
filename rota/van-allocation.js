@@ -1,3 +1,5 @@
+import {changed,contextChanged} from '../operations/draft-state.mjs';
+import {loadPlanningRegister} from '../operations/secure-drafts.mjs?v=2';
 // Client-only Van Allocation worksheet. No network calls or persistent storage.
 import { loadExcelJS } from '../operations/lazy-excel.mjs';
 // Workbook import reads only the 'Van Allocation' sheet. The source workbook
@@ -7,6 +9,7 @@ import { weekDates, sundayOfWeek, offsetWeeks } from './rules.mjs';
 export function setupVanAllocation() {
   const $ = id => document.getElementById(id);
   const SEC = 86400000;
+  const markChanged=()=>changed({workspace:'van-allocation',key:'master'});
   const state = {
     start: null, imported: false, rows: [], dateCols: new Map(),
     sourceHead: new Map(), assigns: new Map(), edit: null, next: 0, generatedDates:new Set(),
@@ -128,7 +131,8 @@ export function setupVanAllocation() {
     const issues=state.rows.filter(isVanProblem).length;
     $('van-status').textContent=issues
       ?issues+' van(s) marked amber: Insurance or Works set to No. Review before allocation.'
-      :'Van Allocation: no Insurance/Works values marked No.';
+      :!state.rows.length?'No vans added. Load saved, add from your vehicle register, or import a workbook.'
+      :state.rows.some(v=>!v.isNote&&[1,2].some(i=>!['yes','no'].includes(v.cells[i]?.trim().toLowerCase())))?'Insurance or working condition is unverified for some vans. Confirm before allocating.':'No vans marked unavailable. Confirm insurance and condition before allocating.';
     for(const vehicle of state.rows){
       const tr=document.createElement('tr');
       const problem=isVanProblem(vehicle);
@@ -183,25 +187,10 @@ export function setupVanAllocation() {
       td.colSpan=34;tr.append(td);body.append(tr);
     }
   }
-  function sample(){
-    state.imported=false;state.start=sundayOfWeek(ukToday());
-    state.rows=Array.from({length:12},(_,i)=>({
-      id:'demo-van-'+i,cells:['SAMPLE VAN '+String(i+1).padStart(2,'0'),'Yes','Yes','','',''],isNote:false
-    }));
+  function blank(){
+    state.start=sundayOfWeek(ukToday());state.imported=false;state.rows=[];
     state.assigns.clear();state.sourceHead.clear();state.dateCols.clear();state.generatedDates.clear();
-    state.rows.forEach((van,i)=>{
-      for(const day of weeks().flat()){
-        const n=dateUTC(day).getUTCDay();
-        if((i+n)%4!==0)state.assigns.set(vkey(van.id,day),'Sample Driver '+String((i+n)%24+1).padStart(2,'0'));
-      }
-    });
-    state.sourceHead.set('1|5','Total vans assigned');
-    state.sourceHead.set('2|1','Not Working');
-    state.sourceHead.set('2|5','Week number');
-    state.sourceHead.set('3|1','Total');
-    for(const [i,label] of ['Van','Ins.','Works','Notes','Issue','Keys / notes'].entries()){
-      state.sourceHead.set('4|'+(i+1),label);
-    }
+    for(const [i,label] of ['Van','Ins.','Works','Notes','Issue','Keys / notes'].entries())state.sourceHead.set('4|'+(i+1),label);
     render();
   }
   function importFromWorkbook(workbook){
@@ -251,10 +240,10 @@ export function setupVanAllocation() {
     const current=sundayOfWeek(ukToday());
     const earliest=sundayOfWeek(ordered[0]),latest=sundayOfWeek(ordered[ordered.length-1]);
     state.start=current>=earliest&&current<=latest?current:earliest;
-    state.imported=true;
+    state.imported=true;markChanged();
     $('van-preview-notice').classList.add('imported');
     $('van-preview-notice').textContent='PRIVATE Van Allocation imported — '+rows.filter(r=>!r.isNote).length+
-      ' vans, '+sourceDates.length+' dates. Source worksheet layout is retained. Edits stay in this tab until you download a draft CSV.';
+      ' vans, '+sourceDates.length+' dates. Source worksheet layout is retained. Save securely or export CSV to keep edits.';
     render();
     show('Van Allocation loaded from the workbook. Original Google Sheet unchanged.');
   }
@@ -270,9 +259,10 @@ export function setupVanAllocation() {
     const edit=state.edit;if(!edit)return;
     const value=clear?'':$('van-assignment').value.trim();
     if(value.length>100){show('Assignment too long.',true);return;}
+    if(value&&state.rows.some(v=>v.id!==edit.id&&!v.isNote&&(state.assigns.get(vkey(v.id,edit.date))||'').trim().toLowerCase()===value.toLowerCase())){show('This driver is already assigned to another van on this date. Review that assignment first.',true);return;}
     if(value)state.assigns.set(vkey(edit.id,edit.date),value);
     else state.assigns.delete(vkey(edit.id,edit.date));
-    $('van-edit-modal').close();state.edit=null;render();
+    $('van-edit-modal').close();state.edit=null;render();markChanged();
     show('Van allocation changed in this browser only. Download CSV to keep.');
   }
   function updateDriverSuggestions(names){
@@ -316,11 +306,20 @@ export function setupVanAllocation() {
     show('Showing van allocations from '+dateLabel(state.start,'long')+'.');
   }
   function setup(){
+    function tabContext(vanTab){
+      document.querySelector('.rota-top h1').textContent=vanTab?'Van Allocation':'Rota & Scheduling';
+      for(const link of document.querySelectorAll('.operation-tabs a[href="#rota"],.operation-tabs a[href="#vans"]')){
+        if(link.getAttribute('href')===(vanTab?'#vans':'#rota'))link.setAttribute('aria-current','page');
+        else link.removeAttribute('aria-current');
+      }
+      contextChanged();
+    }
     $('show-rota-tab').addEventListener('click',()=>{
       $('rota-tab-panel').hidden=false;$('vans-tab-panel').hidden=true;
       $('show-rota-tab').classList.add('active');$('show-vans-tab').classList.remove('active');
       $('show-rota-tab').setAttribute('aria-selected','true');
       $('show-vans-tab').setAttribute('aria-selected','false');
+      tabContext(false);
       if(window.location.hash!=='#rota')window.location.hash='#rota';
     });
     $('show-vans-tab').addEventListener('click',()=>{
@@ -328,6 +327,7 @@ export function setupVanAllocation() {
       $('show-vans-tab').classList.add('active');$('show-rota-tab').classList.remove('active');
       $('show-vans-tab').setAttribute('aria-selected','true');
       $('show-rota-tab').setAttribute('aria-selected','false');
+      tabContext(true);
       if(window.location.hash!=='#vans')window.location.hash='#vans';
     });
     $('van-prev').addEventListener('click',()=>changeWeek(offsetWeeks(state.start,-4)));
@@ -347,7 +347,7 @@ export function setupVanAllocation() {
       const vehicle=state.rows.find(v=>v.id===select.dataset.vanStatus);
       const field=Number(select.dataset.field);
       if(!vehicle||vehicle.isNote||![1,2].includes(field))return;
-      vehicle.cells[field]=select.value;
+      vehicle.cells[field]=select.value;markChanged();
       render();
       const issue=isVanProblem(vehicle);
       show(issue?vehicle.cells[0]+' marked AMBER: Insurance or Works is No.':
@@ -360,6 +360,7 @@ export function setupVanAllocation() {
     $('van-add-cancel').addEventListener('click',()=>$('van-add-modal').close());
     $('van-add-form').addEventListener('submit',e=>{
       e.preventDefault();
+      if(state.rows.length>=350){show('Van allocation is limited to 350 rows.',true);return;}
       const reg=$('van-new-reg').value.trim().toUpperCase();
       if(!reg||reg.length>24){show('Enter a valid van registration.',true);return;}
       if(state.rows.some(v=>v.cells[0].toUpperCase()===reg)){show('Van already exists.',true);return;}
@@ -367,8 +368,22 @@ export function setupVanAllocation() {
         reg,$('van-new-ins').value.trim(),$('van-new-works').value.trim(),'','',''
       ],isNote:false});
       state.rows.sort((a,b)=>a.cells[0].localeCompare(b.cells[0],'en-GB',{numeric:true}));
-      $('van-add-modal').close();$('van-add-form').reset();render();
+      markChanged();$('van-add-modal').close();$('van-add-form').reset();render();
       show('Van added to local draft. Original Van Allocation sheet unchanged.');
+    });
+    $('load-van-register').addEventListener('click',async e=>{
+      const button=e.currentTarget;button.disabled=true;
+      try{
+        const vehicles=await loadPlanningRegister('vehicles');let added=0;
+        for(const v of vehicles){
+          if(state.rows.some(row=>row.cells[0].toUpperCase()===v.registration.toUpperCase()))continue;
+          if(state.rows.length>=350)break;
+          const status=v.status==='Active'&&v.tracker_snapshot?.['Fleet status']==='Needs review'?'Needs review':v.status;
+          state.rows.push({id:'register-'+v.id,cells:[v.registration,'','',status,'',''],isNote:false});added++;
+        }
+        if(added)markChanged();render();
+        show(added+' vans added from the register. Insurance and working condition remain unverified; confirm before allocation. Existing assignments were kept.');
+      }catch(error){show(error.message,true);}finally{button.disabled=false;}
     });
     $('van-export').addEventListener('click',saveCsv);
     $('import-vans-file').addEventListener('change',async e=>{
@@ -382,7 +397,7 @@ export function setupVanAllocation() {
       }catch(error){show('Import failed: '+(error.message||'Unknown error'),true);}
       finally{e.target.value='';}
     });
-    sample();
+    blank();
     if(window.location.hash==='#vans')$('show-vans-tab').click();
     window.addEventListener('hashchange',()=>{
       if(window.location.hash==='#vans')$('show-vans-tab').click();
@@ -391,18 +406,24 @@ export function setupVanAllocation() {
   }
   setup();
   function snapshot(){
-    if(!state.imported)throw new Error('Import a real Van Allocation workbook first; sample vans cannot be saved.');
     return {schema:1,start:state.start,rows:state.rows.map(r=>({
       id:r.id,cells:r.cells,isNote:Boolean(r.isNote)
     })),dateCols:[...state.dateCols],sourceHead:[...state.sourceHead],
       assigns:[...state.assigns],generatedDates:[...state.generatedDates]};
   }
   function restore(data){
+    const ids=new Set((Array.isArray(data?.rows)?data.rows:[]).map(row=>row?.id));
+    const validDate=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&!Number.isNaN(Date.parse(s+'T00:00:00Z'))&&new Date(s+'T00:00:00Z').toISOString().slice(0,10)===s;
+    const pairs=rows=>rows.every(row=>Array.isArray(row)&&row.length===2);
     if(data?.schema!==1||!Array.isArray(data.rows)||data.rows.length>350||
        !Array.isArray(data.assigns)||data.assigns.length>150000||
        !Array.isArray(data.dateCols)||!Array.isArray(data.sourceHead)||
        !Array.isArray(data.generatedDates)||
-       !/^\d{4}-\d{2}-\d{2}$/.test(data.start||''))
+       !validDate(data.start)||data.rows.some(r=>!r||typeof r.id!=='string'||!r.id||!Array.isArray(r.cells)||r.cells.length!==6||r.cells.some(v=>typeof v!=='string'))||
+       new Set(data.rows.map(r=>r.id)).size!==data.rows.length||
+       !pairs(data.dateCols)||data.dateCols.some(([day,col])=>!validDate(day)||!Number.isInteger(col))||
+       !pairs(data.sourceHead)||!pairs(data.assigns)||data.assigns.some(([k,v])=>typeof k!=='string'||!validDate(k.split('|').pop())||!ids.has(k.slice(0,k.lastIndexOf('|')))||typeof v!=='string'||v.length>150)||
+       data.generatedDates.some(day=>!validDate(day)))
       throw new Error('This saved Van Allocation draft has an unsupported structure.');
     state.start=data.start;
     state.rows=data.rows.map(r=>({id:String(r.id),cells:r.cells.map(String).slice(0,6),isNote:!!r.isNote}));
@@ -417,9 +438,9 @@ export function setupVanAllocation() {
   }
   return { importFromWorkbook, updateDriverSuggestions, snapshot, restore, reset:()=>{
     state.generatedDates.clear();
-    sample();
+    blank();
     $('van-preview-notice').classList.remove('imported');
-    $('van-preview-notice').textContent='Van Allocation preview — fictional vehicles and assignments only. Import the same ROTA Excel workbook to display your real Van Allocation worksheet.';
-    show('Van Allocation reset to sample data.');
+    $('van-preview-notice').textContent='No vans loaded. Add from your vehicle register, load saved, or import a workbook.';
+    show('Van Allocation cleared.');
   } };
 }

@@ -7,15 +7,16 @@ const vehicles=[
  {id:'v3',registration:'TEST03',status:'Off hire',mot_due:null},
  {id:'v4',registration:'TEST04',status:'Active',mot_due:date(90),service_due:date(90)}
 ];
-async function openWorkspace(page,{rows=vehicles,admin=true}={}){
+async function openWorkspace(page,{rows=vehicles,admin=true,checklists=true,activity=[]}={}){
  const calls=[];
  await page.route('**/rest/v1/**',async route=>{
   const request=route.request();calls.push(request.method());
   const table=new URL(request.url()).pathname.split('/').pop();
+  if(table==='besa_driver_journey'&&!checklists){await route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({code:'PGRST205',message:'not installed'})});return;}
   const body=table==='besa_admins'?(admin?[{email:'admin@example.test'}]:[]):table==='besa_vehicles'?rows:table==='besa_drivers'?[
    {id:'d1',first_name:'Test',last_name:'Active',status:'Active',licence_expiry:date(120)},
    {id:'d2',first_name:'Test',last_name:'Onboarding',status:'Onboarding',licence_expiry:date(120)}
-  ]:[];
+  ]:table==='besa_activity'?activity:[];
   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
  });
  await page.goto(site);
@@ -104,4 +105,34 @@ test('mobile dashboard opens active drivers with matching records',async({page})
  await expect(page.locator('#driver-filter')).toHaveValue('Active');
  await expect(page.locator('#journey-tracker-body tr')).toHaveCount(1);
  await expect(page.locator('#journey-tracker-body')).toContainText('Test Active');
+});
+
+
+test('review-status fleet counts match rows and mileage-only servicing is listed once',async({page})=>{
+ await openWorkspace(page,{rows:[{id:'r1',registration:'REVIEW01',status:'Active',tracker_snapshot:{'Fleet status':'Needs review'},mot_due:null,service_due:null,current_mileage:20000,service_due_mileage:19000}]});
+ await expect(page.locator('#kpi-vehicle-note')).toContainText('0 active');
+ await expect(page.locator('.fleet-status-link[data-vehicle-status="Needs review"] strong')).toHaveText('1');
+ await expect(page.locator('#kpi-service')).toHaveText('1');
+ await page.locator('.fleet-status-link[data-vehicle-status="Needs review"]').click();
+ await expect(page.locator('#vehicle-rows tr')).toHaveCount(1);await expect(page.locator('#vehicle-rows')).toContainText('REVIEW01');
+ await page.locator('[data-page="compliance"]').click();await page.locator('#compliance-requirement').selectOption('Service');
+ await expect(page.locator('#compliance-rows tr')).toHaveCount(1);
+});
+
+test('local checklist changes are labelled and protected before leaving',async({page})=>{
+ await openWorkspace(page);await page.locator('[data-page="drivers"]').click();
+ await expect(page.locator('#journey-todo-count')).toHaveText('28');
+ await page.locator('#signout-button').click();await openWorkspace(page,{checklists:false});await page.locator('[data-page="drivers"]').click();
+ await expect(page.locator('#journey-todo-count')).toHaveText('Not connected');
+ await page.locator('[data-tracker-field="requirements"]').first().selectOption('Yes');
+ await expect(page.locator('#journey-status')).toContainText('Local draft only');
+ expect(await page.evaluate(()=>{const e=new Event('beforeunload',{cancelable:true});dispatchEvent(e);return e.defaultPrevented;})).toBe(true);
+});
+
+
+test('activity search and record-type filter show only matching saved changes',async({page})=>{
+ await openWorkspace(page,{activity:[{id:'a1',record_label:'SYNTH01',entity:'besa_vehicles',action:'UPDATE',actor_email:'admin@example.test',created_at:new Date().toISOString()},{id:'a2',record_label:'Synthetic Driver',entity:'besa_drivers',action:'INSERT',actor_email:'admin@example.test',created_at:new Date().toISOString()}]});
+ await page.locator('[data-page="activity"]').click();await expect(page.locator('#activity-count')).toHaveText('2 of 2 loaded changes');
+ await page.locator('#activity-entity').selectOption('besa_vehicles');await expect(page.locator('#activity-list')).toContainText('SYNTH01');await expect(page.locator('#activity-list')).not.toContainText('Synthetic Driver');
+ await page.locator('#activity-search').fill('missing record');await expect(page.locator('#activity-list')).toContainText('No matching saved changes');
 });

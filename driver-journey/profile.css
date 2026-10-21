@@ -124,3 +124,5 @@
 .journey-tracker-empty{padding:26px;text-align:center;font-size:12px;color:#76879c}
 .journey-tracker-footnote{padding:10px 15px;margin:0;border-top:1px solid #e3eaf1;background:#f8faff;font-size:11px;line-height:1.6;color:#6a7c98}
 @media(max-width:750px){.journey-tracker-scroll{height:65dvh;min-height:390px}.journey-tracker-sheet th:nth-child(1),.journey-tracker-sheet td:nth-child(1){width:157px;min-width:157px;max-width:157px}.journey-tracker-sheet thead th.journey-col-phone,.journey-tracker-sheet tbody td.journey-phone-cell{left:157px}.journey-tracker-sheet th:nth-child(2),.journey-tracker-sheet td:nth-child(2){width:131px;min-width:131px;max-width:131px}.journey-tracker-actions span{display:none}}
+
+#journey-todo-count.unavailable{font-size:16px;overflow-wrap:anywhere}

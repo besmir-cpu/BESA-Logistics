@@ -86,8 +86,8 @@ test('Payments pages keep correct sidebar selected section',()=>{
 test('every standalone office page includes sidebar resources',()=>{
   for(const name of ['rota.html','payments.html','payment-tracker.html']){
     const html=read(name);
-    assert.ok(html.includes('operations/sidebar.css?v=1'),name+' CSS');
-    assert.ok(html.includes('operations/sidebar.js?v=1'),name+' JS');
+    assert.ok(html.includes('operations/sidebar.css?v=2'),name+' CSS');
+    assert.ok(html.includes('operations/sidebar.js?v=2'),name+' JS');
   }
   const css=read('operations/sidebar.css');
   assert.ok(css.includes('position:fixed!important'));
