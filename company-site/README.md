@@ -1,5 +1,21 @@
 # BESA Logistics — independent company website
 
+## Current release — 21 October 2026
+
+This directory is now the source for the production final-mile carrier website as well as the GitHub Pages preview. The historical setup notes below describe the original preview; use this release section for current deployment instructions.
+
+- Homepage: UK final-mile carrier identity, dispatch-to-doorstep operations, driver support, fleet coordination and careers.
+- Owner-confirmed official Amazon Delivery Service Partner reference, independent ownership statement and trademark notice. See `ASSETS-AND-BRANDING.md` for sources, licensing and the limits of the branding review.
+- Two locally hosted licensed Pexels photographs with model/stock disclosure.
+- Build: `node scripts/build-company-site.mjs` from repository root. Deploy **only `dist/company-site/`** to existing Netlify project `besalogistics`, ID `d9c0090b-3b1a-4e17-9468-4b617892d17e`.
+- The build removes preview/noindex text, adds canonical metadata and retains the existing `besa-contact` Netlify form, field names and honeypot. No contact email or phone is invented. Form detection must stay enabled in the existing Netlify project.
+- `hosting/_redirects` and `hosting/_headers` are retained from the 19 October routing-corrected deployment. Office and onboarding continue proxying GitHub Pages; they are not copied into the company homepage build. No database, authentication or invitation changes are required.
+- GitHub Actions validates source, builds production output, tests desktop/mobile and uploads `besa-company-site-netlify` as an artifact. Download that artifact and upload its contents/ZIP in the existing Netlify project's deployment panel. This project currently uses manual Netlify Drop; the workflow does **not** claim to auto-publish to Netlify. The root `netlify.toml` supplies the correct build/publish settings if the owner later connects Git integration.
+- Local checks: `node --test tests/company-site.test.mjs tests/company-site-deployment.test.mjs`, then serve repository root on port 4173 and run `npx playwright test tests/company-site.browser.spec.cjs tests/company-site-production.browser.spec.cjs`. Browser tests accept `BESA_PREVIEW_URL`/`BESA_PRODUCTION_URL` overrides. They do not submit enquiries or private candidate data.
+- Rollback: republish previous Netlify production deploy `6ad5cd5580dd83a6f78f2562`. Keep DNS and email records intact. Do not add a CNAME to the operations repository: **Do not do that.**
+
+## Historical preview setup (superseded by release instructions above)
+
 This is a **separate public-facing company website**, created for BESA Logistics Ltd and stored in the BESA-controlled GitHub repository:
 `besmir-cpu/BESA-Logistics/company-site/`.
 

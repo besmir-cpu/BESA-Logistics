@@ -27,3 +27,15 @@ jobs:
             fi
           done
           echo "Public site checks passed; no database or personal-data requests made."
+      - name: Verify live company homepage and licensed photos
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://besalogistics.co.uk"
+          curl --fail --silent --show-error --location --retry 2 --max-time 20 "$base/" -o /tmp/besa-company.html
+          grep -q 'UK FINAL-MILE DELIVERY CARRIER' /tmp/besa-company.html
+          grep -q 'official Amazon Delivery Service Partner' /tmp/besa-company.html
+          for image in parcel-handover doorstep-delivery; do
+            curl --fail --silent --show-error --location --max-time 20 "$base/images/$image.jpg" -o /tmp/besa-photo.jpg
+            test "$(wc -c < /tmp/besa-photo.jpg)" -gt 10000
+          done

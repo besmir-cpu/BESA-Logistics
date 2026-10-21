@@ -1,10 +1,10 @@
 const {test,expect}=require('@playwright/test');
-const home='http://127.0.0.1:4173/company-site/';
+const home=process.env.BESA_PREVIEW_URL||'http://127.0.0.1:4173/company-site/';
 test('desktop homepage is original, stable and navigable',async({page})=>{
  const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto(home,{waitUntil:'domcontentloaded'});
- await expect(page.getByRole('heading',{name:/People\.\s*Precision\.\s*Delivery\./})).toBeVisible();
+ await expect(page.getByRole('heading',{name:/The final mile\.\s*A lasting\s*impression\./})).toBeVisible();
  await expect(page.locator('.service-card')).toHaveCount(3);
  await page.locator('.nav a[href="#services"]').click();
  await expect(page).toHaveURL(/#services$/);
