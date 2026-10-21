@@ -1,17 +1,17 @@
 const {test,expect}=require('@playwright/test');
 const site='http://127.0.0.1:4173';
-test('Live login has password option, but the no-email trial has no private access',async({page})=>{
+test('Administrator sign-in is visible and anonymous visitors have no private access',async({page})=>{
   const restCalls=[];
   page.on('request',r=>{
     if(r.url().includes('.supabase.co/rest/v1/')||r.url().includes('.supabase.co/functions/v1/'))
       restCalls.push(r.url());
   });
   await page.goto(site+'/index.html',{waitUntil:'domcontentloaded'});
-  await expect(page.locator('#password-login-form')).toBeHidden();
-  await expect(page.locator('#email-link-login')).toBeHidden();
-  await page.locator('#trial-enter').click();
+  await expect(page.locator('#password-login-form')).toBeVisible();
+  await expect(page.locator('#login-form')).toBeHidden();
   await expect(page.locator('#set-password-open')).toBeHidden();
-  await expect(page.locator('#besa-trial-banner')).toBeVisible();
+  await expect(page.locator('#app-shell')).toBeHidden();
+  await expect(page.locator('#trial-enter')).toHaveCount(0);
   expect(restCalls).toEqual([]);
 });
 test('Admin password sign-in calls Supabase Auth, then still checks database admin membership',async({page})=>{
@@ -36,7 +36,6 @@ test('Admin password sign-in calls Supabase Auth, then still checks database adm
       return {data:{user:{id:'test-admin-id'}},error:null};
     };
   });
-  await page.locator('#live-login-toggle').click();
   await page.locator('#password-login-email').fill('admin@example.test');
   await page.locator('#password-login-password').fill('test-only-passphrase');
   await page.locator('#password-login-submit').click();
@@ -60,7 +59,6 @@ test('Magic link callback stays at BESA office origin; request timing is clearly
       return {error:null};
     };
   });
-  await page.locator('#live-login-toggle').click();
   await page.locator('#email-link-login summary').click();
   await page.locator('#login-email').fill('admin@example.test');
   await page.locator('#login-submit').click();
