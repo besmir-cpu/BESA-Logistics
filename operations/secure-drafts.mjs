@@ -18,7 +18,7 @@ export async function secureClient(){
   if(!loadPromise){
     loadPromise=(async()=>{
       if(!window.supabase)
-        await injectScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js');
+        await injectScript('vendor/supabase.js');
       await injectScript('config.js?v=freeze-page-4');
       if(!window.besaClient)throw new Error('Secure connection unavailable.');
       return window.besaClient;
@@ -36,6 +36,8 @@ async function authenticated(){
   const {data:admin,error:adminError}=await client.from('besa_admins')
     .select('email').eq('email',String(data.session.user.email||'').toLowerCase()).limit(1);
   if(adminError||!admin?.length)throw new Error('Administrator access is required.');
+  const {data:assurance,error:mfaError}=await client.auth.mfa.getAuthenticatorAssuranceLevel();
+  if(mfaError||assurance?.currentLevel!=='aal2')throw new Error('Complete two-step verification in the main BESA dashboard, then return here.');
   return client;
 }
 function keyFor(workspace,key){

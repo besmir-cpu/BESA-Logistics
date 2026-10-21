@@ -1,5 +1,5 @@
 const {test,expect}=require('@playwright/test');
-const url='http://127.0.0.1:4173';
+const url=process.env.BESA_WORKSPACE_URL||'http://127.0.0.1:4173';
 test.use({viewport:{width:1366,height:800}});
 test('Rota and Van Allocation keep the sidebar and grid responsive',async({page})=>{
   const errors=[];

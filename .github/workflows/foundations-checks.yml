@@ -1,0 +1,45 @@
+name: Foundations release checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  foundations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Build and test pinned runtime
+        run: |
+          npm audit --omit=dev --audit-level=low
+          npm run build
+          node --check operations/mfa.js
+          node --experimental-strip-types --check supabase/functions/besa-encrypted-backup/index.ts
+          node --test tests/*.test.mjs operations/*.test.mjs driver-journey/*.test.mjs payments/*.test.mjs recruitment/*.test.mjs design/*.test.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Serve the actual production package with its security headers
+        run: |
+          node scripts/serve-built.mjs >/tmp/besa-foundations.log 2>&1 &
+          for i in $(seq 1 10); do
+            if curl --fail --silent http://127.0.0.1:4174/office/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - name: Verify authentication, conflicts, imports and all operational workspaces
+        env:
+          BESA_OFFICE_URL: http://127.0.0.1:4174/office/
+          BESA_PLATFORM_URL: http://127.0.0.1:4174/office/
+          BESA_WORKSPACE_URL: http://127.0.0.1:4174/office/
+          BESA_CANDIDATE_URL: http://127.0.0.1:4174/onboarding/
+          BESA_PRODUCTION_URL: http://127.0.0.1:4174/
+        run: |
+          npm run test:browser
+          npx playwright test tests/company-site-production.browser.spec.cjs --workers=1 --reporter=line

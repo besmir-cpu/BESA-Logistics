@@ -1,0 +1,36 @@
+name: Encrypted BESA backup and restore rehearsal
+on:
+  schedule:
+    - cron: '43 1 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: besa-production-backup
+  cancel-in-progress: false
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Export encrypted records and documents, validate contents, rehearse isolated recovery
+        env:
+          BESA_BACKUP_JOB_TOKEN: ${{ secrets.BESA_BACKUP_JOB_TOKEN }}
+          BESA_RECOVERY_PRIVATE_KEY: ${{ secrets.BESA_RECOVERY_PRIVATE_KEY }}
+          BESA_RECOVERY_PASSPHRASE: ${{ secrets.BESA_RECOVERY_PASSPHRASE }}
+        run: node scripts/run-backup-job.mjs
+      - name: Retain only encrypted archives and non-personal verification manifests
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: besa-encrypted-backup-${{ github.run_id }}
+          path: |
+            recovery/export/*.pgp
+            recovery/export/*.verified.json
+          retention-days: 90
+          if-no-files-found: error

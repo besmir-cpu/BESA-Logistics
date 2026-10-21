@@ -6,7 +6,7 @@ export async function loadExcelJS(){
   if(!excelPromise){
     excelPromise=new Promise((resolve,reject)=>{
       const script=document.createElement('script');
-      script.src='https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+      script.src=new URL('../vendor/exceljs.min.js',import.meta.url).href;
       script.async=true;
       script.crossOrigin='anonymous';
       const timer=setTimeout(()=>{

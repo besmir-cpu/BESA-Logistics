@@ -1,10 +1,4 @@
-# BESA one-domain website: reversible proxy rewrites during transition.
-# CRITICAL: Netlify normalizes trailing slashes BEFORE matching redirects.
-# NEVER add '/office /office/ 301' or '/onboarding /onboarding/ 301' —
-# those become self-redirects on Netlify and break the entire page.
-# A single /office rule matches /office and /office/; same for onboarding.
-# All specific page rewrites are before the asset wildcard.
-/onboarding    https://besmir-cpu.github.io/BESA-Logistics/candidate-onboarding.html 200!
-/onboarding/*  https://besmir-cpu.github.io/BESA-Logistics/:splat 200!
-/office        https://besmir-cpu.github.io/BESA-Logistics/index.html 200!
-/office/*      https://besmir-cpu.github.io/BESA-Logistics/:splat 200!
+# Directory indexes serve /office/ and /onboarding/ directly.
+# Never introduce a self-redirect between normalised trailing slash URLs.
+# Retain the historical onboarding filename without moving invitation fragments.
+/onboarding/candidate-onboarding.html /onboarding/index.html 200

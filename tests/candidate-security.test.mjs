@@ -31,7 +31,8 @@ test('Edge function gates admin and applicant capabilities independently',()=>{
  for(const action of ["case 'create':","case 'revoke':","case 'admin-review':","case 'admin-view':","case 'status':","case 'submit':"])assert.ok(edge.includes(action),action);
  assert.ok(edge.includes('adminAuth(req)'));
  assert.ok(edge.includes('userDb.auth.getUser(jwt)'));
- assert.ok(edge.includes(".from('besa_admins')"));
+ assert.ok(edge.includes("userDb.rpc('besa_is_admin')"));
+ assert.ok(edge.includes('global:{headers:{Authorization:auth}}'));
  assert.ok(edge.includes('await digest(token)'));
  assert.ok(edge.includes("['application/pdf','pdf']"));
  assert.ok(edge.includes('fileMagic(head,file.type)'));

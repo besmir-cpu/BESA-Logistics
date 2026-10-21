@@ -52,7 +52,7 @@ const DOCS=[
 const BUCKET='besa-driver-private-evidence';
 const state={drivers:[],vehicles:[],checklists:new Map(),pending:new Map(),files:[],profileId:null,
   checklistReady:false,evidenceReady:false,checked:false,rev:0,writeQueue:Promise.resolve(),
-  trackerView:'spreadsheet',dirty:new Set(),editVersions:new Map()};
+  trackerView:'spreadsheet',dirty:new Set(),editVersions:new Map(),versions:new Map(),blockedWrites:new Set()};
 const msg=(text,err=false,id='journey-status')=>{
   const n=$(id);if(!n)return;n.textContent=text;n.classList.toggle('error',Boolean(err));
 };
@@ -247,7 +247,7 @@ function closeProfile(){
 function clearSensitive(){
   state.rev++;
   state.drivers=[];state.vehicles=[];state.profileId=null;
-  state.checklists.clear();state.pending.clear();state.files=[];state.dirty.clear();state.editVersions.clear();
+  state.checklists.clear();state.pending.clear();state.files=[];state.dirty.clear();state.editVersions.clear();state.versions.clear();state.blockedWrites.clear();
   $('journey-tracker-body').replaceChildren();
   $('journey-tracker-count').textContent='0 drivers';
   state.checklistReady=false;state.evidenceReady=false;state.checked=false;
@@ -277,7 +277,8 @@ async function probe(){
   }catch{state.evidenceReady=false;}
   if(rev===state.rev){
     mode();
-    if(state.checklistReady)await loadTrackerChecklists(rev);
+    if(state.checklistReady&&!await loadTrackerChecklists(rev))state.checklistReady=false;
+    mode();
     renderTracker();
   }
 }
@@ -286,16 +287,17 @@ async function loadTrackerChecklists(rev=state.rev){
   try{
     // Only rows for the currently authorised drivers. RLS also restricts access.
     const ids=new Set(state.drivers.map(d=>String(d.id)));
-    if(!ids.size)return;
+    if(!ids.size)return true;
     for(let offset=0;offset<Math.min(state.drivers.length,5000);offset+=500){
       const {data,error}=await window.besaClient.from('besa_driver_journey')
-        .select('driver_id,checklist,details')
+        .select('driver_id,checklist,details,version')
         .range(offset,offset+499).order('driver_id');
       if(error)throw error;
       if(rev!==state.rev)return;
       for(const record of data||[]){
         const id=String(record.driver_id);
-        if(!ids.has(id)||state.dirty.has(id))continue;
+        if(!ids.has(id)||state.dirty.has(id)||(record.version||0)<(state.versions.get(id)||0))continue;
+        state.versions.set(id,record.version||0);
         state.checklists.set(id,{
           checklist:record.checklist&&typeof record.checklist==='object'?record.checklist:{},
           details:record.details&&typeof record.details==='object'?record.details:{}
@@ -304,8 +306,10 @@ async function loadTrackerChecklists(rev=state.rev){
       if((data||[]).length<500)break;
     }
     if(rev===state.rev){renderTracker();updateCounters();}
+    return true;
   }catch(error){
     if(rev===state.rev)msg('Could not load saved recruitment progress: '+(error.message||'Unavailable')+'. Check the secure database setup.',true);
+    return false;
   }
 }
 async function loadChecklist(id){
@@ -313,10 +317,11 @@ async function loadChecklist(id){
   if(!state.checklistReady)return stored(id);
   try{
     const {data,error}=await window.besaClient.from('besa_driver_journey')
-      .select('driver_id,checklist,details').eq('driver_id',String(id)).maybeSingle();
+      .select('driver_id,checklist,details,version').eq('driver_id',String(id)).maybeSingle();
     if(error)throw error;
     if(rev!==state.rev||state.profileId!==String(id))return stored(id);
-    if(data&&!state.dirty.has(String(id))){
+    if(data&&!state.dirty.has(String(id))&&(data.version||0)>=(state.versions.get(String(id))||0)){
+      state.versions.set(String(id),data.version||0);
       state.checklists.set(String(id),{checklist:data.checklist&&typeof data.checklist==='object'?data.checklist:{},
         details:data.details&&typeof data.details==='object'?data.details:{}});
     }
@@ -341,9 +346,16 @@ function queueWrite(id=state.profileId){
   const payload={driver_id:id,checklist:{...data.checklist},details:{...data.details}};
   state.writeQueue=state.writeQueue.catch(()=>{}).then(async()=>{
     if(rev!==state.rev)return;
-    const {error}=await window.besaClient.from('besa_driver_journey').upsert(payload,{onConflict:'driver_id'});
-    if(error)throw error;
+    if(state.blockedWrites.has(id))throw new Error('Reload saved progress before making further secure changes. Your draft is still available to export.');
+    if(!state.versions.has(id))throw new Error('Saved progress has not finished loading. Export this draft before reloading.');
+    const {data:reply,error}=await window.besaClient.rpc('besa_save_driver_journey',{
+      p_driver_id:id,p_checklist:payload.checklist,p_details:payload.details,p_expected_version:state.versions.get(id)
+    });
+    if(error){state.blockedWrites.add(id);throw error;}
+    const result=Array.isArray(reply)?reply[0]:reply;
+    if(!result?.saved){state.blockedWrites.add(id);throw new Error('Another editor saved newer progress. Export your draft, then choose Reload saved progress to review their changes.');}
     if(rev===state.rev){
+      state.versions.set(id,result.current_version);
       if(state.editVersions.get(id)!==editVersion)return;
       state.dirty.delete(id);
       if(state.profileId===id)profileMessage('Checklist saved securely for this driver.');
@@ -532,6 +544,12 @@ async function uploadEvidence(){
   if(!types.includes(file.type)||file.size>8*1024*1024||!file.size){
     privateDocsNotice('Use a PDF, PNG, JPG or WEBP file under 8 MB.',true);return;
   }
+  const bytes=new Uint8Array(await file.slice(0,16).arrayBuffer());
+  const valid=file.type==='application/pdf'?[37,80,68,70,45].every((v,i)=>bytes[i]===v):
+    file.type==='image/jpeg'?bytes[0]===255&&bytes[1]===216&&bytes[2]===255:
+    file.type==='image/png'?[137,80,78,71,13,10,26,10].every((v,i)=>bytes[i]===v):
+    String.fromCharCode(...bytes.slice(0,4))==='RIFF'&&String.fromCharCode(...bytes.slice(8,12))==='WEBP';
+  if(!valid){privateDocsNotice('The file content does not match its declared image or PDF format.',true);return;}
   if(!DOCS.some(x=>x[0]===type))return;
   const ext={ 'application/pdf':'pdf','image/jpeg':'jpg','image/png':'png','image/webp':'webp' }[file.type];
   const objectPath=id+'/'+type+'/'+crypto.randomUUID()+'.'+ext;
@@ -724,6 +742,21 @@ function setup(){
   $('driver-profile-export').addEventListener('click',exportChecklist);
   $('journey-tracker-body').addEventListener('change',trackerFieldChanged);
   $('journey-export-tracker').addEventListener('click',exportTracker);
+  $('journey-reload-progress').addEventListener('click',async e=>{
+    if((state.dirty.size||state.pending.size)&&!window.confirm('Replace unsaved checklist drafts with the latest shared progress? Export first if needed.'))return;
+    const button=e.currentTarget;button.disabled=true;$('drivers').inert=true;
+    // Drain writes before replacing their maps. Failed refreshes restore the
+    // exact browser draft, including its conflict marker and server version.
+    await state.writeQueue.catch(()=>{});
+    const prior={dirty:state.dirty,pending:state.pending,blockedWrites:state.blockedWrites,versions:state.versions,checklists:state.checklists};
+    try{
+      state.dirty=new Set();state.pending=new Map();state.blockedWrites=new Set();state.versions=new Map();state.checklists=new Map();
+      await probe();if(!state.checklistReady)throw new Error('Shared storage could not be read. Your browser draft was kept.');
+      if(state.profileId){overview();checklist();}
+      msg('Shared checklist progress reloaded.');
+    }catch(error){Object.assign(state,prior);renderTracker();mode();msg(error.message,true);}
+    finally{button.disabled=false;$('drivers').inert=false;}
+  });
   $('journey-show-tracker').addEventListener('click',()=>switchDriverView('spreadsheet'));
   $('journey-show-drivers').addEventListener('click',()=>switchDriverView('drivers'));
   $('driver-search').addEventListener('input',renderTracker);

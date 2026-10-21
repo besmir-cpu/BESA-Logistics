@@ -1,0 +1,28 @@
+{
+  "name": "besa-logistics",
+  "private": true,
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build-vendor.mjs && node scripts/build-company-site.mjs",
+    "test:browser": "playwright test tests/browser-smoke.spec.cjs tests/operations-platform.browser.spec.cjs tests/operations-dashboard.browser.spec.cjs tests/candidate-browser.spec.cjs tests/auth-reliability-browser.spec.cjs tests/foundations.browser.spec.cjs --workers=1 --reporter=line"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.117.3",
+    "exceljs": "4.4.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "browserify": "17.0.1",
+    "create-hash": "1.2.0",
+    "libsodium-wrappers": "0.8.4",
+    "openpgp": "6.3.2",
+    "randombytes": "2.1.0",
+    "terser": "5.51.2"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
+  }
+}

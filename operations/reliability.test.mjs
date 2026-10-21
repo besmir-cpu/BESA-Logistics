@@ -8,7 +8,7 @@ function fakeClient(){
   const data=new Map(),history=[];
   const key=(workspace,workspaceKey)=>workspace+':'+workspaceKey;
   const client={
-    auth:{getSession:async()=>({data:{session:{user:{email:'office@example.test'}}},error:null})},
+    auth:{mfa:{getAuthenticatorAssuranceLevel:async()=>({data:{currentLevel:'aal2'},error:null})},getSession:async()=>({data:{session:{user:{email:'office@example.test'}}},error:null})},
     from(table){
       if(table==='besa_admins')return {
         select(){return this;},eq(){return this;},limit:async()=>({data:[{email:'office@example.test'}],error:null})

@@ -1,0 +1,6 @@
+#mfa-panel{margin-top:22px}#mfa-panel h2{font-size:23px;margin:0 0 10px}#mfa-panel p{line-height:1.55}
+#mfa-setup{text-align:center;margin:18px 0;padding:16px;border:1px solid #dfe5f2;border-radius:12px;background:#fff}
+#mfa-qr{display:block;width:190px;max-width:100%;height:190px;margin:0 auto 12px}
+#mfa-secret{display:block;overflow-wrap:anywhere;font-size:12px;margin-top:8px;user-select:all}
+#mfa-code{font-size:24px;text-align:center;letter-spacing:.3em;margin:8px 0 14px}
+#mfa-signout{margin-top:12px}#mfa-panel [hidden]{display:none!important}

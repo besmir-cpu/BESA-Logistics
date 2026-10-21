@@ -1,5 +1,5 @@
 const {test,expect}=require('@playwright/test');
-const site='http://127.0.0.1:4173';
+const site=process.env.BESA_WORKSPACE_URL||'http://127.0.0.1:4173';
 test('Administrator sign-in is visible and anonymous visitors have no private access',async({page})=>{
   const restCalls=[];
   page.on('request',r=>{
@@ -27,6 +27,7 @@ test('Admin password sign-in calls Supabase Auth, then still checks database adm
   });
   await page.goto(site+'/index.html',{waitUntil:'domcontentloaded'});
   await page.evaluate(()=>{
+    window.besaClient.auth.mfa.getAuthenticatorAssuranceLevel=async()=>({data:{currentLevel:'aal2',nextLevel:'aal2'},error:null});
     window.besaClient.auth.signInWithPassword=async({email,password})=>{
       window.__testSignIn={email,passwordWasProvided:password==='test-only-passphrase'};
       return {data:{session:{user:{id:'test-admin-id',email:'admin@example.test'},access_token:'test-no-real-token'}},error:null};
@@ -62,7 +63,7 @@ test('Magic link callback stays at BESA office origin; request timing is clearly
   await page.locator('#email-link-login summary').click();
   await page.locator('#login-email').fill('admin@example.test');
   await page.locator('#login-submit').click();
-  await expect.poll(()=>page.evaluate(()=>window.__testOtp?.options?.emailRedirectTo)).toBe(site+'/office/');
+  await expect.poll(()=>page.evaluate(()=>window.__testOtp?.options?.emailRedirectTo)).toBe(new URL('/office/',site).href);
   await expect(page.locator('#login-status')).toContainText('Email delivery may take longer');
   await expect(page.locator('#login-submit')).toBeDisabled();
 });

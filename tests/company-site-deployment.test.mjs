@@ -15,10 +15,12 @@ test('production homepage launches with final-mile identity and working enquiry 
  assert.match(html,/rel="canonical" href="https:\/\/besalogistics.co.uk\/"/);
  for(const f of ['parcel-handover','doorstep-delivery'])assert.ok(statSync(`dist/company-site/images/${f}.jpg`).size>10000);
 });
-test('office and onboarding routing and headers stay identical to existing hosting source',()=>{
+test('office and onboarding are first-party static files with matching headers',()=>{
  for(const f of ['_headers','_redirects'])assert.equal(read('dist/company-site/'+f),read('company-site/hosting/'+f));
- const redirects=read('dist/company-site/_redirects');
- assert.match(redirects,/\/onboarding\s+https:\/\/besmir-cpu.github.io\/BESA-Logistics\/candidate-onboarding.html 200!/);
- assert.match(redirects,/\/office\s+https:\/\/besmir-cpu.github.io\/BESA-Logistics\/index.html 200!/);
- assert.doesNotMatch(redirects.split('\n').filter(line=>!line.startsWith('#')).join('\n'),/301|302/);
+ assert.doesNotMatch(read('dist/company-site/_redirects'),/github\.io|https:\/\//);
+ assert.match(read('dist/company-site/office/index.html'),/vendor\/supabase\.js/);
+ assert.match(read('dist/company-site/onboarding/index.html'),/candidate-workspace/);
+ assert.match(read('dist/company-site/_headers'),/Content-Security-Policy/);
+ assert.match(read('dist/company-site/_headers'),/frame-ancestors 'none'/);
+ assert.ok(statSync('dist/company-site/office/vendor/exceljs.min.js').size>100000);
 });
