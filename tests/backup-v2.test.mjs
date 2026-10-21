@@ -42,3 +42,11 @@ test('missing, corrupted and traversal document parts are rejected',async t=>{
 test('restore tooling refuses the live project and requires an explicit separate target',()=>{
  assert.throws(()=>assertRecoveryTarget('xyicnwfwsmbfcputqrbn'));assert.throws(()=>assertRecoveryTarget(''));assertRecoveryTarget('qlfhacqhkeciyjhzwvkf');
 });
+test('a truncated encrypted stream cannot publish a complete archive or change an earlier backup',async t=>{
+ const root=await temporary(t),s=await server(fixture()),options={url:'https://example.test/backup',token:'synthetic',key};
+ const good=await runBackupV2({...options,fetchImpl:s.fetch,output:resolve(root,'good')});
+ const fetchImpl=async(url,init)=>{const response=await s.fetch(url,init);if(new URL(url).searchParams.get('action')!=='document')return response;const bytes=new Uint8Array(await response.arrayBuffer());return new Response(bytes.slice(0,Math.floor(bytes.length/2)));};
+ await assert.rejects(runBackupV2({...options,fetchImpl,output:resolve(root,'truncated')}));
+ await assert.rejects(readFile(resolve(root,'truncated','verified.json')));
+ const prior=await readArchive(good.root,key);assert.equal((await verifyPart(good.root,prior.snapshot.files[0],key)).toString(),'%PDFtest');
+});
