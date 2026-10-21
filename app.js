@@ -1,8 +1,8 @@
 'use strict';
 (() => {
   const $ = id => document.getElementById(id);
-  const state = { session: null, vehicles: [], drivers: [], activity: [], ready: false, page: 'dashboard', edit: null, generation: 0, busy: false, trial: false };
-  const vehicleStatuses = ['Active', 'In maintenance', 'Off hire', 'SORN', 'Personal', 'Archived'];
+  const state = { session: null, vehicles: [], drivers: [], activity: [], ready: false, page: 'dashboard', edit: null, generation: 0, busy: false };
+  const vehicleStatuses = ['Active', 'Needs review', 'In maintenance', 'Off hire', 'SORN', 'Personal', 'Archived'];
   const driverStatuses = ['Active', 'Onboarding', 'Inactive', 'Archived'];
   // Data is kept in memory while staff change sections. Render only the
   // requested screen; rebuilding every table on each click was unnecessary.
@@ -60,8 +60,8 @@
     scheduleVehicleHeader();
     $('data-content').hidden = !ready;
     ['primary-add', 'export-vehicles', 'export-drivers'].forEach(id => { $(id).disabled = !ready; });
-    $('connection-label').textContent = state.trial ? 'Trial preview · sample data' : ready ? 'Workspace connected' : 'Workspace unavailable';
-    $('set-password-open').hidden = !ready || !state.session || state.trial;
+    $('connection-label').textContent = ready ? 'Workspace connected' : 'Workspace unavailable';
+    $('set-password-open').hidden = !ready || !state.session;
   }
   function route() {
     const requested = location.hash.slice(1);
@@ -106,15 +106,16 @@
     $('kpi-vehicle-note').textContent = `${fleet.filter(v => v.status === 'Active').length} active · ${fleet.filter(v => v.status === 'In maintenance').length} in maintenance`;
     $('kpi-drivers').textContent = drivers.filter(d => d.status === 'Active').length;
     $('kpi-driver-note').textContent = `${drivers.filter(d => d.status === 'Onboarding').length} onboarding · ${drivers.length} total drivers`;
-    $('kpi-mot').textContent = records.filter(r => r.requirement === 'MOT' && r.date && days(r.date) <= 30).length;
+    $('kpi-mot').textContent = records.filter(r => r.requirement === 'MOT' && needsAttention(r)).length;
     $('kpi-service').textContent = records.filter(r => r.requirement === 'Service' && needsAttention(r)).length;
     const upcoming = records.filter(r => r.requirement === 'MOT' || r.requirement === 'Service').filter(needsAttention).slice(0, 5);
-    $('upcoming-list').innerHTML = upcoming.length ? upcoming.map(r => `<div class="deadline-row"><div><strong>${escape(r.label)}</strong><p>${escape(r.requirement)} · ${formatDate(r.date)}</p></div><div>${timingPill(r)} ${editButton(r.type, r.id, 'Update')}</div></div>`).join('') : '<p class="empty">No MOT or service deadlines need attention. You’re up to date.</p>';
+    $('upcoming-list').innerHTML = upcoming.length ? upcoming.map(r => `<div class="deadline-row"><div><strong>${escape(r.label)}</strong><p>${escape(r.requirement)} · ${formatDate(r.date)}</p></div><div>${timingPill(r)} ${editButton(r.type, r.id, 'Update')}</div></div>`).join('') : `<p class="empty">${fleet.length ? 'No MOT or service tasks need attention for your operational vehicles.' : 'No vehicles recorded yet. Add your first vehicle to start tracking MOT and servicing.'}</p>`;
     $('fleet-breakdown').innerHTML = vehicleStatuses.filter(s => s !== 'Archived').map(status => {
       const count = fleet.filter(v => v.status === status).length;
-      return `<div class="breakdown-row"><span>${escape(status)}</span><strong>${count}</strong><div class="breakdown-bar"><span style="width:${fleet.length ? count / fleet.length * 100 : 0}%"></span></div></div>`;
+      return `<a class="breakdown-row fleet-status-link" href="#vehicles" data-dashboard-view="vehicles" data-vehicle-status="${escape(status)}"><span>${escape(status)}</span><strong>${count}</strong><div class="breakdown-bar"><span style="width:${fleet.length ? count / fleet.length * 100 : 0}%"></span></div></a>`;
     }).join('');
-    $('missing-mot-note').textContent = `${fleet.filter(v => operational(v) && !v.mot_due).length} operational vehicles missing an MOT date`;
+    const missingMot = fleet.filter(v => operational(v) && !v.mot_due).length;
+    $('missing-mot-note').textContent = `${missingMot} operational ${missingMot === 1 ? 'vehicle' : 'vehicles'} missing an MOT date`;
     $('recent-activity').innerHTML = activityMarkup(state.activity.slice(0, 4));
     $('nav-vehicle-count').textContent = fleet.length; $('nav-driver-count').textContent = drivers.length;
   }
@@ -140,7 +141,7 @@
     const mot = $('vehicle-mot-filter').value, service = $('vehicle-service-filter').value;
     return state.vehicles.filter(vehicle => {
       const values = sheetValues(vehicle);
-      if (status ? values.status !== status : vehicle.status === 'Archived') return false;
+      if (status === '__operational__' ? !operational(vehicle) : status ? values.status !== status : vehicle.status === 'Archived') return false;
       if (ownership && (ownership === '__unrecorded__' ? Boolean(vehicle.ownership) : vehicle.ownership !== ownership)) return false;
       if (service && values.service_status !== service) return false;
       const remaining = days(vehicle.mot_due);
@@ -229,7 +230,9 @@
   }
   function renderCompliance() {
     const search = $('compliance-search').value.trim().toLowerCase(); const filter = $('compliance-filter').value;
+    const requirement = $('compliance-requirement').value;
     const records = complianceRecords().filter(r => {
+      if (requirement && r.requirement !== requirement) return false;
       if (search && !`${r.label} ${r.requirement}`.toLowerCase().includes(search)) return false;
       if (filter === 'all') return true;
       if (filter === 'overdue') return r.mileage || (r.date && days(r.date) < 0);
@@ -261,10 +264,6 @@
     return rows;
   }
   async function refresh() {
-    if (state.trial) {
-      // Trial refresh only reloads fictional browser-memory data.
-      loadTrialData(); setReady(true); render(); return true;
-    }
     if (!state.session) return false;
     const generation = ++state.generation;
     $('refresh-button').disabled = true; $('loading-state').hidden = state.ready;
@@ -446,7 +445,7 @@
   function closeForm() { if (!state.busy) { $('record-dialog').close(); state.edit = null; } }
   async function saveRecord(event) {
     event.preventDefault();
-    if (state.busy || !state.edit || (!state.session && !state.trial)) return;
+    if (state.busy || !state.edit || !state.session) return;
     const edit = state.edit; const fields = edit.type === 'vehicle' ? vehicleFields : driverFields();
     const values = new FormData($('record-form')); const payload = {};
     for (const [field, , inputType, , opts = {}] of fields) {
@@ -471,23 +470,6 @@
     if (edit.type === 'vehicle' && !/^[A-Z0-9-]{2,16}$/.test(payload.registration)) { $('form-status').textContent = 'Enter a valid registration using letters and numbers.'; return; }
     if (edit.type === 'driver' && !payload.first_name) { $('form-status').textContent = 'Enter the driver’s first name.'; return; }
     if (payload.last_service_date && payload.service_due && payload.service_due < payload.last_service_date) { $('form-status').textContent = 'Next service date cannot be before the last service date.'; return; }
-    if (state.trial) {
-      // Pure in-memory updates; never access the Supabase client or write a
-      // candidate record in unauthenticated trial mode.
-      const list = edit.type === 'vehicle' ? state.vehicles : state.drivers;
-      const record = { ...(edit.record || {}), ...payload,
-        id: edit.record?.id || 'trial-' + (state.trialNextId++),
-        updated_at: new Date().toISOString()
-      };
-      const index = list.findIndex(item => item.id === record.id);
-      if (index >= 0) list[index] = record; else list.push(record);
-      $('record-dialog').close(); state.edit = null;
-      render(); route();
-      showMessage('TRIAL ONLY: Example ' + edit.type + ' ' +
-        (index >= 0 ? 'updated' : 'added') +
-        ' in this browser. It will reset when you refresh; no live data was saved.');
-      return;
-    }
     state.busy = true; $('save-record').disabled = true; $('save-record').textContent = 'Saving…';
     const sessionId = state.session.user.id;
     try {
@@ -520,68 +502,6 @@
     const url = URL.createObjectURL(new Blob(['\ufeff', output], { type: 'text/csv;charset=utf-8' }));
     const anchor = document.createElement('a'); anchor.href = url; anchor.download = `besa-${type === 'vehicle' ? 'vehicles' : 'drivers'}-${today()}.csv`; anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  function loadTrialData() {
-    const stamp = new Date().toISOString();
-    const inDays = days => {
-      const d = new Date();
-      d.setUTCDate(d.getUTCDate() + days);
-      return d.toISOString().slice(0,10);
-    };
-    state.trialNextId = 100;
-    state.vehicles = [
-      {id:'trial-vehicle-1',registration:'DEMO01',status:'Active',current_mileage:37000,
-        mot_due:inDays(24),service_due:inDays(46),tax_due:inDays(110),tracker_snapshot:{}},
-      {id:'trial-vehicle-2',registration:'DEMO02',status:'In maintenance',current_mileage:62400,
-        mot_due:inDays(7),service_due:inDays(4),tax_due:inDays(128),tracker_snapshot:{}},
-      {id:'trial-vehicle-3',registration:'DEMO03',status:'Active',current_mileage:15300,
-        mot_due:inDays(75),service_due:inDays(16),tracker_snapshot:{}},
-      {id:'trial-vehicle-4',registration:'DEMO04',status:'Active',current_mileage:88700,
-        mot_due:inDays(13),service_due:inDays(35),tracker_snapshot:{}}
-    ];
-    state.drivers = [
-      {id:'trial-driver-1',first_name:'Sample',last_name:'Driver One',status:'Active',
-        email:'driver-one@example.test',phone:'',vehicle_id:'trial-vehicle-1',
-        licence_expiry:inDays(105),contract:'Demo contract'},
-      {id:'trial-driver-2',first_name:'Sample',last_name:'Driver Two',status:'Onboarding',
-        email:'driver-two@example.test',phone:'',vehicle_id:null,
-        licence_expiry:inDays(200),contract:'Demo contract'},
-      {id:'trial-driver-3',first_name:'Sample',last_name:'Driver Three',status:'Active',
-        email:'driver-three@example.test',phone:'',vehicle_id:'trial-vehicle-3',
-        right_to_work_expiry:inDays(60),licence_expiry:inDays(125),contract:'Demo contract'}
-    ];
-    state.activity = [
-      {id:'trial-activity-1',entity:'besa_vehicles',record_label:'DEMO01',
-        action:'INSERT',actor_email:'Fictional demo',created_at:stamp},
-      {id:'trial-activity-2',entity:'besa_drivers',record_label:'Sample Driver Two',
-        action:'INSERT',actor_email:'Fictional demo',created_at:stamp}
-    ];
-  }
-  function enterTrial() {
-    if (state.session) return; // Live authenticated sessions stay authenticated.
-    state.trial = true;
-    loadTrialData();
-    $('login-screen').hidden = true;
-    $('app-shell').hidden = false;
-    $('besa-trial-banner').hidden = false;
-    $('account-email').textContent = 'Demo account · fictional records';
-    $('signout-button').textContent = 'Exit trial';
-    $('login-status').textContent = '';
-    setReady(true); render(); route();
-    showMessage('TRIAL MODE: Explore freely. No database access, real documents, emails or payments.');
-  }
-  function exitTrial() {
-    state.trial = false;
-    state.vehicles = []; state.drivers = []; state.activity = [];
-    ++state.generation;
-    setReady(false); invalidateViews();
-    $('app-shell').hidden = true;
-    $('login-screen').hidden = false;
-    $('besa-trial-banner').hidden = true;
-    $('signout-button').textContent = 'Sign out';
-    if ($('record-dialog').open) $('record-dialog').close();
-    state.edit = null;
   }
 
   // Reuse this browser's current office host for passwordless callbacks.
@@ -657,7 +577,7 @@
   }
   async function setLoginPassword(event){
     event.preventDefault();
-    if(!state.session || state.trial || !state.ready)return;
+    if(!state.session || !state.ready)return;
     const input=$('set-password-value'),confirmation=$('set-password-confirm');
     const status=$('set-password-status'),button=$('set-password-save');
     status.classList.remove('error');
@@ -685,8 +605,6 @@
     }
   }
   function sessionChanged(session) {
-    if (state.trial && !session) return; // Initial anonymous auth event does not close the demo.
-    if (state.trial && session) exitTrial();
     const oldId = state.session?.user?.id; state.session = session;
     $('login-screen').hidden = Boolean(session); $('app-shell').hidden = !session;
     $('account-email').textContent = session?.user?.email || '';
@@ -701,21 +619,14 @@
   function start() {
     if (!window.besaClient) {
       $('login-status').classList.add('error');
-      $('login-status').textContent = 'Live sign-in is temporarily unavailable. Trial mode still works.';
+      $('login-status').textContent = 'Sign-in is temporarily unavailable. Refresh the page to try again.';
       $('login-submit').disabled = true;
       $('password-login-submit').disabled = true;
     }
-    $('trial-enter').addEventListener('click',enterTrial);
-    $('live-login-toggle').addEventListener('click',()=>{
-      const panel=$('live-login-panel');
-      panel.hidden=!panel.hidden;
-      $('live-login-toggle').setAttribute('aria-expanded',String(!panel.hidden));
-      if (!panel.hidden) $('password-login-email').focus();
-    });
     $('login-form').addEventListener('submit', login);
     $('password-login-form').addEventListener('submit', passwordLogin);
     $('set-password-open').addEventListener('click',()=>{
-      if(!state.session || !state.ready || state.trial)return;
+      if(!state.session || !state.ready)return;
       $('set-password-form').reset();
       $('set-password-status').textContent='';
       $('set-password-dialog').showModal();
@@ -727,7 +638,6 @@
       if($('set-password-save').disabled)event.preventDefault();
     });
     $('signout-button').addEventListener('click', async () => {
-      if (state.trial) { exitTrial(); return; }
       $('signout-button').disabled = true;
       try { const { error } = await window.besaClient.auth.signOut(); if (error) throw error; sessionChanged(null); }
       catch (error) { showMessage(error.message || 'Unable to sign out. Please try again.', true); }
@@ -735,17 +645,41 @@
     });
     $('refresh-button').addEventListener('click', () => { showMessage(''); refresh(); });
     $('setup-retry').addEventListener('click', refresh);
+    document.addEventListener('click', event => {
+      const link = event.target.closest('[data-dashboard-view]');
+      if (!link || !state.session || !state.ready || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      const target = link.dataset.dashboardView;
+      const view = ['mot','service'].includes(target) ? 'compliance' : target === 'missing-mot' ? 'vehicles' : target;
+      if (view === 'vehicles') {
+        for (const id of vehicleFilterIds) $(id).value = '';
+        $('vehicle-filter').value = link.dataset.vehicleStatus || '';
+        if (target === 'missing-mot') {
+          $('vehicle-mot-filter').value = 'missing';
+          $('vehicle-filter').value = '__operational__';
+        }
+      }
+      if (view === 'drivers') {
+        $('driver-search').value = '';
+        $('driver-filter').value = 'Active';
+        $('driver-filter').dispatchEvent(new Event('change',{bubbles:true}));
+      }
+      if (view === 'compliance') {
+        $('compliance-search').value = '';
+        $('compliance-filter').value = 'attention';
+        $('compliance-requirement').value = target === 'mot' ? 'MOT' : 'Service';
+      }
+      viewsNeedingRender.add(view);
+      location.hash = view;
+      route();
+      $('page-title').setAttribute('tabindex','-1');
+      $('page-title').focus({preventScroll:true});
+      window.scrollTo({top:0,behavior:'instant'});
+    });
     $('primary-add').addEventListener('click', () => openForm(state.page === 'drivers' ? 'driver' : 'vehicle'));
     window.addEventListener('besa:edit-driver',event=>{
       if(event.detail?.id&&state.ready&&state.page==='drivers')openForm('driver',event.detail.id);
     });
-    document.addEventListener('click', event => {
-      if (state.trial && event.target.closest('[data-driver-profile]')) {
-        event.preventDefault(); event.stopImmediatePropagation();
-        showMessage('Driver documents and recruitment profiles require secure sign-in. This is an example driver.');
-        return;
-      }
-    },true);
     document.addEventListener('click', event => { const button = event.target.closest('[data-edit]'); if (button) openForm(button.dataset.edit, button.dataset.id); });
     for (const id of vehicleFilterIds) $(id).addEventListener('input', renderVehicles);
     $('reset-vehicle-filters').addEventListener('click', () => {
@@ -753,7 +687,7 @@
       renderVehicles();
     });
     for (const id of ['driver-search', 'driver-filter']) $(id).addEventListener('input', renderDrivers);
-    for (const id of ['compliance-search', 'compliance-filter']) $(id).addEventListener('input', renderCompliance);
+    for (const id of ['compliance-search', 'compliance-filter', 'compliance-requirement']) $(id).addEventListener('input', renderCompliance);
     $('record-form').addEventListener('input', updateVehicleCalculations);
     $('record-form').addEventListener('submit', saveRecord); $('cancel-dialog').addEventListener('click', closeForm); $('close-dialog').addEventListener('click', closeForm);
     $('record-dialog').addEventListener('cancel', event => { if (state.busy) event.preventDefault(); else state.edit = null; });
@@ -774,7 +708,6 @@
         if (error) throw error;
         if (!receivedAuth) sessionChanged(data.session);
       }).catch(error => {
-        if (state.trial) return;
         $('login-status').classList.add('error');
         $('login-status').textContent = error.message || 'Please sign in again.';
       });
