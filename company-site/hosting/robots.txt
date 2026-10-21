@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /office/
+Disallow: /onboarding/
+Disallow: /thanks.html
+Sitemap: https://besalogistics.co.uk/sitemap.xml

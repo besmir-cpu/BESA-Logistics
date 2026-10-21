@@ -1,0 +1,18 @@
+const {test,expect}=require('@playwright/test');
+const home=process.env.BESA_PRODUCTION_URL||'http://127.0.0.1:4173/dist/company-site/';
+for(const width of [360,768,1440])test(`production layout, photos and enquiry form at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(home);
+ if(process.env.BESA_SCREENSHOT_DIR)await page.screenshot({path:process.env.BESA_SCREENSHOT_DIR+'/besa-'+width+'.png',fullPage:true});
+ await expect(page.getByRole('heading',{level:1})).toHaveText(/The final mile\.A lastingimpression\./);
+ for(const img of await page.locator('.delivery-photo img').all()){
+  await img.scrollIntoViewIfNeeded();
+  await expect(img).toBeVisible();
+  expect(await img.evaluate(e=>e.complete&&e.naturalWidth>0)).toBe(true);
+ }
+ await expect(page.locator('form[name="besa-contact"]')).toBeVisible();
+ expect(await page.locator('input[type=file]').count()).toBe(0);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+ expect(errors).toEqual([]);
+});
