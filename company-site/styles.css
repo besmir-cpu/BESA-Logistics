@@ -135,6 +135,33 @@ svg{display:block;max-width:100%}
 .about-facts>div{min-width:115px;display:flex;flex-direction:column;gap:4px}
 .about-facts span{font-size:9px;font-weight:900;letter-spacing:.13em;color:#7f8b9c}
 .about-facts strong{font-size:17px;letter-spacing:-.03em}
+.purpose-section{background:var(--mist);border-top:1px solid var(--line)}
+.purpose-intro{display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:clamp(30px,6vw,85px);margin-bottom:45px}
+.purpose-intro h2{font-size:clamp(38px,4.6vw,61px);line-height:1.12}
+.purpose-intro h2 span{color:#0d857d}
+.purpose-intro>p{color:#526079;line-height:1.9;font-size:15px;margin:0;max-width:490px}
+.purpose-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.purpose-card{background:#fff;border:1px solid #dce4ec;border-radius:12px;padding:clamp(24px,3vw,38px)}
+.purpose-label{display:block;color:#126c71;font-size:10px;letter-spacing:.14em;font-weight:850;margin-bottom:25px}
+.purpose-card h3{font-size:24px;line-height:1.25;letter-spacing:-.035em;margin:0 0 20px}
+.purpose-card p{font-size:14px;line-height:1.85;color:#526079;margin:0 0 17px}
+.purpose-card p:last-child{margin-bottom:0}
+.purpose-card .purpose-promise{border-left:3px solid #0d857d;padding-left:16px;color:#233853;font-weight:650}
+.improvement-panel{display:grid;grid-template-columns:.8fr 1.2fr;gap:clamp(28px,5vw,65px);align-items:start;background:var(--navy-2);border-radius:12px;padding:clamp(26px,4vw,48px);margin-top:24px;color:white}
+.improvement-panel h3{font-size:29px;letter-spacing:-.035em;line-height:1.25;margin:0;max-width:310px}
+.improvement-panel p:not(.eyebrow){font-size:14px;line-height:1.85;color:#c5d3e1;margin:0 0 18px}
+.improvement-panel p:last-child{margin-bottom:0}
+.people-section{background:white}
+.people-section .section-head>p{max-width:300px}
+.testimonial-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.testimonial-card{display:flex;flex-direction:column;margin:0;padding:30px;background:#f4f7fa;border:1px solid #dce4ec;border-top:3px solid #0d857d;border-radius:3px 3px 12px 12px}
+.testimonial-mark{font-size:70px;line-height:.85;font-family:Georgia,serif;color:#0d857d;height:46px}
+.testimonial-card blockquote{margin:0 0 30px}
+.testimonial-card blockquote p{font-size:16px;line-height:1.85;color:#233853;margin:0}
+.testimonial-card figcaption{display:flex;align-items:center;gap:12px;padding-top:20px;border-top:1px solid #d9e2e9;margin-top:auto}
+.driver-initial{display:grid;place-items:center;flex-shrink:0;width:42px;height:42px;border-radius:50%;background:#d8efeb;color:#174943;font-weight:850;font-size:17px}
+.testimonial-card figcaption strong{display:block;font-size:15px;color:var(--ink)}
+.testimonial-card figcaption>span>span{display:block;color:#526079;font-size:12px}
 .careers-section{background:#13afaa;background-image:linear-gradient(115deg,#0d9d9f,#14bcb0);overflow:hidden;color:#fff}
 .careers-grid{display:grid;grid-template-columns:1fr .88fr;gap:40px;align-items:stretch}
 .careers-content{padding-block:95px}
@@ -215,6 +242,12 @@ svg{display:block;max-width:100%}
   .service-card:last-child{grid-column:1 / -1}
   .section-head{align-items:start}
   .statement-inner,.about-grid,.careers-grid,.contact-grid{grid-template-columns:1fr}
+  .purpose-intro,.purpose-grid,.improvement-panel{grid-template-columns:1fr}
+  .purpose-intro{margin-bottom:30px;gap:25px}
+  .purpose-intro>p{max-width:640px}
+  .testimonial-grid{grid-template-columns:1fr;gap:15px}
+  .testimonial-card{padding:28px}
+  .testimonial-card blockquote{margin-bottom:22px}
   .statement-section{padding:75px 0}
   .about-graphic{min-height:350px;max-width:580px}
   .careers-grid{gap:0}
@@ -263,6 +296,12 @@ svg{display:block;max-width:100%}
   .graphic-word{font-size:78px}
   .about-facts{gap:20px}
   .about-facts strong{font-size:15px}
+  .purpose-card{padding:24px}
+  .purpose-card h3{font-size:23px}
+  .improvement-panel{padding:26px;gap:25px}
+  .improvement-panel h3{font-size:27px}
+  .testimonial-card{padding:24px}
+  .testimonial-card blockquote p{font-size:15px}
   .careers-content{padding-block:66px 35px}
   .careers-content h2{font-size:clamp(45px,10vw,62px)}
   .careers-steps{gap:12px}
