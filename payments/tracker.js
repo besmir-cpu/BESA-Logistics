@@ -1,3 +1,5 @@
+import {changed,contextChanged} from '../operations/draft-state.mjs';
+const markChanged=()=>changed({workspace:'payment-tracker',key:state.start});
 // BESA PAYMENT TRACKER — local-only, source-aligned weekly clipboard editor.
 // Reproduces the current "Week 42_2026" Google Sheet's day columns (D:J),
 // four operational totals and five note sections. No network or storage APIs.
@@ -59,6 +61,8 @@ function trimEntry(value){return String(value??'').replace(/\r/g,'').slice(0,350
 function setCell(r,c,value){
   if(!EDIT_ROWS.has(r)||c<4||c>10)return false;
   const val=trimEntry(value);
+  if(get(r,c)===val)return true;
+  markChanged();
   if(val)sheet().set(idFor(r,c),val);
   else sheet().delete(idFor(r,c));
   return true;
@@ -155,7 +159,7 @@ function chooseWeek(date){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
   const d=dateUTC(date);
   if(Number.isNaN(d.getTime())||iso(d)!==date)return;
-  state.start=sunday(date);render();message('Showing Week '+weekNumber(state.start)+'. Other edited weeks remain only in this browser tab.');
+  state.start=sunday(date);render();contextChanged();message('Showing Week '+weekNumber(state.start)+'. Other edited weeks remain only in this browser tab.');
 }
 function parseDelimited(input){
   const text=String(input||'').replace(/^\uFEFF/,'');
@@ -340,7 +344,7 @@ function exportCurrent(){
 function clearWeek(){
   const has=sheet().size>0;
   if(has&&!window.confirm('Clear all entered data for Week '+weekNumber(state.start)+' in this browser tab? Export first if you need a copy.'))return;
-  sheet().clear();render();message('Week '+weekNumber(state.start)+' cleared in the local tracker.');
+  sheet().clear();markChanged();render();message('Week '+weekNumber(state.start)+' cleared in the local tracker.');
 }
 // Office secure drafts are reviewed summaries only. No SAM or bank posting.
 function draftSnapshot(){
@@ -361,7 +365,7 @@ function init(){
   window.besaDraftAPI={
     identify:()=>({workspace:'payment-tracker',key:state.start}),
     snapshot:draftSnapshot,restore:draftRestore
-  };
+  };contextChanged();
   $('prev-week').addEventListener('click',()=>chooseWeek(shiftWeek(-1)));
   $('next-week').addEventListener('click',()=>chooseWeek(shiftWeek(1)));
   $('week-date').addEventListener('change',e=>{if(e.target.value)chooseWeek(e.target.value);});
@@ -385,10 +389,6 @@ function init(){
     setCell(row,col,cell.textContent);displayTotals();
   });
   body.addEventListener('paste',pasteFromEditor);
-  window.addEventListener('beforeunload',e=>{
-    if(![...state.weeks.values()].some(m=>m.size))return;
-    e.preventDefault();e.returnValue='';
-  });
   message('Ready to paste from BESA PAYMENT TRACKER. No data has been copied from Google Sheets automatically.');
 }
 init();

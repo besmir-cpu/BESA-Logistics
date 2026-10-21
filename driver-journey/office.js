@@ -52,7 +52,7 @@ const DOCS=[
 const BUCKET='besa-driver-private-evidence';
 const state={drivers:[],vehicles:[],checklists:new Map(),pending:new Map(),files:[],profileId:null,
   checklistReady:false,evidenceReady:false,checked:false,rev:0,writeQueue:Promise.resolve(),
-  trackerView:'spreadsheet',dirty:new Set()};
+  trackerView:'spreadsheet',dirty:new Set(),editVersions:new Map()};
 const msg=(text,err=false,id='journey-status')=>{
   const n=$(id);if(!n)return;n.textContent=text;n.classList.toggle('error',Boolean(err));
 };
@@ -86,13 +86,15 @@ function mask(value){
 function mode(){
   const el=$('journey-storage-mode');
   el.textContent=state.checklistReady?'Secure checklists enabled':'Checklist changes are local drafts';
-  el.classList.toggle('ready',state.checklistReady);
+  el.classList.toggle('ready',state.checklistReady);updateCounters();
 }
 function updateCounters(){
   $('journey-all-count').textContent=String(state.drivers.length);
   $('journey-open-count').textContent=String(state.drivers.filter(d=>d.status==='Onboarding').length);
   $('journey-active-count').textContent=String(state.drivers.filter(d=>d.status==='Active').length);
-  $('journey-todo-count').textContent='—';
+  const current=state.drivers.filter(d=>['Active','Onboarding'].includes(d.status));
+  $('journey-todo-count').classList.toggle('unavailable',!state.checklistReady);
+  $('journey-todo-count').textContent=state.checklistReady?String(current.reduce((total,d)=>total+TASKS.filter(([k])=>stored(d.id).checklist[k]!==true).length,0)):'Not connected';
 }
 
 // Excel-style recruitment tracker. Uses existing driver IDs — no second register.
@@ -245,7 +247,7 @@ function closeProfile(){
 function clearSensitive(){
   state.rev++;
   state.drivers=[];state.vehicles=[];state.profileId=null;
-  state.checklists.clear();state.pending.clear();state.files=[];state.dirty.clear();
+  state.checklists.clear();state.pending.clear();state.files=[];state.dirty.clear();state.editVersions.clear();
   $('journey-tracker-body').replaceChildren();
   $('journey-tracker-count').textContent='0 drivers';
   state.checklistReady=false;state.evidenceReady=false;state.checked=false;
@@ -301,7 +303,7 @@ async function loadTrackerChecklists(rev=state.rev){
       }
       if((data||[]).length<500)break;
     }
-    if(rev===state.rev)renderTracker();
+    if(rev===state.rev){renderTracker();updateCounters();}
   }catch(error){
     if(rev===state.rev)msg('Could not load saved recruitment progress: '+(error.message||'Unavailable')+'. Check the secure database setup.',true);
   }
@@ -314,7 +316,7 @@ async function loadChecklist(id){
       .select('driver_id,checklist,details').eq('driver_id',String(id)).maybeSingle();
     if(error)throw error;
     if(rev!==state.rev||state.profileId!==String(id))return stored(id);
-    if(data){
+    if(data&&!state.dirty.has(String(id))){
       state.checklists.set(String(id),{checklist:data.checklist&&typeof data.checklist==='object'?data.checklist:{},
         details:data.details&&typeof data.details==='object'?data.details:{}});
     }
@@ -327,7 +329,8 @@ async function loadChecklist(id){
 function queueWrite(id=state.profileId){
   if(!id)return;
   id=String(id);
-  state.dirty.add(id);
+  state.dirty.add(id);updateCounters();
+  const editVersion=(state.editVersions.get(id)||0)+1;state.editVersions.set(id,editVersion);
   const data=stored(id),rev=state.rev;
   if(!state.checklistReady){
     const warning='Local draft only — secure checklist storage has not been installed. Export your tracker before refreshing.';
@@ -341,6 +344,7 @@ function queueWrite(id=state.profileId){
     const {error}=await window.besaClient.from('besa_driver_journey').upsert(payload,{onConflict:'driver_id'});
     if(error)throw error;
     if(rev===state.rev){
+      if(state.editVersions.get(id)!==editVersion)return;
       state.dirty.delete(id);
       if(state.profileId===id)profileMessage('Checklist saved securely for this driver.');
       else msg('Recruitment tracker updated and securely saved for '+labelName(driver(id)||{} )+'.');
@@ -747,6 +751,7 @@ function setup(){
       finally{event.target.value='';}
     });
   }
+  window.addEventListener('beforeunload',event=>{if(state.dirty.size||state.pending.size){event.preventDefault();event.returnValue='';}});
   mode();
 }
 setup();

@@ -2,6 +2,7 @@
 // Explicit Load => explicit Save. Server enforces administrator RLS and
 // compare-and-swap versioning. No financial posting or system-of-record writes.
 let loadPromise;
+let sessionOwner;
 const knownVersions=new Map();
 function injectScript(src){
   return new Promise((resolve,reject)=>{
@@ -30,6 +31,7 @@ async function authenticated(){
   const {data,error}=await client.auth.getSession();
   if(error)throw error;
   if(!data.session?.user)throw new Error('Sign into the BESA dashboard as an administrator first, then return here.');
+  if(sessionOwner!==data.session.user.id){knownVersions.clear();sessionOwner=data.session.user.id;}
   // The database independently checks administrator membership on every read/write.
   const {data:admin,error:adminError}=await client.from('besa_admins')
     .select('email').eq('email',String(data.session.user.email||'').toLowerCase()).limit(1);
@@ -48,7 +50,7 @@ export class DraftConflict extends Error{
     this.version=version;
   }
 }
-export async function loadDraft(workspace,key){
+export async function loadDraft(workspace,key,{remember=true}={}){
   const ident=keyFor(workspace,key),client=await authenticated();
   const {data,error}=await client.from('besa_workspace_drafts')
     .select('payload,version,updated_at,updated_by')
@@ -56,18 +58,18 @@ export async function loadDraft(workspace,key){
   if(error)throw new Error(/42P01|PGRST205/.test(error.code||'')
     ?'Secure draft storage has not been installed yet; no data was loaded.'
     :'Could not read private saved draft: '+error.message);
-  knownVersions.set(ident,data?.version??0);
+  if(remember)knownVersions.set(ident,data?.version??0);
   return data??{payload:null,version:0,updated_at:null};
 }
 export async function saveDraft(workspace,key,payload){
   const ident=keyFor(workspace,key);
+  const client=await authenticated();
   if(!knownVersions.has(ident))
     throw new Error('Choose “Load saved draft” once before your first secure save, to prevent overwriting someone else’s work.');
   if(payload===null||Array.isArray(payload)||typeof payload!=='object')
     throw new Error('Draft payload must be a structured object.');
   const raw=JSON.stringify(payload);
   if(raw.length>1700000)throw new Error('This draft is too large. Export it and ask for a larger storage plan.');
-  const client=await authenticated();
   const {data,error}=await client.rpc('besa_save_workspace_draft',{
     p_workspace:workspace,p_key:key,p_payload:payload,
     p_expected_version:knownVersions.get(ident)
@@ -104,4 +106,23 @@ export async function readDraftVersion(workspace,key,version){
   if(!data)throw new Error('That version was not found. Your current draft remains unchanged.');
   return data;
 }
-export function clearDraftSession(){knownVersions.clear();}
+export function clearDraftSession(){knownVersions.clear();sessionOwner=undefined;}
+export function acceptDraftVersion(workspace,key,version){
+  if(!Number.isSafeInteger(version)||version<0)throw new Error('Invalid draft version.');
+  knownVersions.set(keyFor(workspace,key),version);
+}
+
+// Read only existing register fields. This never schedules a driver, allocates
+// a van, or changes official account/vehicle status.
+export async function loadPlanningRegister(kind){
+  if(!['drivers','vehicles'].includes(kind))throw new Error('Unknown register.');
+  const client=await authenticated(),rows=[];
+  const table=kind==='drivers'?'besa_drivers':'besa_vehicles';
+  const fields=kind==='drivers'?'id,first_name,last_name,status':'id,registration,status,tracker_snapshot';
+  for(let offset=0;offset<5000;offset+=500){
+    const {data,error}=await client.from(table).select(fields).order('id').range(offset,offset+499);
+    if(error)throw new Error('Could not read your '+kind+' register: '+error.message);
+    rows.push(...(data||[]));if((data||[]).length<500)break;
+  }
+  return rows.filter(row=>kind==='drivers'?['Active','Onboarding'].includes(row.status):row.status!=='Archived');
+}

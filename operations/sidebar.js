@@ -9,7 +9,7 @@
     {id:'overview',href:'index.html#dashboard',icon:'◫',label:'Overview'},
     {id:'vehicles',href:'index.html#vehicles',icon:'▱',label:'Vehicles'},
     {id:'drivers',href:'index.html#drivers',icon:'♙',label:'Drivers & Onboarding'},
-    {id:'rota',href:'rota.html',icon:'▦',label:'Rota / Scheduling'},
+    {id:'rota',href:'rota.html#rota',icon:'▦',label:'Rota / Scheduling'},
     {id:'vans',href:'rota.html#vans',icon:'▤',label:'Van Allocation'},
     {id:'payments',href:'payments.html',icon:'£',label:'Payments'},
     {id:'tracker',href:'payment-tracker.html',icon:'▥',label:'Payment Tracker'},

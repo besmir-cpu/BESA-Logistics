@@ -1,5 +1,8 @@
+import {changed,contextChanged} from '../operations/draft-state.mjs';
+import {loadPlanningRegister} from '../operations/secure-drafts.mjs?v=2';
+const markChanged=()=>changed({workspace:'rota',key:'master'});
 import { WORK_CODES, CYCLE_1_CODES, CYCLE_2_CODES, weekDates, sundayOfWeek, offsetWeeks, summarizeDay } from './rules.mjs';
-import { setupVanAllocation } from './van-allocation.js';
+import { setupVanAllocation } from './van-allocation.js?v=2';
 import { loadExcelJS } from '../operations/lazy-excel.mjs';
 const vans = setupVanAllocation();
 
@@ -12,7 +15,7 @@ const TABLE_ROWS = [
   ['gap','Total Difference'], ['sb','Standby (SB)'],
   ['notr','NOT Rostered'], ['holiday','Holiday (H)'], ['rest','Rest (R)']
 ];
-const SAMPLE_NAMES = Array.from({length:24},(_,i)=>'Sample Driver '+String(i+1).padStart(2,'0'));
+
 const state = { start:null,drivers:[],shifts:new Map(),daily:new Map(),calendar:new Set(),imported:false,edit:null,nextId:0 };
 function alphabetiseDrivers(){
   state.drivers.sort((a,b)=>a.name.localeCompare(b.name,'en-GB',{sensitivity:'base',numeric:true}));
@@ -59,19 +62,6 @@ function weeksInView(){
   return Array.from({length:4},(_,i)=>weekDates(offsetWeeks(state.start,i)));
 }
 function flatDates(){return weeksInView().flat();}
-function initSample(){
-  state.drivers=SAMPLE_NAMES.map((name,i)=>({id:'sample-'+(++state.nextId),name,licence:i%4===0?'Auto':'Manual'}));
-  const days=flatDates();
-  days.forEach((date,index)=>{
-    state.calendar.add(date);
-    state.daily.set(date,{c1:7,c2:4,vans:30});
-    state.drivers.forEach((d,i)=>{
-      const pattern=['C1','C1','C2','R','C1','RA','SB','R','EW','C2','R','C1','H','Office'];
-      const shift=pattern[(i+index*3)%pattern.length];
-      state.shifts.set(key(d.id,date),shift);
-    });
-  });
-}
 function clearData(){
   state.drivers=[];state.shifts.clear();state.daily.clear();state.calendar.clear();
   state.nextId=0;state.imported=false;
@@ -157,7 +147,7 @@ function makeBody(){
     const nameCell=dom('td',null,'name-col');
     const nameBtn=dom('button',driver.name);
     nameBtn.type='button';nameBtn.dataset.rename=driver.id;
-    nameBtn.title='Rename this driver in the preview';
+    nameBtn.title='Rename this driver in the planning draft';
     nameBtn.style.cssText='text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;color:#244e38';
     const licence=dom('span',driver.licence==='Auto'?'AUTO':driver.licence==='Manual'?'MAN':'—','licence-tag '+(driver.licence==='Manual'?'manual':driver.licence==='Auto'?'':'unknown'));
     licence.title='Driving licence: '+(driver.licence||'Unknown');
@@ -222,7 +212,7 @@ function applyShift(clear=false){
   }
   if(code)state.shifts.set(key(ed.driverId,ed.day),code);
   else state.shifts.delete(key(ed.driverId,ed.day));
-  $('shift-modal').close();state.edit=null;render();
+  markChanged();$('shift-modal').close();state.edit=null;render();
   message('Changed shift to '+(code||'blank')+'; weekly days recalculated. Save a draft CSV to keep changes.');
 }
 function editTargets(day){
@@ -244,7 +234,7 @@ function applyTargets(){
   }
   state.daily.set(day,{c1,c2,vans});
   $('target-modal').close();state.edit=null;render();
-  message('Daily targets updated. Save a draft CSV to keep changes.');
+  markChanged();message('Daily targets updated. Save a draft CSV to keep changes.');
 }
 function editDriver(id=null){
   state.edit={type:'driver',id};
@@ -268,11 +258,12 @@ function applyDriver(){
   if(ed.id){
     const driver=state.drivers.find(d=>d.id===ed.id);
     driver.name=name;driver.licence=licence;
-  }else state.drivers.push({id:'local-'+(++state.nextId),name,licence});
+  }else if(state.drivers.length>=400){message('Rota is limited to 400 drivers.',true);return;}
+  else state.drivers.push({id:'local-'+(++state.nextId),name,licence});
   alphabetiseDrivers();
   vans.updateDriverSuggestions(state.drivers);
   $('driver-modal').close();state.edit=null;render();
-  message('Driver '+name+' '+(ed.id?'renamed':'added')+' in the local preview. Save draft CSV to keep.');
+  markChanged();message('Driver '+name+' '+(ed.id?'renamed':'added')+' in the planning draft. Save securely or export CSV to keep.');
 }
 function unwrapped(value){
   if(value&&typeof value==='object'){
@@ -351,7 +342,7 @@ async function importRota(file){
     ({get,maxCol,maxRow,workbook}=await valueGetterFromXlsx(file));
   }else if(name.endsWith('.csv')){
     const rows=parseCsv(await file.text());
-    if(rows.length>2000)throw new Error('CSV is too large for this private browser preview.');
+    if(rows.length>2000)throw new Error('CSV is too large for this browser planner.');
     get=valueGetterFromCsv(rows);maxCol=Math.min(400,Math.max(0,...rows.map(r=>r.length)));
     maxRow=Math.min(rows.length,1000);
   }else throw new Error('Choose an .xlsx or .csv version of your Google ROTA worksheet.');
@@ -397,7 +388,7 @@ async function importRota(file){
   clearData();
   state.drivers=drivers.map(({id,name,licence})=>({id,name,licence}));
   alphabetiseDrivers();
-  state.shifts=shifts;state.daily=targets;state.calendar=calendar;state.imported=true;
+  state.shifts=shifts;state.daily=targets;state.calendar=calendar;state.imported=true;markChanged();
   state.nextId=500;
   const dates=columns.map(x=>x.date).sort(),current=sundayOfWeek(todayUK());
   const validMin=sundayOfWeek(dates[0]),validMax=sundayOfWeek(dates[dates.length-1]);
@@ -405,7 +396,7 @@ async function importRota(file){
   $('search-driver').value='';
   $('preview-notice').classList.add('imported');
   $('preview-notice').textContent='PRIVATE IMPORT LOADED — '+drivers.length+' driver names and '+columns.length+' dated columns ('+
-    dates[0]+' to '+dates[dates.length-1]+'). Edits exist only in this browser tab. Download a draft CSV to keep your work; nothing is saved to GitHub or BESA’s database.';
+    dates[0]+' to '+dates[dates.length-1]+'). Save securely or export CSV to keep edits. Your source workbook stays unchanged.';
   render();
   vans.updateDriverSuggestions(state.drivers);
   let vanImportIssue='';
@@ -471,18 +462,24 @@ function exportCsv(){
 // Secure draft bridge uses explicit Load/Save only. No automatic import or
 // overwrite; staff must approve replacing browser work with saved content.
 function rotaSnapshot(){
-  if(!state.imported)throw new Error('Import the real ROTA workbook first; sample drivers must not be saved.');
   return {schema:1,start:state.start,drivers:state.drivers.map(d=>({
     id:d.id,name:d.name,licence:d.licence
   })),shifts:[...state.shifts],daily:[...state.daily],
     calendar:[...state.calendar],nextId:state.nextId};
 }
 function rotaRestore(data){
+  const ids=new Set((Array.isArray(data?.drivers)?data.drivers:[]).map(row=>row?.id));
+  const validDate=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&!Number.isNaN(Date.parse(s+'T00:00:00Z'))&&new Date(s+'T00:00:00Z').toISOString().slice(0,10)===s;
+  const pairs=rows=>rows.every(row=>Array.isArray(row)&&row.length===2);
   if(data?.schema!==1||!Array.isArray(data.drivers)||data.drivers.length>400||
      !Array.isArray(data.shifts)||data.shifts.length>250000||
      !Array.isArray(data.daily)||data.daily.length>1500||
      !Array.isArray(data.calendar)||data.calendar.length>1500||
-     !/^\d{4}-\d{2}-\d{2}$/.test(data.start||''))
+     !validDate(data.start)||data.drivers.some(d=>!d||typeof d.id!=='string'||!d.id||typeof d.name!=='string'||!d.name.trim()||d.name.length>90)||
+     new Set(data.drivers.map(d=>d.id)).size!==data.drivers.length||
+     !pairs(data.shifts)||data.shifts.some(([k,v])=>typeof k!=='string'||!validDate(k.split('|').pop())||!ids.has(k.slice(0,k.lastIndexOf('|')))||typeof v!=='string'||v.length>16)||
+     !pairs(data.daily)||data.daily.some(([day,v])=>!validDate(day)||!v||typeof v!=='object'||!['c1','c2'].every(k=>Number.isFinite(v[k])&&v[k]>=0)||!(v.vans==null||Number.isFinite(v.vans)&&v.vans>=0))||
+     data.calendar.some(day=>!validDate(day)))
     throw new Error('This saved rota has an unsupported structure.');
   state.start=data.start;
   state.drivers=data.drivers.map(d=>({
@@ -511,15 +508,29 @@ function activeDraftBridge(){
 }
 function start(){
   state.start=sundayOfWeek(todayUK());
-  initSample();render();
+  render();
   vans.updateDriverSuggestions(state.drivers);
-  window.besaDraftAPI=activeDraftBridge();
+  window.besaDraftAPI=activeDraftBridge();contextChanged();
+  $('load-driver-register').addEventListener('click',async e=>{
+    const button=e.currentTarget;button.disabled=true;
+    try{
+      const drivers=await loadPlanningRegister('drivers');let added=0;
+      for(const d of drivers){
+        const name=[d.first_name,d.last_name].filter(Boolean).join(' ').trim();
+        if(!name||state.drivers.some(row=>row.name.toLowerCase()===name.toLowerCase()))continue;
+        if(state.drivers.length>=400)break;
+        state.drivers.push({id:'register-'+d.id,name,licence:'Unknown'});added++;
+      }
+      if(added)markChanged();alphabetiseDrivers();vans.updateDriverSuggestions(state.drivers);render();
+      message(added+' drivers added from the register. Confirm licence types before assigning vans. Existing shifts were kept.');
+    }catch(error){message(error.message,true);}finally{button.disabled=false;}
+  });
   $('next-4').addEventListener('click',()=>setWeek(offsetWeeks(state.start,4)));
   $('prev-4').addEventListener('click',()=>setWeek(offsetWeeks(state.start,-4)));
   $('add-4').addEventListener('click',()=>{
     const first=offsetWeeks(state.start,4);
     for(let i=0;i<28;i++)state.calendar.add(addDays(first,i));
-    setWeek(first);
+    setWeek(first);markChanged();
     message('Created 4 more blank weeks with dates and week numbers. Shift cells are empty until assigned.');
   });
   $('jump-date').addEventListener('change',e=>{if(e.target.value)setWeek(e.target.value);});
@@ -550,12 +561,11 @@ function start(){
   });
   $('export-rota').addEventListener('click',exportCsv);
   $('reset-demo').addEventListener('click',()=>{
-    if(state.imported&&!window.confirm('Discard imported names and all edits from this browser tab? Export a CSV first if you need to keep them.'))return;
+    if(!window.confirm('Clear the rota in this browser? Export or save first if needed. Saved versions and Van Allocation will be kept.'))return;
     clearData();state.start=sundayOfWeek(todayUK());
-    $('preview-notice').classList.remove('imported');
-    $('preview-notice').textContent='PREVIEW — fictional data only. Import your ROTA Excel or CSV file to load real names and daily targets. No information is uploaded or stored.';
-    $('search-driver').value='';initSample();vans.reset();vans.updateDriverSuggestions(state.drivers);render();message('Preview reset. Your original Google Sheet was not changed.');
+    $('search-driver').value='';vans.updateDriverSuggestions([]);render();markChanged();
+    message('Rota cleared in this browser. Secure saved versions remain available.');
   });
-  message('Four-week preview ready. Click any cell to edit or import your ROTA workbook.');
+  message('Ready. Load a saved draft, add drivers from your register, or import a workbook.');
 }
 start();

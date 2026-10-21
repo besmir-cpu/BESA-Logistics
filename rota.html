@@ -6,22 +6,22 @@
 <link rel="stylesheet" href="operations/diagnostics.css?v=1">
 <script defer src="operations/diagnostics.js?v=1"></script>
 <script defer src="operations/quick-nav.js?v=1"></script>
-<link rel="stylesheet" href="operations/sidebar.css?v=1">
+<link rel="stylesheet" href="operations/sidebar.css?v=2">
 <link rel="stylesheet" href="operations/draft-controls.css?v=1">
-<script type="module" src="operations/draft-controls.mjs?v=1"></script>
-<script defer src="operations/sidebar.js?v=1"></script>
+<script type="module" src="operations/draft-controls.mjs?v=2"></script>
+<script defer src="operations/sidebar.js?v=2"></script>
 <!-- Excel importer is now loaded on demand, reducing initial page weight. -->
-<script type="module" src="rota/preview-v2.js"></script></head>
+<script type="module" src="rota/preview-v2.js?v=2"></script></head>
 <body><header class="top"><div class="brand"><span class="monogram">B</span><span><strong>BESA LOGISTICS</strong><small>OPERATIONS</small></span></div>
 <a class="top-link" href="index.html" style="color:#fff;text-decoration:none">← Main dashboard</a></header>
 <main class="besa-rota">
 <div class="rota-top"><div><p class="eyebrow" style="margin:0">BESA OFFICE · OPERATIONS WORKSPACE</p><h1>Rota & Scheduling</h1></div>
-<span class="rota-tag" style="background:#215341;padding:8px 12px;border-radius:6px">WORKSPACE · LOCAL DRAFT</span></div>
+<span class="rota-tag" style="background:#215341;padding:8px 12px;border-radius:6px">OPERATIONS PLANNING</span></div>
 <nav class="operation-tabs" aria-label="Operations sections">
-<a href="rota.html" aria-current="page">Rota & Scheduling</a>
-<a href="rota.html#vans">Van Allocation</a>
+<a href="#rota" aria-current="page">Rota & Scheduling</a>
+<a href="#vans">Van Allocation</a>
 <a href="payments.html">Working hours</a><a href="payment-tracker.html">Payment Tracker</a></nav>
-<div id="preview-notice" class="rota-intro"><strong>Local planning mode.</strong> Import your ROTA Excel workbook to work with your driver names, daily targets and van allocations. Until secure database saving is installed, edits are held only in this browser tab. <strong>Export your work before leaving.</strong> No changes are sent to Google Sheets or the live database.</div>
+<div id="preview-notice" class="rota-intro"><strong>Plan from your real operations.</strong> Load a saved draft, add drivers and vans from your register, or import your ROTA workbook. Save securely or export CSV before leaving. Source spreadsheets stay unchanged.</div>
 <nav class="besa-sheet-tabs" aria-label="Workbook tabs">
 <button id="show-rota-tab" type="button" class="active" aria-selected="true">ROTA</button>
 <button id="show-vans-tab" type="button" aria-selected="false">Van Allocation</button>
@@ -30,6 +30,7 @@
 <div class="rota-toolbar" aria-label="Rota tools">
 <label class="file-button" for="import-file" title="Import the ROTA worksheet from XLSX or CSV">
 📥 Import workbook (.xlsx / .csv)<input type="file" id="import-file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"></label>
+<button type="button" id="load-driver-register">Add from driver register</button>
 <button class="primary" type="button" id="add-driver">+ Add driver</button>
 <button type="button" id="prev-4">← Previous 4 weeks</button>
 <div class="week-status" id="range-title">Calculating weeks…</div>
@@ -39,7 +40,7 @@
 <label>Find driver <input id="search-driver" type="search" placeholder="Name…"></label>
 
 <button type="button" id="export-rota">⬇ Save rota CSV</button>
-<button type="button" id="reset-demo">↻ Reset preview</button>
+<button type="button" id="reset-demo">Clear rota draft</button>
 </div>
 <div class="rota-help"><span><b>Week numbers</b> match Google ROTA's Sunday-based WEEKNUM.</span>
 <span><b>Frozen:</b> summary rows, driver names and licence column.</span><span><b>Change shift:</b> click a cell. Weekly working days recalculate.</span><span><b>Edit targets:</b> click the yellow C1/C2 cells.</span></div>
@@ -56,12 +57,12 @@
 <span id="van-range-title" class="week-status">Van Allocation</span>
 <button type="button" id="van-next">Next 4 weeks →</button>
 <button type="button" id="van-more">+ 4 more weeks</button>
+<button type="button" id="load-van-register">Add from vehicle register</button>
 <button class="primary" type="button" id="van-add">+ Add van</button>
 <label>Jump to date <input id="van-jump" type="date"></label>
 <button type="button" id="van-export">⬇ Save Van Allocation CSV</button>
 </div>
-<div id="van-preview-notice" class="rota-intro">Van Allocation · sample vehicle registrations and assignments until your workbook is imported.
-Import the same ROTA Excel workbook to display its real <strong>Van Allocation</strong> worksheet. The source sheet is not changed.</div>
+<div id="van-preview-notice" class="rota-intro">Load saved, add vans from your vehicle register, or import the Van Allocation worksheet. Confirm insurance and working condition before allocating a vehicle.</div>
 <div class="rota-help"><span><b>Same layout:</b> Van, Ins., Works, Notes, Issue, keys audit and daily driver assignments.</span>
 <span><b>Frozen:</b> first five vehicle detail columns and top four rows.</span>
 <span><b>Edit:</b> click an assignment cell or add a van.</span></div>

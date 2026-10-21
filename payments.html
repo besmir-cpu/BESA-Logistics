@@ -7,12 +7,12 @@
 <link rel="stylesheet" href="operations/diagnostics.css?v=1">
 <script defer src="operations/diagnostics.js?v=1"></script>
 <script defer src="operations/quick-nav.js?v=1"></script>
-<link rel="stylesheet" href="operations/sidebar.css?v=1">
+<link rel="stylesheet" href="operations/sidebar.css?v=2">
 <link rel="stylesheet" href="operations/draft-controls.css?v=1">
-<script type="module" src="operations/draft-controls.mjs?v=1"></script>
-<script defer src="operations/sidebar.js?v=1"></script>
+<script type="module" src="operations/draft-controls.mjs?v=2"></script>
+<script defer src="operations/sidebar.js?v=2"></script>
 <!-- Excel importer is now loaded on demand, reducing initial page weight. -->
-<script type="module" src="payments/summary.js"></script>
+<script type="module" src="payments/summary.js?v=2"></script>
 </head><body>
 <header class="top"><div class="brand"><span class="monogram">B</span><span><strong>BESA LOGISTICS</strong><small>OPERATIONS CONTROL</small></span></div>
 <a href="index.html" class="top-link">← Dashboard</a></header>
@@ -22,7 +22,7 @@
 <div class="payment-heading-side"><span class="payment-status-pill">REVIEW ONLY</span><a class="payment-minilink" href="rota.html">Open Rota →</a></div></div>
 <nav class="operation-tabs" aria-label="Operations sections">
 <a href="rota.html">Rota</a><a href="rota.html#vans">Van Allocation</a><a href="payments.html" aria-current="page">Working hours</a><a href="payment-tracker.html">Payment Tracker</a></nav>
-<div class="finance-note"><strong>Safe workspace:</strong> Import a Work Summary Tool export to calculate a driver-hours summary in this browser. No money is sent, no invoices are issued and nothing is written to BESA's database or Google Sheets. <strong>Keep an exported copy of your work.</strong></div>
+<div class="finance-note"><strong>Safe workspace:</strong> Import a Work Summary Tool export to calculate a driver-hours summary in this browser. Save a reviewed summary securely with the draft controls. No money is sent, no invoices are issued and your Google Sheet stays unchanged. <strong>Keep an exported copy of your work.</strong></div>
 <section class="payment-upload-card"><div class="payment-drop" id="payment-drop" role="group" aria-label="Work Summary Tool file import">
 <div class="payment-upload-icon" aria-hidden="true">↥</div><h2>Drop your Work Summary Tool file here</h2>
 <p>Excel (.xlsx) or CSV · up to 15 MB · processed on your device</p>
@@ -53,10 +53,10 @@
 <div class="payment-breakdown">
 <div class="payment-summary-head"><label>Find driver <input id="payment-search" type="search" placeholder="Search driver…"></label>
 <label>Week <select id="payment-week-filter"><option value="">All weeks</option></select></label></div>
-<div class="payment-table-wrap"><table class="payment-table"><thead><tr><th>Driver</th><th>Week (Sunday)</th><th>Hours</th><th>Shifts</th><th>Worked dates</th></tr></thead><tbody id="payment-table-body"></tbody></table></div></div>
+<p class="payment-hint">Totals follow the driver and week filters. CSV export includes all summary rows.</p><div class="payment-table-wrap"><table class="payment-table"><thead><tr><th>Driver</th><th>Week (Sunday)</th><th>Hours</th><th>Shifts</th><th>Worked dates</th></tr></thead><tbody id="payment-table-body"></tbody></table></div></div>
 <details class="payment-checks"><summary id="payment-review-summary">Review skipped or questionable rows</summary><div id="payment-review-rows"></div></details>
 <p class="payment-hint">This is a work-hours summary, not a payroll calculation or SAM invoice. It cannot establish payable routes, rates, deductions or VAT without approved input rules.</p>
 </section>
 <p id="payment-message" class="payment-message" aria-live="polite" role="status"></p>
-<footer class="payment-footer">BESA Logistics · Internal planning interface · Files are not uploaded to BESA servers.</footer>
+<footer class="payment-footer">BESA Logistics · Internal planning interface · Source files are processed on your device. Reviewed summaries are stored only when you choose Save securely.</footer>
 </main></body></html>

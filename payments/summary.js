@@ -1,3 +1,5 @@
+import {changed,contextChanged} from '../operations/draft-state.mjs';
+const markChanged=()=>changed({workspace:'work-summary',key:'master'});
 // Local, review-only working-hours summary. No calls to BESA data services.
 import { loadExcelJS } from '../operations/lazy-excel.mjs';
 const $=id=>document.getElementById(id);
@@ -228,7 +230,7 @@ function build(){
   const check=$('payment-review-rows');check.replaceChildren();
   if(!warnings.length)check.textContent='No invalid rows detected by these basic checks. Please still reconcile with the original export.';
   else for(const w of warnings.slice(0,200)){const p=document.createElement('p');p.textContent=w;check.append(p);}
-  renderRows();
+  markChanged();renderRows();
   message('Calculated '+records.length+' work-hour rows. Review totals before using them.');
 }
 function renderRows(){
@@ -236,6 +238,9 @@ function renderRows(){
   const week=$('payment-week-filter').value;
   const table=$('payment-table-body');table.replaceChildren();
   const visible=state.summary.filter(r=>(!query||r.driver.toLowerCase().includes(query))&&(!week||r.week===week));
+  $('payment-drivers-count').textContent=String(new Set(visible.map(r=>r.driver.toLowerCase())).size);
+  $('payment-hours-total').textContent=fmtHours(visible.reduce((sum,r)=>sum+r.hours,0));
+  $('payment-shifts-total').textContent=String(visible.reduce((sum,r)=>sum+r.shifts,0));
   for(const r of visible){
     const tr=document.createElement('tr');
     for(const value of [r.driver,r.week,fmtHours(r.hours),r.shifts,r.dates]){
@@ -279,6 +284,7 @@ async function loadFile(file){
   }else throw new Error('Choose an .xlsx or .csv export.');
   if(!sheets.length||!sheets.some(s=>s.rows.length>1))throw new Error('No usable data sheets found.');
   state.file=file;state.sheets=sheets;
+  state.summary=[];state.records=[];state.warnings=[];markChanged();
   $('payment-file-meta').hidden=false;
   $('payment-file-meta').textContent='File loaded: '+file.name+' · '+sheets.length+' sheet(s). Check column matching below.';
   selectSheet(sheets[0].name);
@@ -286,6 +292,8 @@ async function loadFile(file){
   message('File read in your browser. Match the columns, then calculate the summary.');
 }
 function clearFile(){
+  if((state.file||state.summary.length)&&!window.confirm('Clear this browser’s work-hours data? Save or export the summary first if needed.'))return;
+  markChanged();
   state.file=null;state.sheets=[];state.sheet=null;state.summary=[];state.records=[];state.warnings=[];
   $('payment-file').value='';
   $('payment-results').hidden=true;$('mapping-panel').hidden=true;$('payment-file-meta').hidden=true;
@@ -326,7 +334,7 @@ function init(){
   window.besaDraftAPI={
     identify:()=>({workspace:'work-summary',key:'master'}),
     snapshot:draftSnapshot,restore:draftRestore
-  };
+  };contextChanged();
   const drop=$('payment-drop');
   for(const e of ['dragenter','dragover']){
     drop.addEventListener(e,event=>{event.preventDefault();drop.classList.add('dragover')});
