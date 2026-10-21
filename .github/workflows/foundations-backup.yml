@@ -5,13 +5,14 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: besa-production-backup
   cancel-in-progress: false
 jobs:
   backup:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -19,18 +20,32 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts
+      - name: Find the previous successful encrypted backup
+        id: previous
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/find-previous-backup.mjs
+      - name: Download previous encrypted parts for verified reuse
+        if: steps.previous.outputs.artifact_id != ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.previous.outputs.run_id }}
+          artifact-ids: ${{ steps.previous.outputs.artifact_id }}
+          merge-multiple: true
+          path: recovery/previous
       - name: Export encrypted records and documents, validate contents, rehearse isolated recovery
         env:
           BESA_BACKUP_JOB_TOKEN: ${{ secrets.BESA_BACKUP_JOB_TOKEN }}
           BESA_RECOVERY_PRIVATE_KEY: ${{ secrets.BESA_RECOVERY_PRIVATE_KEY }}
           BESA_RECOVERY_PASSPHRASE: ${{ secrets.BESA_RECOVERY_PASSPHRASE }}
+          BESA_BACKUP_OUTPUT_DIR: recovery/export/current
+          BESA_BACKUP_PREVIOUS_DIR: recovery/previous
         run: node scripts/run-backup-job.mjs
       - name: Retain only encrypted archives and non-personal verification manifests
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: besa-encrypted-backup-${{ github.run_id }}
-          path: |
-            recovery/export/*.pgp
-            recovery/export/*.verified.json
+          path: recovery/export/current/
           retention-days: 90
           if-no-files-found: error

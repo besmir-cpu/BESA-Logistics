@@ -23,6 +23,7 @@ jobs:
           npm run build
           node --check operations/mfa.js
           node --experimental-strip-types --check supabase/functions/besa-encrypted-backup/index.ts
+          node --experimental-strip-types --check supabase/functions/besa-recovery-validation/index.ts
           node --test tests/*.test.mjs operations/*.test.mjs driver-journey/*.test.mjs payments/*.test.mjs recruitment/*.test.mjs design/*.test.mjs
       - run: npx playwright install --with-deps chromium
       - name: Serve the actual production package with its security headers
