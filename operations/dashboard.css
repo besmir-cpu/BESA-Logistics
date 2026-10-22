@@ -11,4 +11,17 @@
 #missing-mot-note{line-height:1.6}
 #compliance .toolbar{flex-wrap:wrap}
 #compliance .toolbar select{max-width:100%}
+.dashboard-date{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:12px}
+.daily-priorities{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:-5px 0 22px}
+.daily-priorities a{display:flex;align-items:center;gap:12px;padding:16px;background:#fff;border:1px solid var(--line);border-radius:12px;color:var(--ink);text-decoration:none;font-size:12px;min-width:0}
+.daily-priorities strong{font-size:23px;color:var(--green)}
+.daily-priorities a>span:last-child{margin-left:auto;color:var(--green)}
+.daily-priorities a:focus-visible{outline:3px solid var(--green);outline-offset:3px}
+.vehicle-filters{grid-template-columns:repeat(3,minmax(0,1fr))}
+.vehicle-search-row>label:not(.search){font-size:11px;color:var(--muted);min-width:0}
+.vehicle-search-row #vehicle-view{min-height:42px;margin-top:4px;font-size:12px}
+#compliance .toolbar{align-items:stretch}
+#compliance .toolbar .search{min-width:180px}
+@media(max-width:1100px){.vehicle-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:750px){.daily-priorities{grid-template-columns:1fr;gap:8px}.daily-priorities a{padding:12px 15px}.vehicle-search-row{flex-wrap:wrap}.vehicle-search-row .search{flex-basis:100%}.vehicle-search-row>label:not(.search){flex:1}.vehicle-search-row select{width:100%}.deadline-row>div:last-child{flex-wrap:wrap;justify-content:flex-end}.deadline-row{gap:12px}}
 @media(max-width:750px){.sidebar::before{display:none}.dashboard-stat .stat-action{font-size:10px;margin-top:12px}#compliance .toolbar>label{min-width:0}}

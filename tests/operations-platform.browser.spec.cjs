@@ -106,10 +106,60 @@ test('cancelling a newer load retains the previous conflict-check version',async
 
 test('one driver cannot be assigned to two vans on the same day',async({page})=>{
   await setup(page);await page.goto(base+'rota.html#vans');
-  await page.evaluate(()=>window.besaDraftAPI.restore({schema:1,start:'2026-10-18',rows:[{id:'a',cells:['SYNTH01','','','','','']},{id:'b',cells:['SYNTH02','','','','','']}],dateCols:[],sourceHead:[],generatedDates:[],assigns:[['a|2026-10-18','Synthetic Driver']]}));
+  await page.evaluate(()=>window.besaDraftAPI.restore({schema:1,start:'2026-10-18',rows:[{id:'a',cells:['SYNTH01','Yes','Yes','','','']},{id:'b',cells:['SYNTH02','Yes','Yes','','','']}],dateCols:[],sourceHead:[],generatedDates:[],assigns:[['a|2026-10-18','Synthetic Driver']]}));
   await page.locator('[data-vehicle="b"][data-day="2026-10-18"]').click();await page.locator('#van-assignment').fill('Synthetic Driver');await page.locator('#van-edit-form button[type="submit"]').click();
   await expect(page.locator('#van-status')).toContainText('already assigned');
   expect(await page.evaluate(()=>window.besaDraftAPI.snapshot().assigns)).toEqual([['a|2026-10-18','Synthetic Driver']]);
+});
+
+test('restoring a manually added van cannot reuse its ID for a new van',async({page})=>{
+ await setup(page);await page.goto(base+'rota.html#vans');
+ await page.evaluate(()=>window.besaDraftAPI.restore({schema:1,start:'2026-10-18',rows:[{id:'added-van-1',cells:['SYNTH01','Yes','Yes','','','']}],dateCols:[],sourceHead:[],generatedDates:[],assigns:[['added-van-1|2026-10-18','Synthetic Driver']]}));
+ await page.locator('#van-add').click();await page.locator('#van-new-reg').fill('SYNTH02');await page.locator('#van-add-form button[type="submit"]').click();
+ const draft=await page.evaluate(()=>window.besaDraftAPI.snapshot());
+ expect(new Set(draft.rows.map(r=>r.id)).size).toBe(2);expect(draft.assigns).toEqual([['added-van-1|2026-10-18','Synthetic Driver']]);
+});
+
+test('uninsured vans cannot receive an assignment and the error is visible inside the dialog',async({page})=>{
+ await setup(page);await page.goto(base+'rota.html#vans');
+ await page.evaluate(()=>window.besaDraftAPI.restore({schema:1,start:'2026-10-18',rows:[{id:'a',cells:['SYNTH01','No','Yes','','','']}],dateCols:[],sourceHead:[],generatedDates:[],assigns:[]}));
+ await page.locator('[data-vehicle="a"][data-day="2026-10-18"]').click();await page.locator('#van-assignment').fill('Synthetic Driver');await page.locator('#van-edit-form button[type="submit"]').click();
+ await expect(page.locator('#van-edit-status')).toBeVisible();await expect(page.locator('#van-edit-status')).toContainText('Insurance');
+ expect(await page.evaluate(()=>window.besaDraftAPI.snapshot().assigns)).toEqual([]);
+ await page.locator('#van-edit-cancel').click();await page.locator('[aria-label="Daily insurance for SYNTH01"]').selectOption('Yes');
+ await page.locator('[data-vehicle="a"][data-day="2026-10-18"]').click();await page.locator('#van-assignment').fill('Synthetic Driver');await page.locator('#van-edit-form button[type="submit"]').click();
+ expect(await page.evaluate(()=>window.besaDraftAPI.snapshot().assigns)).toEqual([['a|2026-10-18','Synthetic Driver']]);
+});
+
+test('van registration and driver spacing cannot create duplicate allocations',async({page})=>{
+ await setup(page);await page.goto(base+'rota.html#vans');
+ await page.evaluate(()=>window.besaDraftAPI.restore({schema:1,start:'2026-10-18',rows:[{id:'a',cells:['AB12 CDE','Yes','Yes','','','']},{id:'b',cells:['SYNTH02','Yes','Yes','','','']}],dateCols:[],sourceHead:[],generatedDates:[],assigns:[['a|2026-10-18','Synthetic Driver']]}));
+ await page.locator('#van-add').click();await page.locator('#van-new-reg').fill(' ab12cde ');await page.locator('#van-add-form button[type="submit"]').click();
+ await expect(page.locator('#van-add-status')).toContainText('already exists');await page.locator('#van-add-cancel').click();
+ await page.locator('[data-vehicle="b"][data-day="2026-10-18"]').click();await page.locator('#van-assignment').fill(' synthetic   DRIVER ');await page.locator('#van-edit-form button[type="submit"]').click();
+ await expect(page.locator('#van-edit-status')).toContainText('already assigned');expect(await page.evaluate(()=>window.besaDraftAPI.snapshot().assigns)).toHaveLength(1);
+});
+
+test('daily review flags imported conflicts and unavailable vans while preserving and clearing assignments',async({page})=>{
+ await setup(page);await page.goto(base+'rota.html#vans');
+ await page.evaluate(()=>window.besaDraftAPI.restore({schema:1,start:'2026-10-18',rows:[{id:'a',cells:['SYNTH01','Yes','Yes','','','']},{id:'b',cells:['SYNTH02','Yes','Yes','','','']},{id:'c',cells:['SYNTH03','Yes','Yes','','',''],fleetStatus:'In maintenance'}],dateCols:[],sourceHead:[],generatedDates:[],assigns:[['a|2026-10-18','Synthetic Driver'],['b|2026-10-18','Synthetic   Driver'],['c|2026-10-18','Existing Driver']]}));
+ await page.locator('#van-review-date').fill('2026-10-18');await page.locator('#van-review-date').dispatchEvent('change');
+ await expect(page.locator('#van-day-assigned')).toHaveText('3');await expect(page.locator('#van-day-not-ready')).toHaveText('1');await expect(page.locator('#van-day-conflicts')).toHaveText('2');
+ await page.locator('[data-day-vehicle="c"]').click();await page.locator('#van-assignment').fill('Replacement Driver');await page.locator('#van-edit-form button[type="submit"]').click();await expect(page.locator('#van-edit-status')).toContainText('In maintenance');
+ await page.locator('#van-edit-clear').click();await expect(page.locator('#van-day-assigned')).toHaveText('2');
+ expect(await page.evaluate(()=>window.besaDraftAPI.snapshot().assigns)).toHaveLength(2);
+ await page.locator('#van-search').fill('SYNTH02');await expect(page.locator('#van-day-body tr')).toHaveCount(1);
+ expect(await page.evaluate(()=>window.besaDraftAPI.snapshot().rows)).toHaveLength(3);
+});
+
+test('van CSV retains assignments outside the visible dates and refuses a truncated export',async({page})=>{
+ await setup(page);await page.goto(base+'rota.html#vans');
+ await page.evaluate(()=>window.besaDraftAPI.restore({schema:1,start:'2026-10-18',rows:[{id:'a',cells:['SYNTH01','Yes','Yes','','','']}],dateCols:[],sourceHead:[],generatedDates:[],assigns:[['a|2026-09-01','Historical Synthetic Driver']]}));
+ const pending=page.waitForEvent('download');await page.locator('#van-export').click();const download=await pending,stream=await download.createReadStream(),chunks=[];for await(const chunk of stream)chunks.push(chunk);
+ const csv=Buffer.concat(chunks).toString('utf8');expect(csv).toContain('Historical Synthetic Driver');expect(csv).toContain('01/09/2026');
+ await page.evaluate(()=>{const data=window.besaDraftAPI.snapshot();data.assigns.push(['a|2030-01-01','Far Future Driver']);window.besaDraftAPI.restore(data);});
+ await page.locator('#van-export').click();await expect(page.locator('#van-status')).toContainText('no partial CSV was exported');
+ expect(await page.evaluate(()=>window.besaDraftAPI.snapshot().assigns)).toHaveLength(2);
 });
 
 test('malformed planning snapshots are rejected before changing existing rows',async({page})=>{
@@ -125,4 +175,26 @@ test('all standalone operations pages keep mobile scrolling inside their workshe
     await page.goto(base+file);await expect(page.locator('#besa-draft-bar')).toBeVisible();
     await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-innerWidth),{message:file}).toBeLessThanOrEqual(1);
   }
+});
+
+for(const width of [360,768,1440])test(`daily van review and blocked assignments fit a ${width}px screen`,async({page})=>{
+ await setup(page);await page.setViewportSize({width,height:1000});await page.goto(base+'rota.html#vans');
+ await page.evaluate(()=>window.besaDraftAPI.restore({schema:1,start:'2026-10-18',rows:[{id:'a',cells:['SYNTH01','Yes','Yes','','','']},{id:'b',cells:['SYNTH02','No','Yes','','','']},{id:'c',cells:['SYNTH03','','','','','']}],dateCols:[],sourceHead:[],generatedDates:[],assigns:[['a|2026-10-18','Synthetic Driver']]}));
+ await page.locator('#van-review-date').fill('2026-10-18');await page.locator('#van-review-date').dispatchEvent('change');
+ await expect(page.locator('#van-day-assigned')).toHaveText('1');await expect(page.locator('#van-day-not-ready')).toHaveText('2');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+ if(process.env.BESA_OPS_SCREENSHOT_DIR)await page.screenshot({path:process.env.BESA_OPS_SCREENSHOT_DIR+`/vans-${width}.png`,fullPage:true});
+ await page.locator('[data-day-vehicle="b"]').click();await page.locator('#van-assignment').fill('Synthetic Replacement');await page.locator('#van-edit-form button[type="submit"]').click();
+ await expect(page.locator('#van-edit-status')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+ if(process.env.BESA_OPS_SCREENSHOT_DIR)await page.screenshot({path:process.env.BESA_OPS_SCREENSHOT_DIR+`/van-warning-${width}.png`});
+});
+
+test('350-van review preserves the register and renders without a major freeze',async({page})=>{
+ await setup(page);await page.goto(base+'rota.html#vans');
+ const elapsed=await page.evaluate(()=>{
+  const rows=Array.from({length:350},(_,i)=>({id:'perf-'+i,cells:['SYNTH'+String(i).padStart(3,'0'),'Yes','Yes','','','']}));
+  const start=performance.now();window.besaDraftAPI.restore({schema:1,start:'2026-10-18',rows,dateCols:[],sourceHead:[],generatedDates:[],assigns:[]});return performance.now()-start;
+ });
+ await expect(page.locator('#van-day-total')).toHaveText('350');expect(elapsed).toBeLessThan(3000);
+ console.log('SYNTHETIC_350_VAN_REVIEW_RENDER_MS='+Math.round(elapsed));
 });
