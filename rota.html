@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BESA Logistics | Rota & Van Allocation</title><meta name="theme-color" content="#222e60">
-<link rel="stylesheet" href="driver/portal.css"><link rel="stylesheet" href="rota/rota-v2.css">
+<link rel="stylesheet" href="driver/portal.css"><link rel="stylesheet" href="rota/rota-v2.css?v=operations-20261022">
 <link rel="stylesheet" href="besa-theme.css?v=horizon-1">
 <link rel="stylesheet" href="operations/diagnostics.css?v=1">
 <script defer src="operations/diagnostics.js?v=1"></script>
@@ -11,7 +11,7 @@
 <script type="module" src="operations/draft-controls.mjs?v=2"></script>
 <script defer src="operations/sidebar.js?v=2"></script>
 <!-- Excel importer is now loaded on demand, reducing initial page weight. -->
-<script type="module" src="rota/preview-v2.js?v=2"></script></head>
+<script type="module" src="rota/preview-v2.js?v=3"></script></head>
 <body><header class="top"><div class="brand"><span class="monogram">B</span><span><strong>BESA LOGISTICS</strong><small>OPERATIONS</small></span></div>
 <a class="top-link" href="index.html" style="color:#fff;text-decoration:none">← Main dashboard</a></header>
 <main class="besa-rota">
@@ -57,12 +57,18 @@
 <span id="van-range-title" class="week-status">Van Allocation</span>
 <button type="button" id="van-next">Next 4 weeks →</button>
 <button type="button" id="van-more">+ 4 more weeks</button>
-<button type="button" id="load-van-register">Add from vehicle register</button>
+<button type="button" id="load-van-register">Add / refresh from vehicle register</button>
 <button class="primary" type="button" id="van-add">+ Add van</button>
 <label>Jump to date <input id="van-jump" type="date"></label>
 <button type="button" id="van-export">⬇ Save Van Allocation CSV</button>
 </div>
 <div id="van-preview-notice" class="rota-intro">Load saved, add vans from your vehicle register, or import the Van Allocation worksheet. Confirm insurance and working condition before allocating a vehicle.</div>
+<section class="van-day-panel" aria-labelledby="van-day-title">
+  <div class="van-day-heading"><div><h2 id="van-day-title">Daily van allocation</h2><p>Review the day before allocating. Insurance and working checks must be Yes; unavailable fleet statuses block new assignments.</p></div><div class="van-day-controls"><label>Review date<input id="van-review-date" type="date" min="1950-01-01" max="2100-12-31"></label><button id="van-today" type="button">Today</button><label>Find van or driver<input id="van-search" type="search" placeholder="Registration or driver…"></label></div></div>
+  <dl class="van-day-stats"><div><dt>Vans in draft</dt><dd id="van-day-total">0</dd></div><div><dt>Assigned</dt><dd id="van-day-assigned">0</dd></div><div><dt>Unassigned</dt><dd id="van-day-unassigned">0</dd></div><div><dt>Not ready</dt><dd id="van-day-not-ready">0</dd></div><div><dt>Conflicting rows</dt><dd id="van-day-conflicts">0</dd></div></dl>
+  <p id="van-day-count" class="van-day-count" role="status"></p>
+  <div class="van-day-scroll" role="region" tabindex="0" aria-label="Daily van allocation records"><table class="van-day-table"><thead><tr><th scope="col">Van</th><th scope="col">Readiness / review</th><th scope="col">Assigned driver</th><th scope="col">Action</th></tr></thead><tbody id="van-day-body"></tbody></table></div>
+</section>
 <div class="rota-help"><span><b>Same layout:</b> Van, Ins., Works, Notes, Issue, keys audit and daily driver assignments.</span>
 <span><b>Frozen:</b> first five vehicle detail columns and top four rows.</span>
 <span><b>Edit:</b> click an assignment cell or add a van.</span></div>
@@ -92,14 +98,17 @@
 <h2 id="van-edit-title">Van assignment</h2>
 <label id="van-assignment-label">Assigned driver<input id="van-assignment" type="text" list="van-driver-options" maxlength="100" placeholder="Driver name"></label>
 <datalist id="van-driver-options"></datalist>
+<p id="van-edit-readiness" class="van-form-help"></p>
+<p id="van-edit-status" class="van-form-error" role="alert"></p>
 <div class="actions"><button type="button" id="van-edit-cancel">Cancel</button>
 <button type="button" id="van-edit-clear">Clear</button><button type="submit" class="primary">Apply assignment</button></div>
 </form></dialog>
 <dialog id="van-add-modal" class="rota-modal"><form id="van-add-form">
 <h2>Add van</h2>
-<label>Vehicle registration<input id="van-new-reg" type="text" maxlength="24" required placeholder="Registration"></label>
-<label>Insurance status<input id="van-new-ins" type="text" maxlength="24" placeholder="Yes / No"></label>
-<label>Working status<input id="van-new-works" type="text" maxlength="24" placeholder="Yes / No"></label>
+<label>Vehicle registration<input id="van-new-reg" type="text" maxlength="16" required placeholder="Registration"></label>
+<label>Insurance status<select id="van-new-ins"><option value="">Unverified</option><option>Yes</option><option>No</option></select></label>
+<label>Working status<select id="van-new-works"><option value="">Unverified</option><option>Yes</option><option>No</option></select></label>
+<p id="van-add-status" class="van-form-error" role="alert"></p>
 <div class="actions"><button type="button" id="van-add-cancel">Cancel</button><button class="primary" type="submit">Add van</button></div>
 </form></dialog>
 </body></html>

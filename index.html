@@ -11,7 +11,7 @@
   <script defer src="config.js?v=freeze-page-4"></script>
   <link rel="stylesheet" href="operations/mfa.css?v=1">
   <script defer src="operations/mfa.js?v=1"></script>
-  <script defer src="app.js?v=foundations-20261021"></script>
+  <script defer src="app.js?v=operations-20261022"></script>
   <!-- Excel importer is now loaded on demand, reducing initial page weight. -->
   <script type="module" src="driver-journey/office.js?v=3"></script>
   <link rel="stylesheet" href="driver-journey/profile.css?v=2">
@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="operations/diagnostics.css?v=1">
 <script defer src="operations/diagnostics.js?v=1"></script>
 <script defer src="operations/quick-nav.js?v=1"></script>
-<link rel="stylesheet" href="operations/dashboard.css?v=1">
+<link rel="stylesheet" href="operations/dashboard.css?v=2">
 </head>
 <body>
   <section id="login-screen" class="login-screen">
@@ -86,12 +86,18 @@
         <div id="loading-state" class="empty" hidden>Loading your workspace…</div>
         <div id="data-content" hidden>
           <section id="dashboard" class="page-section">
+            <p class="dashboard-date" id="dashboard-today"></p>
             <div class="stats-grid">
               <a class="stat dashboard-stat" data-dashboard-view="vehicles" href="#vehicles"><div class="stat-label">Vehicles <span aria-hidden="true">▱</span></div><strong id="kpi-vehicles">0</strong><p id="kpi-vehicle-note">Across your fleet</p><span class="stat-action">Open records →</span></a>
               <a class="stat dashboard-stat" data-dashboard-view="drivers" href="#drivers"><div class="stat-label">Active drivers <span aria-hidden="true">♙</span></div><strong id="kpi-drivers">0</strong><p id="kpi-driver-note">Ready to get moving</p><span class="stat-action">Open records →</span></a>
               <a class="stat dashboard-stat" data-dashboard-view="mot" href="#compliance"><div class="stat-label">MOT attention <span aria-hidden="true">◷</span></div><strong id="kpi-mot" class="amber-text">0</strong><p>Overdue, due within 30 days or missing</p><span class="stat-action">Open records →</span></a>
               <a class="stat dashboard-stat" data-dashboard-view="service" href="#compliance"><div class="stat-label">Service attention <span aria-hidden="true">⚒</span></div><strong id="kpi-service">0</strong><p>Dates, mileage or missing schedule</p><span class="stat-action">Open records →</span></a>
             </div>
+            <nav class="daily-priorities" aria-label="Daily priorities">
+              <a href="#compliance" data-dashboard-view="cover"><strong id="priority-cover">0</strong><span>Tax & insurance deadlines</span><span aria-hidden="true">→</span></a>
+              <a href="#compliance" data-dashboard-view="driver-checks"><strong id="priority-drivers">0</strong><span>Driver check deadlines</span><span aria-hidden="true">→</span></a>
+              <a href="#vehicles" data-dashboard-view="vehicle-review"><strong id="priority-data">0</strong><span>Vehicle records to review</span><span aria-hidden="true">→</span></a>
+            </nav>
             <section class="operations-shortcuts" aria-label="Operations workspaces">
               <a class="operations-shortcut" href="rota.html"><span class="shortcut-symbol" aria-hidden="true">▦</span><span><strong>Rota & Scheduling</strong><small>4-week planner · weekly targets</small></span><span class="shortcut-arrow" aria-hidden="true">↗</span></a>
               <a class="operations-shortcut" href="rota.html#vans"><span class="shortcut-symbol" aria-hidden="true">▤</span><span><strong>Van Allocation</strong><small>Vehicle status · driver allocation</small></span><span class="shortcut-arrow" aria-hidden="true">↗</span></a>
@@ -100,7 +106,7 @@
               <a class="operations-shortcut" href="#drivers"><span class="shortcut-symbol" aria-hidden="true">♧</span><span><strong>Drivers & onboarding</strong><small>One driver profile · recruitment tasks · evidence</small></span><span class="shortcut-arrow" aria-hidden="true">↗</span></a>
             </section>
             <div class="overview-grid">
-              <article class="panel"><div class="panel-heading"><div><h2>Needs attention</h2><p class="muted small">MOT and service tasks for your operational fleet</p></div><a href="#compliance" class="text-link">View all ↗</a></div><div id="upcoming-list"></div></article>
+              <article class="panel"><div class="panel-heading"><div><h2>Needs attention</h2><p class="muted small">Fleet deadlines and driver checks · <span id="upcoming-count"></span></p></div><a href="#compliance" data-dashboard-view="attention" class="text-link">View all ↗</a></div><div id="upcoming-list"></div></article>
               <article class="panel"><div class="panel-heading"><h2>Fleet at a glance</h2><span class="pill neutral">LIVE RECORDS</span></div><div id="fleet-breakdown"></div><div class="panel-foot"><a id="missing-mot-note" data-dashboard-view="missing-mot" href="#vehicles" class="text-link"></a><a href="#vehicles" class="text-link">Manage fleet ↗</a></div></article>
             </div>
             <article class="panel"><div class="panel-heading"><div><h2>Recent changes</h2><p class="muted small">Saved updates across your workspace</p></div><a href="#activity" class="text-link">View activity ↗</a></div><div id="recent-activity"></div></article>
@@ -108,12 +114,13 @@
 
           <section id="vehicles" class="page-section" hidden>
             <div class="vehicle-controls">
-              <div class="vehicle-search-row"><label class="search"><span class="sr-only">Search vehicles</span><input id="vehicle-search" type="search" placeholder="Search Van Reg, VIN, ownership or notes…"></label><button class="button" id="export-vehicles">Export CSV</button></div>
+              <div class="vehicle-search-row"><label class="search"><span class="sr-only">Search vehicles</span><input id="vehicle-search" type="search" placeholder="Search Van Reg, VIN, ownership or notes…"></label><label>Table view<select id="vehicle-view"><option value="daily">Daily view · 9 columns</option><option value="full">Full register · 27 columns</option></select></label><button class="button" id="export-vehicles">Export CSV</button></div>
               <div class="vehicle-filters" aria-label="Vehicle filters">
                 <label>Fleet status<select id="vehicle-filter"><option value="">All current statuses</option><option value="__operational__">Operational vehicles</option><option>Active</option><option>Needs review</option><option>In maintenance</option><option>Off hire</option><option>SORN</option><option>Personal</option><option>Archived</option></select></label>
                 <label>Ownership<select id="vehicle-ownership-filter"><option value="">All owners</option></select></label>
                 <label>MOT<select id="vehicle-mot-filter"><option value="">All MOT dates</option><option value="overdue">Overdue</option><option value="soon">Due within 30 days</option><option value="current">More than 30 days</option><option value="missing">Missing MOT date</option></select></label>
                 <label>Service status<select id="vehicle-service-filter"><option value="">All service statuses</option><option>Overdue</option><option>Due soon</option><option>OK</option><option>Missing service data</option><option>Missing service intervals</option><option>Check data</option><option>Not in service</option></select></label>
+                <label>Action needed<select id="vehicle-attention-filter"><option value="">All actions</option><option value="review">Operational records to review</option><option>Urgent review</option><option>Complete data</option><option>Due soon / update reading</option><option>OK</option><option>Not in service</option></select></label>
                 <button type="button" class="button quiet" id="reset-vehicle-filters">Clear filters</button>
               </div>
               <p class="small muted vehicle-help">Choose Edit vehicle beside a registration to update its details. Headings stay visible as you scroll through the table.</p>
@@ -178,7 +185,7 @@
           </section>
 
           <section id="compliance" class="page-section" hidden>
-            <div class="toolbar"><label class="search"><span class="sr-only">Search compliance</span><input id="compliance-search" type="search" placeholder="Search registration or driver…"></label><label><span class="sr-only">Requirement</span><select id="compliance-requirement"><option value="">All requirements</option><option>MOT</option><option>Service</option><option>Road tax</option><option>Insurance</option><option>Driving licence</option><option>Right to work</option></select></label><label><span class="sr-only">Compliance status</span><select id="compliance-filter"><option value="attention">Needs attention</option><option value="all">All recorded dates</option><option value="overdue">Overdue</option><option value="soon">Due within 30 days</option><option value="missing">Missing dates</option></select></label></div>
+            <div class="toolbar"><label class="search"><span class="sr-only">Search compliance</span><input id="compliance-search" type="search" placeholder="Search registration or driver…"></label><label><span class="sr-only">Record group</span><select id="compliance-group"><option value="">Fleet & drivers</option><option value="cover">Tax & insurance</option><option value="drivers">Driver checks</option></select></label><label><span class="sr-only">Requirement</span><select id="compliance-requirement"><option value="">All requirements</option><option>MOT</option><option>Service</option><option>Road tax</option><option>Insurance</option><option>Driving licence</option><option>Right to work</option></select></label><label><span class="sr-only">Compliance status</span><select id="compliance-filter"><option value="attention">Needs attention</option><option value="all">All recorded schedules</option><option value="overdue">Overdue</option><option value="soon">Due soon · dates or mileage</option><option value="missing">Missing dates / mileage</option></select></label></div>
             <article class="panel table-panel"><div class="table-wrap"><table><caption class="sr-only">Compliance deadlines</caption><thead><tr><th>Record</th><th>Requirement</th><th>Due date</th><th>Timing</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="compliance-rows"></tbody></table></div><div class="empty" id="compliance-empty" hidden>No deadlines match this view.</div><div class="panel-foot muted small">Off-hire, SORN, personal and archived vehicles are excluded from reminders. Dates are compared with today's date in the UK.</div></article>
           </section>
 

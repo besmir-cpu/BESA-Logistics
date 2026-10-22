@@ -70,6 +70,7 @@ jobs:
           node --input-type=module --check < rota/preview-v2.js
           node --input-type=module --check < rota/van-allocation.js
           node --input-type=module --check < rota/rules.mjs
+          node --test rota/van-rules.test.mjs
       - name: Check Work Summary import script
         run: node --input-type=module --check < payments/summary.js
       - name: Check payment tracker syntax

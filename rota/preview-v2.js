@@ -2,7 +2,7 @@ import {changed,contextChanged} from '../operations/draft-state.mjs';
 import {loadPlanningRegister} from '../operations/secure-drafts.mjs?v=2';
 const markChanged=()=>changed({workspace:'rota',key:'master'});
 import { WORK_CODES, CYCLE_1_CODES, CYCLE_2_CODES, weekDates, sundayOfWeek, offsetWeeks, summarizeDay } from './rules.mjs';
-import { setupVanAllocation } from './van-allocation.js?v=2';
+import { setupVanAllocation } from './van-allocation.js?v=3';
 import { loadExcelJS } from '../operations/lazy-excel.mjs';
 const vans = setupVanAllocation();
 
