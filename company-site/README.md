@@ -1,6 +1,8 @@
 # BESA Logistics — independent company website
 
-## Current release — 21 October 2026
+## Current release — 30 October 2026
+
+The homepage now leads with BESA's name, official Amazon DSP role, Aylesford base and the confirmed driver offer. A separate `home.css` widens the homepage to a 1680px outer container while keeping the driver application and private office styling separate. Repeated values sections are condensed into the actual delivery process. The safety section describes expected standards for vehicle checks, responsible driving, fatigue/unsafe stops and reporting/learning; it does not claim accreditation, verified safety statistics or particular vehicle safety equipment. Owner-approved testimonials remain unchanged. Industry references and release evidence are recorded with the release outputs; no competitor text or imagery was copied.
 
 This directory is now the source for the production final-mile carrier website as well as the GitHub Pages preview. The historical setup notes below describe the original preview; use this release section for current deployment instructions.
 

@@ -6,5 +6,5 @@ window.BESA_COMPANY_SITE = Object.freeze({
   contactEmail: 'info@besalogistics.org',
   contactPhone: '',
   contactWhatsapp: '+44 7477 177362',
-  heroStatement: "We are BESA Logistics, a UK final-mile delivery carrier based in Aylesford, Kent. As an independently owned Amazon Delivery Service Partner, we deliver parcels from the station to customers’ doors."
+  heroStatement: "We’re a UK final-mile delivery carrier based in Aylesford, Kent. Our team delivers Amazon parcels from the delivery station to homes and businesses."
 });
