@@ -4,9 +4,9 @@ const drivers=new URL('drivers/',home).href;
 for(const width of [360,768,1440])test(`driver page, confirmed offer and contacts at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:900});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(drivers);
- await expect(page.getByRole('heading',{level:1})).toHaveText(/Your next route\.Your next chapter\./);
+ await expect(page.getByRole('heading',{level:1})).toHaveText('Drive with BESA.No van hire costs.');
  await expect(page.locator('.driver-rate')).toHaveText(/£140\.40per day, plus VAT where applicable/);
- for(const label of ['2026 automatic vans','Vehicle insurance','Fuel cards','Free accountancy benefits'])await expect(page.getByRole('heading',{name:label,exact:true})).toBeVisible();
+ for(const label of ['Modern 2026 automatic vans','No vehicle insurance costs','No delivery fuel costs','Paid training','A friendly, supportive team','Free accountancy benefits'])await expect(page.getByRole('heading',{name:label,exact:true})).toBeVisible();
  for(const img of await page.locator('.delivery-photo img').all()){await img.scrollIntoViewIfNeeded();await expect.poll(()=>img.evaluate(e=>e.complete&&e.naturalWidth>0)).toBe(true);}
  await expect(page.locator('form[name="driver-application"]')).toBeVisible();
  expect(await page.locator('input[type="file"]').count()).toBe(0);
