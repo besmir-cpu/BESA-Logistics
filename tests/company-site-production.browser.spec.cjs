@@ -6,6 +6,7 @@ for(const width of [360,768,1440,1920])test(`production layout, photos and enqui
  await page.goto(home);
  if(process.env.BESA_SCREENSHOT_DIR)await page.screenshot({path:process.env.BESA_SCREENSHOT_DIR+'/besa-'+width+'.png',fullPage:true});
  await expect(page.getByRole('heading',{level:1})).toHaveText('BESA Logistics.DeliveringAmazon parcels.');
+ expect(await page.getByRole('heading',{level:1}).innerText()).toMatch(/BESA Logistics\.\s+Delivering\s+Amazon parcels\./);
  await expect(page.locator('.home-hero')).toContainText('OFFICIAL AMAZON DELIVERY SERVICE PARTNER');
  await expect(page.locator('.hero-description')).toContainText('Aylesford, Kent');
  await expect(page.locator('.home-hiring')).toContainText('2026 automatic van at no cost');
