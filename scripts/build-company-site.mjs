@@ -6,7 +6,7 @@ const source=resolve('company-site'), output=resolve('dist/company-site');
 if(!output.startsWith(resolve('dist')+sep))throw Error('Invalid website output directory');
 rmSync(output,{recursive:true,force:true});
 mkdirSync(output,{recursive:true});
-for(const name of ['styles.css','site.js','site-config.js','favicon.svg','images'])cpSync(`${source}/${name}`,`${output}/${name}`,{recursive:true});
+for(const name of ['styles.css','home.css','site.js','site-config.js','favicon.svg','images'])cpSync(`${source}/${name}`,`${output}/${name}`,{recursive:true});
 for(const name of ['_headers','_redirects','robots.txt','sitemap.xml'])cpSync(`${source}/hosting/${name}`,`${output}/${name}`);
 function buildPublicPage(path,route){
  const html=readFileSync(`${source}/${path}`,'utf8')
