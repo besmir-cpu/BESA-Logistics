@@ -5,6 +5,7 @@ import { loadExcelJS } from '../operations/lazy-excel.mjs';
 // Workbook import reads only the 'Van Allocation' sheet. The source workbook
 // may contain other private tabs, which are never inspected or displayed.
 import { weekDates, sundayOfWeek, offsetWeeks } from './rules.mjs';
+import {registrationKey, driverKey, vanReadiness, reviewVanDay} from './van-rules.mjs';
 
 export function setupVanAllocation() {
   const $ = id => document.getElementById(id);
@@ -13,7 +14,7 @@ export function setupVanAllocation() {
   const state = {
     start: null, imported: false, rows: [], dateCols: new Map(),
     sourceHead: new Map(), assigns: new Map(), edit: null, next: 0, generatedDates:new Set(),
-    driverNames: []
+    driverNames: [], reviewDay: null, search: ''
   };
   const textCell = (tag,text,klass='') => {
     const n=document.createElement(tag);
@@ -60,7 +61,7 @@ export function setupVanAllocation() {
     }
     if(typeof v!=='string')return null;
     const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(v.trim());
-    if(!m)return /^\d{4}-\d{2}-\d{2}$/.test(v.trim())?v.trim():null;
+    if(!m){const iso=v.trim(),parsed=new Date(iso+'T00:00:00Z');return /^\d{4}-\d{2}-\d{2}$/.test(iso)&&!Number.isNaN(parsed.valueOf())&&isoDate(parsed)===iso?iso:null;}
     const day=+m[1],month=+m[2],year=+m[3];
     const result=new Date(Date.UTC(year,month-1,day));
     return result.getUTCFullYear()===year&&result.getUTCMonth()===month-1&&result.getUTCDate()===day
@@ -80,7 +81,7 @@ export function setupVanAllocation() {
     if(date&&row===3)return dateLabel(date,'day');
     if(date&&row===4)return dateLabel(date);
     if(date&&row===1){
-      return state.rows.filter(v=>state.assigns.get(vkey(v.id,date))?.trim()).length;
+      return state.rows.filter(v=>!v.isNote&&state.assigns.get(vkey(v.id,date))?.trim()).length;
     }
     if(col===5)return ['', 'Week number','','Issue'][row-1];
     if(col===6)return ['', '', 'Day', 'Keys / notes'][row-1];
@@ -115,7 +116,39 @@ export function setupVanAllocation() {
     return tr;
   }
   function isVanProblem(vehicle){
-    return !vehicle.isNote && [1,2].some(i=>vehicle.cells[i]?.trim().toLowerCase()==='no');
+    return !vehicle.isNote && !vanReadiness(vehicle).ready;
+  }
+  function matchesSearch(vehicle){
+    if(!state.search)return true;
+    return [vehicle.cells.join(' '),...weeks().flat().map(day=>state.assigns.get(vkey(vehicle.id,day))||'')].join(' ').toLowerCase().includes(state.search);
+  }
+  function renderDay(){
+    const review=reviewVanDay(state.rows,state.assigns,state.reviewDay);
+    $('van-review-date').value=state.reviewDay;
+    for(const [id,value] of [['van-day-total',review.total],['van-day-assigned',review.assigned],['van-day-unassigned',review.unassigned],['van-day-not-ready',review.notReady],['van-day-conflicts',review.conflicts]])$(id).textContent=value;
+    const body=$('van-day-body');body.replaceChildren();
+    const entries=review.entries.filter(entry=>matchesSearch(entry.row));
+    $('van-day-count').textContent=entries.length+' of '+review.total+' vans shown · '+dateLabel(state.reviewDay,'long');
+    for(const entry of entries){
+      const tr=document.createElement('tr');if(entry.issues.length)tr.className='van-day-review';
+      tr.append(textCell('th',entry.row.cells[0]));tr.lastChild.scope='row';
+      const condition=textCell('td',entry.issues.length?entry.issues.join(' · '):'Insurance & condition confirmed');
+      const checks=document.createElement('div');checks.className='van-day-checks';
+      for(const [field,label] of [[1,'Insurance'],[2,'Works']]){
+        const wrapper=textCell('label',label),select=document.createElement('select'),raw=entry.row.cells[field]?.trim()||'';
+        select.dataset.vanStatus=entry.row.id;select.dataset.field=String(field);select.setAttribute('aria-label','Daily '+label.toLowerCase()+' for '+entry.row.cells[0]);
+        const values=['','Yes','No'];if(raw&&!values.some(value=>value.toLowerCase()===raw.toLowerCase()))values.push(raw);
+        for(const value of values){const option=textCell('option',value||'Unverified');option.value=value;select.append(option);}
+        select.value=values.find(value=>value.toLowerCase()===raw.toLowerCase())||'';wrapper.append(select);checks.append(wrapper);
+      }
+      condition.append(checks);
+      tr.append(condition,textCell('td',entry.assignment||'Unassigned'));
+      const action=document.createElement('td'),button=textCell('button',entry.assignment?'Review / change':'Assign driver');
+      button.type='button';button.dataset.dayVehicle=entry.row.id;
+      button.setAttribute('aria-label',(entry.assignment?'Review assignment for ':'Assign driver to ')+entry.row.cells[0]);
+      action.append(button);tr.append(action);body.append(tr);
+    }
+    if(!entries.length){const tr=document.createElement('tr'),td=textCell('td',review.total?'No vans match this search.':'Add vans from your register, load a saved draft, or add a van to get started.');td.colSpan=4;tr.append(td);body.append(tr);}
   }
   function render(){
     if(!state.start)return;
@@ -128,12 +161,15 @@ export function setupVanAllocation() {
     head.replaceChildren();body.replaceChildren();
     for(let row=1;row<=4;row++)head.append(constructRow(row,tableWeeks,true));
     const dates=tableWeeks.flat();
+    renderDay();
+    $('van-status').classList.remove('error');
     const issues=state.rows.filter(isVanProblem).length;
     $('van-status').textContent=issues
-      ?issues+' van(s) marked amber: Insurance or Works set to No. Review before allocation.'
+      ?issues+' van(s) need review: confirm insurance, working condition and fleet status before allocation.'
       :!state.rows.length?'No vans added. Load saved, add from your vehicle register, or import a workbook.'
       :state.rows.some(v=>!v.isNote&&[1,2].some(i=>!['yes','no'].includes(v.cells[i]?.trim().toLowerCase())))?'Insurance or working condition is unverified for some vans. Confirm before allocating.':'No vans marked unavailable. Confirm insurance and condition before allocating.';
     for(const vehicle of state.rows){
+      if(!matchesSearch(vehicle))continue;
       const tr=document.createElement('tr');
       const problem=isVanProblem(vehicle);
       if(problem)tr.classList.add('van-problem');
@@ -159,7 +195,7 @@ export function setupVanAllocation() {
           td.append(select);
         } else if(i===0&&problem){
           td.append(textCell('span','⚠ '+raw,'van-problem-label'));
-          td.title='Van problem: Insurance or Works marked No';
+          td.title=vanReadiness(vehicle).reasons.join(' · ');
         } else {
           td.textContent=vehicle.cells[i]||'';
           td.title=vehicle.cells[i]||'';
@@ -175,6 +211,7 @@ export function setupVanAllocation() {
         }else{
           const button=textCell('button',assignment||'·');
           button.type='button';button.dataset.vehicle=vehicle.id;button.dataset.day=date;
+          button.setAttribute('aria-label',(assignment?'Change assignment for ':'Assign driver to ')+vehicle.cells[0]+' on '+dateLabel(date,'long'));
           button.title=assignment||'Unassigned; click to assign a driver';
           td.append(button);
         }
@@ -189,6 +226,7 @@ export function setupVanAllocation() {
   }
   function blank(){
     state.start=sundayOfWeek(ukToday());state.imported=false;state.rows=[];
+    state.reviewDay=ukToday();state.search='';$('van-search').value='';
     state.assigns.clear();state.sourceHead.clear();state.dateCols.clear();state.generatedDates.clear();
     for(const [i,label] of ['Van','Ins.','Works','Notes','Issue','Keys / notes'].entries())state.sourceHead.set('4|'+(i+1),label);
     render();
@@ -204,6 +242,7 @@ export function setupVanAllocation() {
       if(date)sourceDates.push({col,date});
     }
     if(sourceDates.length<7)throw new Error('Van Allocation tab has fewer than 7 dated columns in row 4.');
+    if(new Set(sourceDates.map(item=>item.date)).size!==sourceDates.length)throw new Error('The workbook has duplicate date columns. Resolve them before importing so assignments cannot be overwritten.');
     const sourceHead=new Map();
     for(let row=1;row<=4;row++)for(let col=1;col<=6;col++){
       sourceHead.set(row+'|'+col,display(sheet.getRow(row).getCell(col).value));
@@ -233,6 +272,7 @@ export function setupVanAllocation() {
       }
     }
     if(!rows.some(r=>!r.isNote))throw new Error('No vehicle registrations were found in column A.');
+    if(state.rows.length&&!window.confirm('Replace the current Van Allocation draft with this workbook? Export a CSV first if you need to keep the current draft.'))return;
     state.generatedDates.clear();
     state.rows=rows;state.assigns=assigns;state.sourceHead=sourceHead;
     state.dateCols=new Map(sourceDates.map(s=>[s.date,s.col]));
@@ -240,6 +280,7 @@ export function setupVanAllocation() {
     const current=sundayOfWeek(ukToday());
     const earliest=sundayOfWeek(ordered[0]),latest=sundayOfWeek(ordered[ordered.length-1]);
     state.start=current>=earliest&&current<=latest?current:earliest;
+    state.reviewDay=current>=earliest&&current<=latest?ukToday():ordered[0];
     state.imported=true;markChanged();
     $('van-preview-notice').classList.add('imported');
     $('van-preview-notice').textContent='PRIVATE Van Allocation imported — '+rows.filter(r=>!r.isNote).length+
@@ -251,6 +292,9 @@ export function setupVanAllocation() {
     const van=state.rows.find(v=>v.id===id);
     if(!van||van.isNote)return;
     state.edit={id,date};
+    $('van-edit-status').textContent='';
+    const readiness=vanReadiness(van);
+    $('van-edit-readiness').textContent=readiness.ready?'Insurance and working condition are confirmed in this draft.':readiness.reasons.join(' · ')+'. New assignments require both checks to be Yes and an available fleet status. Existing assignments can still be cleared.';
     $('van-edit-title').textContent=(van.cells[0]||'Van')+' · '+dateLabel(date,'long');
     $('van-assignment').value=state.assigns.get(vkey(id,date))||'';
     $('van-edit-modal').showModal();
@@ -258,12 +302,18 @@ export function setupVanAllocation() {
   function saveEdit(clear=false){
     const edit=state.edit;if(!edit)return;
     const value=clear?'':$('van-assignment').value.trim();
-    if(value.length>100){show('Assignment too long.',true);return;}
-    if(value&&state.rows.some(v=>v.id!==edit.id&&!v.isNote&&(state.assigns.get(vkey(v.id,edit.date))||'').trim().toLowerCase()===value.toLowerCase())){show('This driver is already assigned to another van on this date. Review that assignment first.',true);return;}
+    const fail=message=>{$('van-edit-status').textContent=message;show(message,true);};
+    const current=state.assigns.get(vkey(edit.id,edit.date))||'';
+    if(value===current){$('van-edit-modal').close();state.edit=null;return;}
+    if(value.length>100){fail('Assignment too long.');return;}
+    const entry=reviewVanDay(state.rows,state.assigns,edit.date).entries.find(item=>item.row.id===edit.id);
+    if(!entry){fail('This van is no longer in the draft. Close the dialog and review the current list.');return;}
+    if(value&&!entry.ready){fail(entry.issues.join(' · ')+'. Confirm the van is ready before assigning a driver.');return;}
+    if(value&&state.rows.some(v=>v.id!==edit.id&&!v.isNote&&driverKey(state.assigns.get(vkey(v.id,edit.date)))===driverKey(value))){fail('This driver is already assigned to another van on this date. Review that assignment first.');return;}
     if(value)state.assigns.set(vkey(edit.id,edit.date),value);
     else state.assigns.delete(vkey(edit.id,edit.date));
     $('van-edit-modal').close();state.edit=null;render();markChanged();
-    show('Van allocation changed in this browser only. Download CSV to keep.');
+    show('Van allocation changed. Use Save securely to share the draft, or export CSV before leaving.');
   }
   function updateDriverSuggestions(names){
     state.driverNames=names.map(x=>x.name).filter(Boolean).slice(0,500);
@@ -273,11 +323,14 @@ export function setupVanAllocation() {
     }
   }
   function saveCsv(){
-    const dates=[...new Set([...state.dateCols.keys(),...state.generatedDates])].sort();
+    const dates=[...new Set([...state.dateCols.keys(),...state.generatedDates,...[...state.assigns.keys()].map(key=>key.slice(key.lastIndexOf('|')+1))])].sort();
     const first=dates.length?sundayOfWeek(dates[0]):state.start;
     const last=dates.length?sundayOfWeek(dates[dates.length-1]):offsetWeeks(state.start,3);
     const weeksToSave=[];
-    for(let w=first;w<=last&&weeksToSave.length<80;w=offsetWeeks(w,1))weeksToSave.push(weekDates(w));
+    for(let w=first;w<=last;w=offsetWeeks(w,1)){
+      if(weeksToSave.length===80){show('This draft spans more than 80 weeks. Use Save securely to retain the complete draft; no partial CSV was exported.',true);return;}
+      weeksToSave.push(weekDates(w));
+    }
     const days=weeksToSave.flat();
     const sheet=[];
     for(let row=1;row<=4;row++){
@@ -301,7 +354,7 @@ export function setupVanAllocation() {
     show('Van Allocation draft CSV saved. It contains vehicle and driver details; keep it private.');
   }
   function changeWeek(day){
-    state.start=sundayOfWeek(day);render();
+    state.start=sundayOfWeek(day);state.reviewDay=day;render();
     $('van-scroller').scrollLeft=0;
     show('Showing van allocations from '+dateLabel(state.start,'long')+'.');
   }
@@ -333,6 +386,10 @@ export function setupVanAllocation() {
     $('van-prev').addEventListener('click',()=>changeWeek(offsetWeeks(state.start,-4)));
     $('van-next').addEventListener('click',()=>changeWeek(offsetWeeks(state.start,4)));
     $('van-jump').addEventListener('change',e=>{if(e.target.value)changeWeek(e.target.value);});
+    $('van-review-date').addEventListener('change',e=>{if(e.target.value)changeWeek(e.target.value);});
+    $('van-today').addEventListener('click',()=>changeWeek(ukToday()));
+    $('van-search').addEventListener('input',e=>{state.search=e.target.value.trim().toLowerCase();render();});
+    $('van-day-body').addEventListener('click',e=>{const button=e.target.closest('[data-day-vehicle]');if(button)openEdit(button.dataset.dayVehicle,state.reviewDay);});
     $('van-more').addEventListener('click',()=>{
       changeWeek(offsetWeeks(state.start,4));
       show('Four new dated weeks are ready for allocations. Save a CSV to keep.');
@@ -341,7 +398,7 @@ export function setupVanAllocation() {
       const button=e.target.closest('button[data-vehicle][data-day]');
       if(button)openEdit(button.dataset.vehicle,button.dataset.day);
     });
-    $('van-body').addEventListener('change',e=>{
+    function updateVanFlag(e){
       const select=e.target.closest('select[data-van-status]');
       if(!select)return;
       const vehicle=state.rows.find(v=>v.id===select.dataset.vanStatus);
@@ -350,21 +407,26 @@ export function setupVanAllocation() {
       vehicle.cells[field]=select.value;markChanged();
       render();
       const issue=isVanProblem(vehicle);
-      show(issue?vehicle.cells[0]+' marked AMBER: Insurance or Works is No.':
-        vehicle.cells[0]+' status updated. Save Van Allocation CSV to keep changes.');
-    });
+      show(issue?vehicle.cells[0]+' needs review: '+vanReadiness(vehicle).reasons.join(' · ')+'.':
+        vehicle.cells[0]+' checks updated for this draft across all dates. Use Save securely to share the changes.');
+    }
+    $('van-body').addEventListener('change',updateVanFlag);
+    $('van-day-body').addEventListener('change',updateVanFlag);
     $('van-edit-form').addEventListener('submit',e=>{e.preventDefault();saveEdit();});
     $('van-edit-clear').addEventListener('click',()=>saveEdit(true));
-    $('van-edit-cancel').addEventListener('click',()=>$('van-edit-modal').close());
-    $('van-add').addEventListener('click',()=>$('van-add-modal').showModal());
+    $('van-edit-cancel').addEventListener('click',()=>{$('van-edit-modal').close();state.edit=null;});
+    $('van-edit-modal').addEventListener('cancel',()=>{state.edit=null;});
+    $('van-add').addEventListener('click',()=>{$('van-add-status').textContent='';$('van-add-modal').showModal();});
     $('van-add-cancel').addEventListener('click',()=>$('van-add-modal').close());
     $('van-add-form').addEventListener('submit',e=>{
       e.preventDefault();
-      if(state.rows.length>=350){show('Van allocation is limited to 350 rows.',true);return;}
-      const reg=$('van-new-reg').value.trim().toUpperCase();
-      if(!reg||reg.length>24){show('Enter a valid van registration.',true);return;}
-      if(state.rows.some(v=>v.cells[0].toUpperCase()===reg)){show('Van already exists.',true);return;}
-      state.rows.push({id:'added-van-'+(++state.next),cells:[
+      const fail=message=>{$('van-add-status').textContent=message;show(message,true);};
+      if(state.rows.length>=350){fail('Van allocation is limited to 350 rows.');return;}
+      const reg=registrationKey($('van-new-reg').value);
+      if(!/^[A-Z0-9-]{2,16}$/.test(reg)){fail('Enter a valid van registration using letters and numbers.');return;}
+      if(state.rows.some(v=>!v.isNote&&registrationKey(v.cells[0])===reg)){fail('This van already exists in the draft.');return;}
+      let id;do{id='added-van-'+(++state.next);}while(state.rows.some(row=>row.id===id));
+      state.rows.push({id,cells:[
         reg,$('van-new-ins').value.trim(),$('van-new-works').value.trim(),'','',''
       ],isNote:false});
       state.rows.sort((a,b)=>a.cells[0].localeCompare(b.cells[0],'en-GB',{numeric:true}));
@@ -374,15 +436,16 @@ export function setupVanAllocation() {
     $('load-van-register').addEventListener('click',async e=>{
       const button=e.currentTarget;button.disabled=true;
       try{
-        const vehicles=await loadPlanningRegister('vehicles');let added=0;
+        const vehicles=await loadPlanningRegister('vehicles');let added=0,updated=0;
         for(const v of vehicles){
-          if(state.rows.some(row=>row.cells[0].toUpperCase()===v.registration.toUpperCase()))continue;
-          if(state.rows.length>=350)break;
           const status=v.status==='Active'&&v.tracker_snapshot?.['Fleet status']==='Needs review'?'Needs review':v.status;
-          state.rows.push({id:'register-'+v.id,cells:[v.registration,'','',status,'',''],isNote:false});added++;
+          const existing=state.rows.find(row=>!row.isNote&&registrationKey(row.cells[0])===registrationKey(v.registration));
+          if(existing){if(existing.fleetStatus!==status){existing.fleetStatus=status;updated++;}continue;}
+          if(state.rows.length>=350)continue;
+          state.rows.push({id:'register-'+v.id,cells:[v.registration,'','',status,'',''],isNote:false,fleetStatus:status});added++;
         }
-        if(added)markChanged();render();
-        show(added+' vans added from the register. Insurance and working condition remain unverified; confirm before allocation. Existing assignments were kept.');
+        if(added||updated)markChanged();render();
+        show(added+' vans added; '+updated+' fleet statuses refreshed. Insurance and working checks are not inferred from the register. Existing assignments were kept.');
       }catch(error){show(error.message,true);}finally{button.disabled=false;}
     });
     $('van-export').addEventListener('click',saveCsv);
@@ -407,7 +470,7 @@ export function setupVanAllocation() {
   setup();
   function snapshot(){
     return {schema:1,start:state.start,rows:state.rows.map(r=>({
-      id:r.id,cells:r.cells,isNote:Boolean(r.isNote)
+      id:r.id,cells:[...r.cells],isNote:Boolean(r.isNote),...(r.fleetStatus?{fleetStatus:r.fleetStatus}:{})
     })),dateCols:[...state.dateCols],sourceHead:[...state.sourceHead],
       assigns:[...state.assigns],generatedDates:[...state.generatedDates]};
   }
@@ -420,17 +483,18 @@ export function setupVanAllocation() {
        !Array.isArray(data.dateCols)||!Array.isArray(data.sourceHead)||
        !Array.isArray(data.generatedDates)||
        !validDate(data.start)||data.rows.some(r=>!r||typeof r.id!=='string'||!r.id||!Array.isArray(r.cells)||r.cells.length!==6||r.cells.some(v=>typeof v!=='string'))||
-       new Set(data.rows.map(r=>r.id)).size!==data.rows.length||
+       new Set(data.rows.map(r=>r.id)).size!==data.rows.length||data.rows.some(r=>r.fleetStatus!==undefined&&typeof r.fleetStatus!=='string')||
        !pairs(data.dateCols)||data.dateCols.some(([day,col])=>!validDate(day)||!Number.isInteger(col))||
        !pairs(data.sourceHead)||!pairs(data.assigns)||data.assigns.some(([k,v])=>typeof k!=='string'||!validDate(k.split('|').pop())||!ids.has(k.slice(0,k.lastIndexOf('|')))||typeof v!=='string'||v.length>150)||
        data.generatedDates.some(day=>!validDate(day)))
       throw new Error('This saved Van Allocation draft has an unsupported structure.');
     state.start=data.start;
-    state.rows=data.rows.map(r=>({id:String(r.id),cells:r.cells.map(String).slice(0,6),isNote:!!r.isNote}));
+    state.rows=data.rows.map(r=>({id:String(r.id),cells:r.cells.map(String).slice(0,6),isNote:!!r.isNote,...(r.fleetStatus?{fleetStatus:r.fleetStatus}:{})}));
     state.dateCols=new Map(data.dateCols);
     state.sourceHead=new Map(data.sourceHead);
     state.assigns=new Map(data.assigns);
     state.generatedDates=new Set(data.generatedDates);
+    state.reviewDay=ukToday()>=state.start&&ukToday()<=weekDates(offsetWeeks(state.start,3))[6]?ukToday():state.start;
     state.imported=true;
     $('van-preview-notice').classList.add('imported');
     $('van-preview-notice').textContent='Private Van Allocation draft loaded from secure BESA storage. Review before using.';

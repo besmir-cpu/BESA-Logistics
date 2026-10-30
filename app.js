@@ -83,9 +83,10 @@
     const records = [];
     for (const vehicle of state.vehicles.filter(operational)) {
       for (const [field, label] of [['mot_due', 'MOT'], ['service_due', 'Service'], ['tax_due', 'Road tax'], ['insurance_due', 'Insurance']]) {
-        const mileage = field === 'service_due' && vehicle.service_due_mileage != null && vehicle.current_mileage != null && vehicle.current_mileage >= vehicle.service_due_mileage;
-        if (!vehicle[field] && field !== 'mot_due' && !(field === 'service_due' && (vehicle.service_due_mileage == null || mileage))) continue;
-        records.push({ type: 'vehicle', id: vehicle.id, label: vehicle.registration, requirement: label, date: vehicle[field], mileage });
+        const remainingMiles = field === 'service_due' && vehicle.service_due_mileage != null && vehicle.current_mileage != null ? vehicle.service_due_mileage - vehicle.current_mileage : null;
+        if (!vehicle[field] && !['mot_due','service_due'].includes(field)) continue;
+        const missing = !vehicle[field] && (field !== 'service_due' || remainingMiles === null);
+        records.push({ type: 'vehicle', id: vehicle.id, label: vehicle.registration, requirement: label, date: vehicle[field], remainingMiles, mileage: remainingMiles !== null && remainingMiles <= 0, mileageSoon: remainingMiles > 0 && remainingMiles <= 1000, mileageMissing: field === 'service_due' && vehicle.service_due_mileage != null && vehicle.current_mileage == null, missing });
       }
     }
     for (const driver of state.drivers.filter(d => d.status === 'Active' || d.status === 'Onboarding')) {
@@ -93,10 +94,11 @@
         if (driver[field]) records.push({ type: 'driver', id: driver.id, label: nameOf(driver), requirement: label, date: driver[field] });
       }
     }
-    return records.sort((a, b) => (a.mileage ? -100000 : days(a.date) ?? 100000) - (b.mileage ? -100000 : days(b.date) ?? 100000) || a.label.localeCompare(b.label));
+    const rank = record => record.mileage ? -100000 : days(record.date) ?? (record.mileageSoon ? 0 : 100000);
+    return records.sort((a, b) => rank(a) - rank(b) || a.label.localeCompare(b.label));
   }
-  const needsAttention = record => record.mileage || record.date == null || days(record.date) <= 30;
-  const timingPill = record => record.mileage ? pill('Service mileage reached', 'bad') : pill(...timing(record.date));
+  const needsAttention = record => record.mileage || record.mileageSoon || record.missing || (record.date && days(record.date) <= 30);
+  const timingPill = record => record.mileage ? pill('Service mileage reached', 'bad') : record.date && days(record.date) <= 0 ? pill(...timing(record.date)) : record.mileageSoon ? pill(`Service due in ${number(record.remainingMiles)} miles`, 'warn') : !record.date && record.mileageMissing ? pill('Current mileage missing','neutral') : !record.date && record.remainingMiles !== null && record.remainingMiles !== undefined ? pill(`Service due in ${number(record.remainingMiles)} miles`, 'good') : pill(...timing(record.date));
   function renderDashboard() {
     const fleet = state.vehicles.filter(v => v.status !== 'Archived');
     const drivers = state.drivers.filter(d => d.status !== 'Archived');
@@ -107,8 +109,13 @@
     $('kpi-driver-note').textContent = `${drivers.filter(d => d.status === 'Onboarding').length} onboarding · ${drivers.length} total drivers`;
     $('kpi-mot').textContent = records.filter(r => r.requirement === 'MOT' && needsAttention(r)).length;
     $('kpi-service').textContent = records.filter(r => r.requirement === 'Service' && needsAttention(r)).length;
-    const upcoming = records.filter(r => r.requirement === 'MOT' || r.requirement === 'Service').filter(needsAttention).slice(0, 5);
-    $('upcoming-list').innerHTML = upcoming.length ? upcoming.map(r => `<div class="deadline-row"><div><strong>${escape(r.label)}</strong><p>${escape(r.requirement)} · ${formatDate(r.date)}</p></div><div>${timingPill(r)} ${editButton(r.type, r.id, 'Update')}</div></div>`).join('') : `<p class="empty">${fleet.length ? 'No MOT or service tasks need attention for your operational vehicles.' : 'No vehicles recorded yet. Add your first vehicle to start tracking MOT and servicing.'}</p>`;
+    const attention = records.filter(needsAttention), upcoming = attention.slice(0, 8);
+    $('dashboard-today').textContent = new Intl.DateTimeFormat('en-GB',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(today()+'T00:00:00Z'));
+    $('priority-cover').textContent = records.filter(r => ['Road tax','Insurance'].includes(r.requirement) && needsAttention(r)).length;
+    $('priority-drivers').textContent = records.filter(r => r.type === 'driver' && needsAttention(r)).length;
+    $('priority-data').textContent = fleet.filter(v => operational(v) && ['Urgent review','Complete data'].includes(sheetValues(v).action_required)).length;
+    $('upcoming-count').textContent = attention.length > upcoming.length ? `Showing ${upcoming.length} of ${attention.length} tasks` : `${attention.length} ${attention.length === 1 ? 'task' : 'tasks'} to review`;
+    $('upcoming-list').innerHTML = upcoming.length ? upcoming.map(r => `<div class="deadline-row"><div><strong>${escape(r.label)}</strong><p>${escape(r.requirement)} · ${r.date ? formatDate(r.date) : r.remainingMiles != null ? 'Mileage schedule' : 'Date not recorded'}</p></div><div>${timingPill(r)} ${editButton(r.type, r.id, 'Update')}</div></div>`).join('') : `<p class="empty">${fleet.length ? 'No recorded deadlines need attention for your operational fleet or active drivers.' : 'No vehicles recorded yet. Add your first vehicle to start tracking MOT and servicing.'}</p>`;
     $('fleet-breakdown').innerHTML = vehicleStatuses.filter(s => s !== 'Archived').map(status => {
       const count = fleet.filter(v => fleetStatus(v) === status).length;
       return `<a class="breakdown-row fleet-status-link" href="#vehicles" data-dashboard-view="vehicles" data-vehicle-status="${escape(status)}"><span>${escape(status)}</span><strong>${count}</strong><div class="breakdown-bar"><span style="width:${fleet.length ? count / fleet.length * 100 : 0}%"></span></div></a>`;
@@ -122,7 +129,7 @@
     const d = days(date);
     return `<span class="${d === null ? 'muted' : d < 0 ? 'date-overdue' : d <= 30 ? 'date-soon' : ''}">${formatDate(date)}</span>`;
   }
-  const vehicleFilterIds = ['vehicle-search', 'vehicle-filter', 'vehicle-ownership-filter', 'vehicle-mot-filter', 'vehicle-service-filter'];
+  const vehicleFilterIds = ['vehicle-search', 'vehicle-filter', 'vehicle-ownership-filter', 'vehicle-mot-filter', 'vehicle-service-filter', 'vehicle-attention-filter'];
   function syncVehicleFilterOptions() {
     const select = $('vehicle-ownership-filter');
     const owners = [...new Set(state.vehicles.map(v => v.ownership || '').filter(Boolean))].sort((a,b) => a.localeCompare(b));
@@ -143,6 +150,9 @@
       if (status === '__operational__' ? !operational(vehicle) : status ? values.status !== status : vehicle.status === 'Archived') return false;
       if (ownership && (ownership === '__unrecorded__' ? Boolean(vehicle.ownership) : vehicle.ownership !== ownership)) return false;
       if (service && values.service_status !== service) return false;
+      const focus = $('vehicle-attention-filter').value;
+      if (focus === 'review' && (!operational(vehicle) || !['Urgent review','Complete data'].includes(values.action_required))) return false;
+      if (focus && focus !== 'review' && values.action_required !== focus) return false;
       const remaining = days(vehicle.mot_due);
       if (mot === 'overdue' && !(remaining !== null && remaining < 0)) return false;
       if (mot === 'soon' && !(remaining !== null && remaining >= 0 && remaining <= 30)) return false;
@@ -202,16 +212,18 @@
   function renderVehicles() {
     syncVehicleFilterOptions();
     const rows = filteredVehicles();
-    $('vehicle-headings').innerHTML = sheetColumns.map(([, heading]) => `<th scope="col">${escape(heading)}</th>`).join('');
+    const dailyFields = ['registration','status','ownership','mot_due','service_status','current_mileage','service_due','service_due_mileage','action_required'];
+    const columns = $('vehicle-view').value === 'full' ? sheetColumns : dailyFields.map(field=>sheetColumns.find(column=>column[0]===field));
+    $('vehicle-headings').innerHTML = columns.map(([, heading]) => `<th scope="col">${escape(heading)}</th>`).join('');
     $('vehicle-rows').innerHTML = rows.map(vehicle => {
       const values = sheetValues(vehicle);
-      return '<tr>' + sheetColumns.map(([field, heading, type]) => {
+      return '<tr>' + columns.map(([field, heading, type]) => {
         const value = sheetDisplay(values, field, type);
         if (field === 'registration') return `<td class="vehicle-registration-cell"><button class="vehicle-reg-edit" type="button" data-edit="vehicle" data-id="${escape(vehicle.id)}" aria-label="Edit ${escape(value)}" title="Edit vehicle details"><span class="reg">${escape(value)}</span><span class="vehicle-edit-icon" aria-hidden="true">↗</span></button></td>`;
         return `<td title="${escape(value)}" class="${field === 'notes' ? 'sheet-notes' : ''}">${escape(value === '' ? '—' : value)}</td>`;
       }).join('') + '</tr>';
     }).join('');
-    $('vehicle-empty').hidden = rows.length > 0; $('vehicle-count').textContent = `${rows.length} ${rows.length === 1 ? 'vehicle' : 'vehicles'} shown · 27 columns, matching MOTs/ services`;
+    $('vehicle-empty').hidden = rows.length > 0; $('vehicle-count').textContent = `${rows.length} ${rows.length === 1 ? 'vehicle' : 'vehicles'} shown · ${columns.length} columns${columns.length === 27 ? ', matching MOTs/ services' : ' in daily view'} · CSV exports all 27 columns`;
     floatingHeaderDirty = true; scheduleVehicleHeader();
   }
 
@@ -232,11 +244,14 @@
     const requirement = $('compliance-requirement').value;
     const records = complianceRecords().filter(r => {
       if (requirement && r.requirement !== requirement) return false;
+      const group = $('compliance-group').value;
+      if (group === 'cover' && !['Road tax','Insurance'].includes(r.requirement)) return false;
+      if (group === 'drivers' && r.type !== 'driver') return false;
       if (search && !`${r.label} ${r.requirement}`.toLowerCase().includes(search)) return false;
       if (filter === 'all') return true;
       if (filter === 'overdue') return r.mileage || (r.date && days(r.date) < 0);
-      if (filter === 'soon') return r.date && days(r.date) >= 0 && days(r.date) <= 30;
-      if (filter === 'missing') return !r.date && !r.mileage;
+      if (filter === 'soon') return !r.mileage && !(r.date && days(r.date) < 0) && (r.mileageSoon || (r.date && days(r.date) >= 0 && days(r.date) <= 30));
+      if (filter === 'missing') return r.missing;
       return needsAttention(r);
     });
     $('compliance-rows').innerHTML = records.map(r => `<tr><td><strong>${escape(r.label)}</strong><span class="secondary">${r.type === 'vehicle' ? 'Vehicle' : 'Driver'}</span></td><td>${escape(r.requirement)}</td><td>${formatDate(r.date)}</td><td>${timingPill(r)}</td><td>${editButton(r.type, r.id, 'Update')}</td></tr>`).join('');
@@ -326,7 +341,7 @@
     ['tax_status', 'Tax date status', 'text', false, { calculated: true }],
     ['action_required', 'Action required', 'text', false, { calculated: true }]
   ];
-  const storedVehicleFields = new Set(['registration', 'ownership', 'vin', 'mot_due', 'tax_due', 'current_mileage', 'last_service_date', 'last_service_mileage', 'notes', 'status', 'service_due', 'service_due_mileage']);
+  const storedVehicleFields = new Set(['registration', 'ownership', 'vin', 'mot_due', 'tax_due', 'insurance_due', 'current_mileage', 'last_service_date', 'last_service_mileage', 'notes', 'status', 'service_due', 'service_due_mileage']);
   const sheetDate = value => {
     if (!value) return null;
     const text = String(value).trim();
@@ -369,7 +384,7 @@
     v.deployment_difference = difference(v.current_mileage, v.deployment_mileage);
     v.miles_since_service = difference(v.current_mileage, v.last_service_mileage);
     v.months_since_service = completedMonths(v.last_service_date, now, 'Missing service date', 'Check service date');
-    const notInService = ['Off hire', 'SORN', 'Archived'].includes(v.status);
+    const notInService = ['Off hire', 'SORN', 'Personal', 'Archived'].includes(v.status);
     const checkData = v.miles_since_service === 'Check mileage' || v.months_since_service === 'Check service date';
     const overdue = (v.service_due && days(v.service_due) <= 0) || (v.service_due_mileage != null && v.current_mileage != null && v.current_mileage >= v.service_due_mileage);
     const missingData = v.current_mileage == null || !v.last_service_date || v.last_service_mileage == null;
@@ -413,7 +428,7 @@
     for (const [field, , , , opts = {}] of sheetColumns) if (opts.calculated) $('field-' + field).value = calculated[field] ?? '';
   }
 
-  const vehicleFields = sheetColumns;
+  const vehicleFields = [...sheetColumns, ['insurance_due', 'Vehicle insurance renewal', 'date']];
   const driverFields = () => [
     ['first_name', 'First name', 'text', true], ['last_name', 'Last name', 'text'],
     ['email', 'Email address', 'email'], ['phone', 'Phone number', 'tel'],
@@ -434,7 +449,7 @@
     $('dialog-eyebrow').textContent = type === 'vehicle' ? 'FLEET RECORD' : 'DRIVER RECORD';
     $('save-record').textContent = `Save ${type}`; $('form-status').textContent = ''; $('form-status').classList.remove('error');
     $('form-fields').innerHTML = fields.map(([field, label, inputType, required, opts = {}]) => {
-      const value = (type === 'vehicle' ? sheetValues(record)[field] : record?.[field]) ?? (field === 'status' ? 'Onboarding' : '');
+      const value = (type === 'vehicle' ? sheetValues(record)[field] ?? record?.[field] : record?.[field]) ?? (field === 'status' ? 'Onboarding' : '');
       let control;
       if (inputType === 'select') control = `<select id="field-${field}" name="${field}" ${required ? 'required' : ''}>${opts.options.map(option => {
         const [optionValue, optionLabel] = Array.isArray(option) ? option : [option, option];
@@ -445,9 +460,17 @@
       return `<label ${opts.wide ? 'class="wide"' : ''} for="field-${field}">${escape(label)}${required ? ' *' : ''}${control}${opts.calculated ? '<span class="form-hint">Calculated automatically</span>' : ''}${field === 'status' ? '<span class="form-hint">Use Archived to remove this record from daily views while keeping its history.</span>' : ''}</label>`;
     }).join('');
     $('record-dialog').classList.toggle('vehicle-dialog', type === 'vehicle');
+    state.edit.initial = formFingerprint();
     $('record-dialog').showModal();
   }
-  function closeForm() { if (!state.busy) { $('record-dialog').close(); state.edit = null; } }
+  function formFingerprint() {
+    return JSON.stringify([...$('record-form').elements].filter(control => control.name && !control.readOnly).map(control => [control.name,control.value]));
+  }
+  const formDirty = () => Boolean(state.edit && $('record-dialog').open && state.edit.initial !== formFingerprint());
+  function closeForm() {
+    if (state.busy || (formDirty() && !window.confirm('Discard the unsaved changes to this record?'))) return;
+    $('record-dialog').close(); state.edit = null;
+  }
   async function saveRecord(event) {
     event.preventDefault();
     if (state.busy || !state.edit || !state.session) return;
@@ -460,6 +483,7 @@
     }
     if (edit.type === 'vehicle') {
       const values = sheetValues(edit.record, readVehicleForm());
+      values.registration = (payload.registration || '').replace(/\s/g,'').toUpperCase();
       const roadTax = String(values.tax_due || '').trim();
       if (roadTax && roadTax.toUpperCase() !== 'SORN' && !sheetDate(roadTax)) {
         $('form-status').classList.add('error'); $('form-status').textContent = 'Road Tax must be a valid date in DD/MM/YYYY format, SORN, or blank.'; return;
@@ -473,9 +497,13 @@
     if (payload.email) payload.email = payload.email.toLowerCase();
     $('form-status').classList.add('error');
     if (edit.type === 'vehicle' && !/^[A-Z0-9-]{2,16}$/.test(payload.registration)) { $('form-status').textContent = 'Enter a valid registration using letters and numbers.'; return; }
+    if (edit.type === 'vehicle' && state.vehicles.some(v => v.id !== edit.record?.id && String(v.registration).replace(/\s/g,'').toUpperCase() === payload.registration)) { $('form-status').textContent = 'This registration already exists, possibly in archived records. Edit the existing vehicle instead.'; return; }
     if (edit.type === 'driver' && !payload.first_name) { $('form-status').textContent = 'Enter the driver’s first name.'; return; }
     if (payload.last_service_date && payload.service_due && payload.service_due < payload.last_service_date) { $('form-status').textContent = 'Next service date cannot be before the last service date.'; return; }
     state.busy = true; $('save-record').disabled = true; $('save-record').textContent = 'Saving…';
+    // Prevent edits made after the submitted payload from disappearing when a
+    // delayed save succeeds and closes the form. Failed saves re-enable it.
+    for(const control of $('form-fields').querySelectorAll('input,select,textarea'))control.disabled=true;
     const sessionId = state.session.user.id;
     try {
       const table = edit.type === 'vehicle' ? 'besa_vehicles' : 'besa_drivers';
@@ -493,11 +521,11 @@
     } catch (error) {
       if (state.session?.user.id !== sessionId) return;
       $('form-status').textContent = error.code === '23505' ? `A ${edit.type} with this ${edit.type === 'vehicle' ? 'registration' : 'email address'} already exists. Edit the existing record instead.` : error.code === '42501' ? 'Your account does not have permission to save this record.' : error.message || 'Unable to save. Your entries are still here; please try again.';
-    } finally { state.busy = false; $('save-record').disabled = false; $('save-record').textContent = `Save ${edit.type}`; }
+    } finally { state.busy = false; for(const control of $('form-fields').querySelectorAll('input,select,textarea'))control.disabled=false; $('save-record').disabled = false; $('save-record').textContent = `Save ${edit.type}`; }
   }
   function downloadCsv(type) {
     const rows = type === 'vehicle' ? filteredVehicles() : filteredDrivers();
-    const fields = type === 'vehicle' ? vehicleFields : driverFields();
+    const fields = type === 'vehicle' ? sheetColumns : driverFields();
     const cell = value => {
       let text = String(value ?? '');
       if (typeof value !== 'number' && /^[\s]*[=+@-]/.test(text)) text = "'" + text;
@@ -670,7 +698,7 @@
       if (!link || !state.session || !state.ready || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
       const target = link.dataset.dashboardView;
-      const view = ['mot','service'].includes(target) ? 'compliance' : target === 'missing-mot' ? 'vehicles' : target;
+      const view = ['mot','service','attention','cover','driver-checks'].includes(target) ? 'compliance' : ['missing-mot','vehicle-review'].includes(target) ? 'vehicles' : target;
       if (view === 'vehicles') {
         for (const id of vehicleFilterIds) $(id).value = '';
         $('vehicle-filter').value = link.dataset.vehicleStatus || '';
@@ -678,6 +706,7 @@
           $('vehicle-mot-filter').value = 'missing';
           $('vehicle-filter').value = '__operational__';
         }
+        if (target === 'vehicle-review') $('vehicle-attention-filter').value = 'review';
       }
       if (view === 'drivers') {
         $('driver-search').value = '';
@@ -687,7 +716,8 @@
       if (view === 'compliance') {
         $('compliance-search').value = '';
         $('compliance-filter').value = 'attention';
-        $('compliance-requirement').value = target === 'mot' ? 'MOT' : 'Service';
+        $('compliance-requirement').value = target === 'mot' ? 'MOT' : target === 'service' ? 'Service' : '';
+        $('compliance-group').value = target === 'cover' ? 'cover' : target === 'driver-checks' ? 'drivers' : '';
       }
       viewsNeedingRender.add(view);
       location.hash = view;
@@ -702,16 +732,18 @@
     });
     document.addEventListener('click', event => { const button = event.target.closest('[data-edit]'); if (button) openForm(button.dataset.edit, button.dataset.id); });
     for (const id of vehicleFilterIds) $(id).addEventListener('input', renderVehicles);
+    $('vehicle-view').addEventListener('change',renderVehicles);
     $('reset-vehicle-filters').addEventListener('click', () => {
       for (const id of vehicleFilterIds) $(id).value = '';
       renderVehicles();
     });
     for (const id of ['driver-search', 'driver-filter']) $(id).addEventListener('input', renderDrivers);
-    for (const id of ['compliance-search', 'compliance-filter', 'compliance-requirement']) $(id).addEventListener('input', renderCompliance);
+    for (const id of ['compliance-search', 'compliance-filter', 'compliance-requirement', 'compliance-group']) $(id).addEventListener('input', renderCompliance);
     for (const id of ['activity-search','activity-entity']) $(id).addEventListener('input',renderActivity);
     $('record-form').addEventListener('input', updateVehicleCalculations);
     $('record-form').addEventListener('submit', saveRecord); $('cancel-dialog').addEventListener('click', closeForm); $('close-dialog').addEventListener('click', closeForm);
-    $('record-dialog').addEventListener('cancel', event => { if (state.busy) event.preventDefault(); else state.edit = null; });
+    $('record-dialog').addEventListener('cancel', event => { event.preventDefault(); closeForm(); });
+    window.addEventListener('beforeunload',event=>{if(state.busy || formDirty()){event.preventDefault();event.returnValue='';}});
     $('export-vehicles').addEventListener('click', () => downloadCsv('vehicle')); $('export-drivers').addEventListener('click', () => downloadCsv('driver'));
     window.addEventListener('scroll', scheduleVehicleHeader, { passive: true });
     window.addEventListener('resize', () => { floatingHeaderDirty = true; scheduleVehicleHeader(); });
@@ -735,18 +767,21 @@
     }
     // Only update date-dependent sections when visible. The fleet/driver
     // tables were previously rebuilt every minute even with no data change.
-    let reminderDay = new Date().toDateString();
-    setInterval(() => {
+    let reminderDay = today();
+    function updateReminderDay() {
       if (!state.ready || document.hidden) return;
-      const currentDay = new Date().toDateString();
+      const currentDay = today();
       if (reminderDay !== currentDay) {
         reminderDay = currentDay;
         viewsNeedingRender.add('dashboard');
         viewsNeedingRender.add('compliance');
-        if (state.page === 'dashboard' || state.page === 'compliance')
+        viewsNeedingRender.add('vehicles');
+        if (['dashboard','compliance','vehicles'].includes(state.page))
           renderActiveView(state.page);
       }
-    }, 60000);
+    }
+    setInterval(updateReminderDay, 60000);
+    document.addEventListener('visibilitychange',updateReminderDay);
   }
   start();
 })();
