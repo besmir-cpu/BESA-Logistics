@@ -10,7 +10,7 @@ for(const width of [360,768,1440,1920])test(`production layout, photos and enqui
  await expect(page.locator('.home-hero')).toContainText('OFFICIAL AMAZON DELIVERY SERVICE PARTNER');
  await expect(page.locator('.hero-description')).toContainText('Aylesford, Kent');
  await expect(page.locator('.home-hiring')).toContainText('2026 automatic van at no cost');
- if(width===360){
+ if(width<=768){
   await expect(page.locator('.home-mobile-offer')).toBeInViewport({ratio:1});
   await expect(page.getByRole('link',{name:'Join our driving team'})).toBeInViewport({ratio:1});
  }
