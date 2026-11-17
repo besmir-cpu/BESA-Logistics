@@ -13,7 +13,9 @@ test('production homepage launches with final-mile identity and working enquiry 
  assert.match(html,/netlify-honeypot="bot-field"/);
  assert.match(html,/action="\/thanks"/);
  assert.match(html,/rel="canonical" href="https:\/\/besalogistics.co.uk\/"/);
- for(const f of ['parcel-handover','doorstep-delivery'])assert.ok(statSync(`dist/company-site/images/${f}.jpg`).size>10000);
+ for (const image of ['besa-prime-van-front', 'besa-prime-van-front-768']) {
+  assert.ok(statSync(`dist/company-site/images/${image}.jpg`).size > 10000);
+ }
 });
 test('office and onboarding are first-party static files with matching headers',()=>{
  for(const f of ['_headers','_redirects'])assert.equal(read('dist/company-site/'+f),read('company-site/hosting/'+f));

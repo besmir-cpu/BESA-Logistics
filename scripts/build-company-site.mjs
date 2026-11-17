@@ -42,5 +42,7 @@ cpSync('vendor/exceljs.min.js',resolve(office,'vendor/exceljs.min.js'));
 cpSync('vendor/LICENSES.txt',resolve(office,'vendor/LICENSES.txt'));
 for(const name of ['candidate-onboarding.js','candidate-onboarding.css'])cpSync(name,resolve(onboarding,name));
 cpSync('candidate-onboarding.html',resolve(onboarding,'index.html'));
-if(!existsSync(`${output}/images/parcel-handover.jpg`))throw Error('Missing licensed hero photograph');
+for (const heroImage of ['besa-prime-van-front.jpg', 'besa-prime-van-front-768.jpg']) {
+  if (!existsSync(`${output}/images/${heroImage}`)) throw Error(`Missing homepage hero image: ${heroImage}`);
+}
 console.log(`Production website built at ${output}; company, office and onboarding served directly by Netlify.`);
