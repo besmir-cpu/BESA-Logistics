@@ -2,10 +2,18 @@ const {test,expect}=require('@playwright/test');
 const home=process.env.BESA_PRODUCTION_URL||'http://127.0.0.1:4173/dist/company-site/';
 const drivers=new URL('drivers/',home).href;
 for(const width of [360,768,1440])test(`driver page, confirmed offer and contacts at ${width}px`,async({page})=>{
- await page.setViewportSize({width,height:900});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.setViewportSize({width,height:width===360?640:900});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(drivers);
  await expect(page.getByRole('heading',{level:1})).toHaveText('Drive with BESA.No van hire costs.');
  await expect(page.locator('.driver-rate')).toHaveText(/£140\.40per day, plus VAT where applicable/);
+ if(width===360){
+  await expect(page.locator('.driver-rate')).toBeInViewport({ratio:1});
+  const apply=page.getByRole('link',{name:'Register your interest',exact:true});
+  await expect(apply).toBeInViewport({ratio:1});
+  await apply.click();
+  await expect(page).toHaveURL(/#apply$/);
+  await expect(page.getByRole('form',{name:'Driver interest form'})).toBeInViewport();
+ }
  for(const label of ['Modern 2026 automatic vans','No vehicle insurance costs','No delivery fuel costs','Paid training','A friendly, supportive team','Free accountancy benefits'])await expect(page.getByRole('heading',{name:label,exact:true})).toBeVisible();
  for(const img of await page.locator('.delivery-photo img').all()){await img.scrollIntoViewIfNeeded();await expect.poll(()=>img.evaluate(e=>e.complete&&e.naturalWidth>0)).toBe(true);}
  await expect(page.locator('form[name="driver-application"]')).toBeVisible();
