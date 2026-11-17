@@ -366,7 +366,7 @@ form{padding:25px}form label{display:block;font-size:13px;font-weight:650}form i
 .driver-rate strong{font-size:40px;letter-spacing:-.04em;display:block;line-height:1.15}
 .driver-rate span{display:block;font-size:13px;color:#c5d3e1;margin-top:7px}
 .driver-hero-photo{border-radius:3px 3px 26px 3px}
-.driver-hero-photo img{height:350px;object-position:center}
+.driver-hero-photo img{height:auto}
 .benefit-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
 .benefit-card{background:#f2f5f9;border:1px solid #dce4ec;border-radius:10px;padding:28px}
 .benefit-card>span{font-size:10px;font-weight:850;letter-spacing:.13em;color:#126c71}
@@ -413,4 +413,34 @@ form{padding:25px}form label{display:block;font-size:13px;font-weight:650}form i
 .nav a[aria-current=page]{color:#fff}
 @media(max-width:1000px){.driver-form-pair{grid-template-columns:1fr;gap:0}.benefit-card{padding:23px}.driver-hero .hero-actions{align-items:stretch}}
 @media(max-width:800px){.location-grid,.driver-hero-grid,.application-grid,.faq-grid{grid-template-columns:1fr}.driver-hero{padding-block:55px}.driver-hero-grid{gap:35px}.driver-hero h1{font-size:clamp(45px,8vw,64px)}.benefit-grid{grid-template-columns:1fr 1fr}.driver-hero-photo,.location-photo{max-width:650px;width:100%}.driver-form-pair{grid-template-columns:1fr 1fr;gap:16px}.application-grid>div>p:not(.eyebrow){max-width:650px}}
-@media(max-width:560px){.benefit-grid{grid-template-columns:1fr;gap:12px}.driver-hero{padding-block:45px}.driver-hero h1{font-size:clamp(42px,11vw,57px)}.driver-rate strong{font-size:37px}.driver-hero-photo img,.location-photo img{height:265px}.driver-story-photo img{height:280px}.driver-hero .hero-actions .button{flex-basis:100%}.driver-form-pair{grid-template-columns:1fr;gap:0}.application-grid,.faq-grid{gap:30px}.prose-content h2{font-size:25px}}
+@media(max-width:560px){.benefit-grid{grid-template-columns:1fr;gap:12px}.driver-hero{padding-block:45px}.driver-hero h1{font-size:clamp(42px,11vw,57px)}.driver-rate strong{font-size:37px}.location-photo img{height:265px}.driver-story-photo img{height:280px}.driver-hero .hero-actions .button{flex-basis:100%}.driver-form-pair{grid-template-columns:1fr;gap:0}.application-grid,.faq-grid{gap:30px}.prose-content h2{font-size:25px}}
+
+.driver-hero .hiring-summary {
+  margin: 24px 0 0;
+}
+
+
+@media (max-width: 560px) {
+  .driver-hero {
+    padding-block: 26px 34px;
+  }
+
+  .driver-hero .eyebrow {
+    margin-bottom: 12px;
+  }
+
+  .driver-hero h1 {
+    font-size: clamp(35px, 10vw, 49px);
+    margin-bottom: 14px;
+  }
+
+  .driver-hero .driver-hero-intro {
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  .driver-hero .driver-rate {
+    margin: 16px 0;
+    padding-block: 12px;
+  }
+}

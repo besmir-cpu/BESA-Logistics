@@ -1,7 +1,7 @@
 const {test,expect}=require('@playwright/test');
 const home=process.env.BESA_PRODUCTION_URL||'http://127.0.0.1:4173/dist/company-site/';
 for(const width of [360,768,1440,1920])test(`production layout, photos and enquiry form at ${width}px`,async({page})=>{
- await page.setViewportSize({width,height:900});
+ await page.setViewportSize({width,height:width===360?640:900});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(home);
  if(process.env.BESA_SCREENSHOT_DIR)await page.screenshot({path:process.env.BESA_SCREENSHOT_DIR+'/besa-'+width+'.png',fullPage:true});
@@ -10,6 +10,10 @@ for(const width of [360,768,1440,1920])test(`production layout, photos and enqui
  await expect(page.locator('.home-hero')).toContainText('OFFICIAL AMAZON DELIVERY SERVICE PARTNER');
  await expect(page.locator('.hero-description')).toContainText('Aylesford, Kent');
  await expect(page.locator('.home-hiring')).toContainText('2026 automatic van at no cost');
+ if(width<=768){
+  await expect(page.locator('.home-mobile-offer')).toBeInViewport({ratio:1});
+  await expect(page.getByRole('link',{name:'Join our driving team'})).toBeInViewport({ratio:1});
+ }
  await expect(page.locator('#approach')).toContainText('Fatigue, illness or an unsafe delivery stop');
  if(width>=1440){
   const contentWidth=await page.locator('.home-hero-grid').evaluate(e=>{const s=getComputedStyle(e);return e.clientWidth-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight);});
