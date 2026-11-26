@@ -5,11 +5,13 @@ for(const width of [360,768,1440,1920])test(`production layout, photos and enqui
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(home);
  if(process.env.BESA_SCREENSHOT_DIR)await page.screenshot({path:process.env.BESA_SCREENSHOT_DIR+'/besa-'+width+'.png',fullPage:true});
- await expect(page.getByRole('heading',{level:1})).toHaveText('BESA Logistics.Deliveringwith care.');
+ await expect(page.getByRole('heading',{level:1})).toHaveText('BESA Logistics.Delivering with care.');
  expect(await page.getByRole('heading',{level:1}).innerText()).toMatch(/BESA Logistics\.\s+Delivering\s+with care\./);
  await expect(page.locator('.home-hero')).toContainText('OFFICIAL AMAZON DELIVERY SERVICE PARTNER');
  await expect(page.locator('.hero-description')).toContainText('Aylesford, Kent');
- await expect(page.locator('.home-hiring')).toContainText('Start at the Aylesford delivery station');
+ await expect(page.locator('.home-route')).toContainText('Start at the Aylesford delivery station');
+ await expect(page.locator('.home-mobile-offer')).toBeVisible();
+ await expect(page.locator('.home-route img')).toHaveAttribute('src','./images/route-preparation.jpg');
  const heroImage=page.locator('.home-hero-photo img');
  await expect(heroImage).toHaveAttribute('src','./images/besa-prime-van-front.jpg');
  if(width<=768){
