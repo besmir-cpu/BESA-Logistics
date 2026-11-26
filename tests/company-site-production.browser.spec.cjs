@@ -9,7 +9,7 @@ for(const width of [360,768,1440,1920])test(`production layout, photos and enqui
  expect(await page.getByRole('heading',{level:1}).innerText()).toMatch(/BESA Logistics\.\s+Delivering\s+with care\./);
  await expect(page.locator('.home-hero')).toContainText('OFFICIAL AMAZON DELIVERY SERVICE PARTNER');
  await expect(page.locator('.hero-description')).toContainText('Aylesford, Kent');
- await expect(page.locator('.home-hiring')).toContainText('2026 automatic van at no cost');
+ await expect(page.locator('.home-hiring')).toContainText('Start at the Aylesford delivery station');
  const heroImage=page.locator('.home-hero-photo img');
  await expect(heroImage).toHaveAttribute('src','./images/besa-prime-van-front.jpg');
  if(width<=768){
@@ -18,7 +18,7 @@ for(const width of [360,768,1440,1920])test(`production layout, photos and enqui
  }
  if(width<=768){
   await expect(page.locator('.home-mobile-offer')).toBeInViewport({ratio:1});
-  await expect(page.getByRole('link',{name:'Join our driving team'})).toBeInViewport({ratio:1});
+  await expect(page.locator('.hero-actions').getByRole('link',{name:'Apply to drive'})).toBeInViewport({ratio:1});
  }
  await expect(page.locator('#approach')).toContainText('Fatigue, illness or an unsafe delivery stop');
  if(width>=1440){
